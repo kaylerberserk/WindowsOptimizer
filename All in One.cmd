@@ -119,6 +119,11 @@ if "%IS_LAPTOP%"=="1" (
 ) else (
     echo %STYLE_BOLD%%COLOR_WHITE% TYPE    :%COLOR_RESET% %COLOR_CYAN%PC FIXE%COLOR_RESET%
 )
+if "%HAS_INTERNET%"=="1" (
+    echo %STYLE_BOLD%%COLOR_WHITE% INTERNET:%COLOR_RESET% %COLOR_GREEN%Connecte%COLOR_RESET%
+) else (
+    echo %STYLE_BOLD%%COLOR_WHITE% INTERNET:%COLOR_RESET% %COLOR_YELLOW%Hors ligne ou filtre ^(ICMP / HTTP^)%COLOR_RESET%
+)
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- OPTIMISATIONS GENERALES ---%COLOR_RESET%
@@ -1453,11 +1458,6 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WcmSvc\GroupPolicy" /v fDisabl
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v PlatformAoAcOverride /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v SleepStudyDisabled /t REG_DWORD /d 1 /f >nul 2>&1
 
-:: RawMouseThrottle (Background Polling)
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Deblocage du polling rate souris en arriere-plan...
-reg add "HKCU\Control Panel\Mouse" /v RawMouseThrottleEnabled /t REG_DWORD /d 0 /f >nul 2>&1
-echo %COLOR_GREEN%[OK]%COLOR_RESET% RawMouseThrottle desactive
-
 :: 7.11 - Desactivation des Timer Coalescing et DPC
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des Timer Coalescing et optimisation DPC...
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel" /v MinimumDpcRate /t REG_DWORD /d 1 /f >nul 2>&1
@@ -1994,8 +1994,12 @@ echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%C
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
 if errorlevel 3 goto :MENU_GESTION_WINDOWS
-if errorlevel 2 goto :DESACTIVER_DEFENDER_SECTION
-if errorlevel 1 goto :ACTIVER_DEFENDER_SECTION
+if errorlevel 2 (
+  call :DESACTIVER_DEFENDER_SECTION
+  goto :TOGGLE_DEFENDER
+)
+call :ACTIVER_DEFENDER_SECTION
+goto :TOGGLE_DEFENDER
 
 :ACTIVER_DEFENDER_SECTION
 cls
@@ -2063,7 +2067,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Services Defender restaures
 echo.
 call :FINISH_ACTION "Windows Defender" "reactive" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_DEFENDER
+exit /b
 
 :DESACTIVER_DEFENDER_SECTION
 cls
@@ -2134,7 +2138,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Services Defender desactives
 echo.
 call :FINISH_ACTION "Windows Defender" "desactive" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_DEFENDER
+exit /b
 
 :TOGGLE_UAC
 cls
@@ -2149,8 +2153,12 @@ echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%C
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
 if errorlevel 3 goto :MENU_GESTION_WINDOWS
-if errorlevel 2 goto :DESACTIVER_UAC_SECTION
-if errorlevel 1 goto :ACTIVER_UAC_SECTION
+if errorlevel 2 (
+  call :DESACTIVER_UAC_SECTION
+  goto :TOGGLE_UAC
+)
+call :ACTIVER_UAC_SECTION
+goto :TOGGLE_UAC
 
 :ACTIVER_UAC_SECTION
 cls
@@ -2167,16 +2175,14 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreen
 
 :: Reactiver le suivi de zone (fichiers telecharges marques comme Internet)
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Attachments" /v SaveZoneInformation /t REG_DWORD /d 2 /f >nul 2>&1
-echo.
 call :FINISH_ACTION "UAC" "active" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_UAC
+exit /b
 
 :DESACTIVER_UAC_SECTION
 cls
 echo %COLOR_RED%[-]%COLOR_RESET% %STYLE_BOLD%Desactivation complete de l'UAC et des avertissements...%COLOR_RESET%
 echo %COLOR_YELLOW%LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.%COLOR_RESET%
-echo.
 
 :: UAC OFF = plus de demande Oui/Non
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 0 /f >nul 2>&1
@@ -2188,10 +2194,9 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreen
 
 :: Desactiver "Ce fichier provient d'Internet" (Zone.Identifier)
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Attachments" /v SaveZoneInformation /t REG_DWORD /d 1 /f >nul 2>&1
-echo.
 call :FINISH_ACTION "UAC" "desactive" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_UAC
+exit /b
 
 :TOGGLE_ANIMATIONS
 cls
@@ -2206,8 +2211,12 @@ echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%C
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
 if errorlevel 3 goto :MENU_GESTION_WINDOWS
-if errorlevel 2 goto :DESACTIVER_ANIMATIONS_SECTION
-if errorlevel 1 goto :ACTIVER_ANIMATIONS_SECTION
+if errorlevel 2 (
+  call :DESACTIVER_ANIMATIONS_SECTION
+  goto :TOGGLE_ANIMATIONS
+)
+call :ACTIVER_ANIMATIONS_SECTION
+goto :TOGGLE_ANIMATIONS
 
 :ACTIVER_ANIMATIONS_SECTION
 cls
@@ -2230,6 +2239,7 @@ reg add "HKCU\Control Panel\Desktop" /v AnimateWindow /t REG_DWORD /d 1 /f >nul 
 reg add "HKCU\Control Panel\Desktop" /v ComboboxAnimation /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop" /v ListBoxSmoothScrolling /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\DWM" /v EnableAeroPeek /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 1 /f >nul 2>&1
 
 :: Activer les effets visuels supplementaires
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v IconsOnly /t REG_DWORD /d 0 /f >nul 2>&1
@@ -2249,12 +2259,9 @@ bcdedit /set bootuxdisabled off >nul 2>&1
 
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Animations Windows activees.
 echo %COLOR_YELLOW%[!]%COLOR_RESET% Un redemarrage est requis pour appliquer les modifications.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :TOGGLE_ANIMATIONS
-)
+if "%~1"=="call" exit /b
+pause
+exit /b
 
 :DESACTIVER_ANIMATIONS_SECTION
 cls
@@ -2277,6 +2284,7 @@ reg add "HKCU\Control Panel\Desktop" /v AnimateWindow /t REG_DWORD /d 0 /f >nul 
 reg add "HKCU\Control Panel\Desktop" /v ComboboxAnimation /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop" /v ListBoxSmoothScrolling /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\DWM" /v EnableAeroPeek /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f >nul 2>&1
 
 :: Garder les options utiles actives (Police, Ombre icone, Drag content)
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v IconsOnly /t REG_DWORD /d 0 /f >nul 2>&1
@@ -2295,12 +2303,9 @@ bcdedit /set bootuxdisabled on >nul 2>&1
 
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Animations Windows desactivees.
 echo %COLOR_YELLOW%[!]%COLOR_RESET% Un redemarrage est requis pour appliquer les modifications.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :TOGGLE_ANIMATIONS
-)
+if "%~1"=="call" exit /b
+pause
+exit /b
 
 :TOGGLE_COPILOT
 cls
@@ -2330,13 +2335,32 @@ echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%C
 echo.
 choice /C 123456DM /N /M "%STYLE_BOLD%%COLOR_YELLOW%Choisissez une option [1-6, D, M]: %COLOR_RESET%"
 if errorlevel 8 goto :MENU_GESTION_WINDOWS
-if errorlevel 7 goto :DESACTIVER_TOUT_COPILOT
-if errorlevel 6 goto :DESACTIVER_RECALL
-if errorlevel 5 goto :ACTIVER_RECALL
-if errorlevel 4 goto :DESACTIVER_WIDGETS
-if errorlevel 3 goto :ACTIVER_WIDGETS
-if errorlevel 2 goto :DESACTIVER_COPILOT
-if errorlevel 1 goto :ACTIVER_COPILOT
+if errorlevel 7 (
+  call :DESACTIVER_TOUT_COPILOT
+  goto :TOGGLE_COPILOT
+)
+if errorlevel 6 (
+  call :DESACTIVER_RECALL
+  goto :TOGGLE_COPILOT
+)
+if errorlevel 5 (
+  call :ACTIVER_RECALL
+  goto :TOGGLE_COPILOT
+)
+if errorlevel 4 (
+  call :DESACTIVER_WIDGETS
+  goto :TOGGLE_COPILOT
+)
+if errorlevel 3 (
+  call :ACTIVER_WIDGETS
+  goto :TOGGLE_COPILOT
+)
+if errorlevel 2 (
+  call :DESACTIVER_COPILOT
+  goto :TOGGLE_COPILOT
+)
+call :ACTIVER_COPILOT
+goto :TOGGLE_COPILOT
 
 :ACTIVER_COPILOT
 cls
@@ -2362,7 +2386,7 @@ set "HOSTS=%windir%\System32\drivers\etc\hosts"
 powershell -NoProfile -c "(Get-Content '%HOSTS%') | Where-Object { $_ -notmatch 'copilot\.microsoft\.com|windows\.ai\.microsoft\.com|copilot-telemetry\.microsoft\.com|Copilot Block' } | Set-Content '%HOSTS%'" >nul 2>&1
 call :FINISH_IA_ACTION "Copilot" "active" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_COPILOT
+exit /b
 
 :DESACTIVER_COPILOT
 cls
@@ -2395,7 +2419,7 @@ if errorlevel 1 (
 )
 call :FINISH_IA_ACTION "Copilot" "desactive" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_COPILOT
+exit /b
 
 :ACTIVER_WIDGETS
 cls
@@ -2409,7 +2433,7 @@ reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /f >n
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 1 /f >nul 2>&1
 call :FINISH_IA_ACTION "Widgets" "active" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_COPILOT
+exit /b
 
 :DESACTIVER_WIDGETS
 cls
@@ -2423,7 +2447,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_D
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 0 /f >nul 2>&1
 call :FINISH_IA_ACTION "Widgets" "desactive" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_COPILOT
+exit /b
 
 :ACTIVER_RECALL
 cls
@@ -2449,7 +2473,7 @@ reg delete "HKCU\Software\Microsoft\Windows\Shell\ClickToDo" /v DisableClickToDo
 reg add "HKCU\Software\Microsoft\input\Settings" /v InsightsEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 call :FINISH_IA_ACTION "Recall" "active" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_COPILOT
+exit /b
 
 :DESACTIVER_RECALL
 cls
@@ -2477,7 +2501,7 @@ reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\Rec
 reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\Recall" /f >nul 2>&1
 call :FINISH_IA_ACTION "Recall" "desactive" "%~1"
 if "%~1"=="call" exit /b
-goto :TOGGLE_COPILOT
+exit /b
 
 :DESACTIVER_TOUT_COPILOT
 cls
@@ -2511,27 +2535,31 @@ reg add "HKCU\Software\Microsoft\input\Settings" /v InsightsEnabled /t REG_DWORD
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userActivityFeedGlobal" /v Value /t REG_SZ /d "Deny" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableImageInsights /t REG_DWORD /d 1 /f >nul 2>&1
 
-if "%~1"=="call" (
-  exit /b
-)
+if "%~1"=="call" exit /b
 call :FINISH_ACTION "Toutes les fonctions IA/Widgets" "desactivees"
-goto :TOGGLE_COPILOT
+exit /b
 
 :FINISH_ACTION
-echo.
+setlocal DisableDelayedExpansion
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Action terminee : %~1 %~2.%COLOR_RESET%
 echo %COLOR_YELLOW%[!]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour finaliser les changements.%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo.
-if "%~3"=="call" exit /b
-choice /C YN /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [Y/N]: %COLOR_RESET%"
-if errorlevel 2 exit /b
+if "%~3"=="call" (
+  endlocal
+  exit /b
+)
+choice /C YN /N /M "%COLOR_YELLOW%Redemarrer maintenant ? [Y/N]:%COLOR_RESET%"
+if errorlevel 2 (
+  endlocal
+  exit /b
+)
 if errorlevel 1 shutdown /r /t 5 /c "Redemarrage apres modification"
+endlocal
 exit /b
 
 :FINISH_IA_ACTION
-call :FINISH_ACTION %1 %2 "%~3"
+call :FINISH_ACTION "%~1" "%~2" "%~3"
 exit /b
 
 :DESINSTALLER_ONEDRIVE
@@ -2946,7 +2974,7 @@ if "%DESACTIVER_IA%"=="1" (
   echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Les fonctionnalites IA de Windows ont ete desactivees.%COLOR_RESET%
 )
 if "%DESACTIVER_UAC%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Le Controle de Compte Utilisateur (UAC) a ete desactive.%COLOR_RESET%
+  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Le Controle de Compte Utilisateur ^(UAC^) a ete desactive.%COLOR_RESET%
 )
 echo.
 echo %COLOR_YELLOW%[!]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour appliquer toutes les modifications.%COLOR_RESET%
@@ -3094,7 +3122,7 @@ if "%DESACTIVER_IA%"=="1" (
   echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Les fonctionnalites IA de Windows ont ete desactivees.%COLOR_RESET%
 )
 if "%DESACTIVER_UAC%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Le Controle de Compte Utilisateur (UAC) a ete desactive.%COLOR_RESET%
+  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Le Controle de Compte Utilisateur ^(UAC^) a ete desactive.%COLOR_RESET%
 )
 echo.
 echo %COLOR_YELLOW%[!]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour appliquer toutes les modifications.%COLOR_RESET%
@@ -3341,7 +3369,7 @@ if %VCINSTALLED_COUNT%==2 (
     goto :MENU_PRINCIPAL
 )
 
-:VCREDIST_INSTALL
+:: Suite : installation des paquets VC++ manquants (flux sequentiel, pas de goto vers ce point)
 echo.
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Installation des versions manquantes...
 set /a VC_TO_INSTALL=2-VCINSTALLED_COUNT
@@ -3455,8 +3483,12 @@ set "PCURRENT=%~1"
 set "PTOTAL=%~2"
 set "PDESC=%~3"
 
-set /a PCALC=%PCURRENT%*100/%PTOTAL% 2>nul
-set /a PFILL=PCALC*20/100
+set /a PCALC=0
+set /a PFILL=0
+if not "%PTOTAL%"=="" if not "%PTOTAL%"=="0" (
+    set /a PCALC=%PCURRENT%*100/%PTOTAL% 2>nul
+)
+set /a PFILL=PCALC*20/100 2>nul
 
 set "PBAR="
 for /l %%i in (1,1,20) do (
@@ -3500,17 +3532,29 @@ exit /b
 
 
 :REFRESH_INTERNET_STATUS
+set "HAS_INTERNET=0"
+ping -n 1 -w 1500 1.1.1.1 >nul 2>&1
+if not errorlevel 1 (
+    set "HAS_INTERNET=1"
+    exit /b
+)
+:: Repli si ICMP est bloque (entreprise, pare-feu) : test HTTP leger (service Microsoft)
+powershell -NoProfile -Command "try { $c=(Invoke-WebRequest -Uri 'http://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 5).Content; if ($c -match 'Microsoft') { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+if not errorlevel 1 set "HAS_INTERNET=1"
 exit /b
 
 :END_SCRIPT
+:: Sans expansion retardée : évite que les "!" dans les textes ([!], AU REVOIR!, etc.) cassent la fin du script
+setlocal DisableDelayedExpansion
 cls
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
-echo %STYLE_BOLD%%COLOR_WHITE% AU REVOIR !%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% AU REVOIR! %COLOR_RESET%
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
-echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Merci d'avoir utilise le script d'optimisation !%COLOR_RESET%
+echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Merci d'avoir utilise le script d'optimisation! %COLOR_RESET%
 echo %COLOR_YELLOW%[!]%COLOR_RESET% %COLOR_WHITE%N'oubliez pas de redemarrer votre PC pour finaliser tout.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 timeout /t 3 /nobreak >nul
-exit /b
+endlocal
+exit /b 0
