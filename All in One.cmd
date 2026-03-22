@@ -504,14 +504,12 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% Ajout des blocages telemetrie dans le fichie
 set "HOSTS=%SystemRoot%\System32\drivers\etc\hosts"
 attrib -r "%HOSTS%" >nul 2>&1
 
-:: Supprimer l'ancien bloc telemetrie s'il existe
-findstr /c:"Telemetry Block" "%HOSTS%" >nul 2>&1
-if not errorlevel 1 (
-    echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression de l'ancien bloc telemetrie...
-    findstr /v /c:"Telemetry Block" /c:"0.0.0.0 vortex" /c:"0.0.0.0 v10." /c:"0.0.0.0 telecommand.telemetry" /c:"0.0.0.0 oca.telemetry" /c:"0.0.0.0 watson" /c:"End Telemetry Block" "%HOSTS%" > "%HOSTS%.tmp"
-    copy /y "%HOSTS%.tmp" "%HOSTS%" >nul
-    del "%HOSTS%.tmp" >nul 2>&1
-)
+:: Supprimer TOUTES les anciennes entrees telemetrie (ancien format sans marqueurs + nouveau format avec marqueurs)
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Nettoyage des anciennes entrees telemetrie dans hosts...
+findstr /i /v /c:"telemetry" /c:"watson" /c:"vortex" /c:"v10.events" /c:"metaservices" /c:"choice.microsoft" /c:"settings-sandbox" /c:"statsfe" /c:"corpext" /c:"compatexchange" /c:"feedback" /c:"settings-win" /c:"self.events" /c:"onecollector" /c:"diagnostics.support" "%HOSTS%" > "%HOSTS%.tmp"
+findstr /i /v /c:"storeedgefd" /c:"ds.microsoft.com" "%HOSTS%.tmp" > "%HOSTS%.clean"
+copy /y "%HOSTS%.clean" "%HOSTS%" >nul
+del "%HOSTS%.tmp" "%HOSTS%.clean" >nul 2>&1
 
 :: Ajouter le nouveau bloc
 echo.>> "%HOSTS%"
