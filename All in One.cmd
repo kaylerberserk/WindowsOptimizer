@@ -507,7 +507,7 @@ set "HOSTS=%SystemRoot%\System32\drivers\etc\hosts"
 findstr /c:"Telemetry Block Start" "%HOSTS%" >nul 2>&1
 if not errorlevel 1 (
     echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression de l'ancien bloc telemetrie...
-    powershell -NoProfile -Command "(Get-Content '%%HOSTS%%') -replace '(?s)# --- Telemetry Block.*?# --- End Telemetry Block ---', '' | Set-Content '%%HOSTS%%'"
+    powershell -NoProfile -Command "(Get-Content '%HOSTS%') -replace '(?s)# --- Telemetry Block.*?# --- End Telemetry Block ---', '' | Set-Content '%HOSTS%'"
 )
 
 :: Ajouter les blocages
