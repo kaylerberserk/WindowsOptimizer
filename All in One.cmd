@@ -502,15 +502,21 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Taches de telemetrie desactivees
 :: Blocage telemetrie via hosts
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Ajout des blocages telemetrie dans le fichier hosts...
 set "HOSTS=%SystemRoot%\System32\drivers\etc\hosts"
+attrib -r "%HOSTS%" >nul 2>&1
 
-:: Verifier si deja ajoute
-findstr /c:"vortex.data.microsoft.com" "%HOSTS%" >nul 2>&1
-if errorlevel 1 (
-    :: Ajouter les blocages
-    attrib -r "%HOSTS%" >nul 2>&1
-    echo.>> "%HOSTS%"
-    echo # Telemetry Block Start >> "%HOSTS%"
-    echo # --- Telemetry Block (Optimizer Script) --->> "%HOSTS%"
+:: Supprimer l'ancien bloc telemetrie s'il existe
+findstr /c:"Telemetry Block" "%HOSTS%" >nul 2>&1
+if not errorlevel 1 (
+    echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression de l'ancien bloc telemetrie...
+    findstr /v /c:"Telemetry Block" /c:"0.0.0.0 vortex" /c:"0.0.0.0 v10." /c:"0.0.0.0 telecommand.telemetry" /c:"0.0.0.0 oca.telemetry" /c:"0.0.0.0 watson" /c:"End Telemetry Block" "%HOSTS%" > "%HOSTS%.tmp"
+    copy /y "%HOSTS%.tmp" "%HOSTS%" >nul
+    del "%HOSTS%.tmp" >nul 2>&1
+)
+
+:: Ajouter le nouveau bloc
+echo.>> "%HOSTS%"
+echo # Telemetry Block Start>> "%HOSTS%"
+echo # --- Telemetry Block --->> "%HOSTS%"
 echo 0.0.0.0 vortex.data.microsoft.com>> "%HOSTS%"
 echo 0.0.0.0 vortex-win.data.microsoft.com>> "%HOSTS%"
 echo 0.0.0.0 v10.vortex-win.data.microsoft.com>> "%HOSTS%"
@@ -521,9 +527,7 @@ echo 0.0.0.0 watson.telemetry.microsoft.com>> "%HOSTS%"
 echo 0.0.0.0 watsonc.microsoft.com>> "%HOSTS%"
 echo # --- End Telemetry Block --->> "%HOSTS%"
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Domaines telemetrie bloques via hosts
-
 attrib +r "%HOSTS%" >nul 2>&1
-:HOSTS_DONE
 
 :: 1.5 - Services optimises
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Optimisation services
