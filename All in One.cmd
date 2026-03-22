@@ -343,7 +343,6 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Configuration des priorites CPU et de la planification...
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 3 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v IoPriority /t REG_DWORD /d 3 /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableRoutinelyTakingAction /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEng.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEngCP.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 38 /f >nul 2>&1
@@ -927,10 +926,10 @@ reg add "HKCU\SYSTEM\GameConfigStore" /v GameDVR_HonorUserFSEBehaviorMode /t REG
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% GameDVR desactive - Game Mode conserve pour les performances
 
-:: 4.2 - Activation du VRR et du mode Flip Model pour DirectX
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation du VRR et Activation du mode Flip Model pour DirectX...
+:: 4.2 - VRR desactive (reduit le stutter), Flip Model / SwapEffectUpgrade actif
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Application des preferences DirectX ^(VRR desactive, Flip Model actif^)...
 reg add "HKCU\Software\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /t REG_SZ /d "VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;" /f >nul 2>&1
-echo %COLOR_GREEN%[OK]%COLOR_RESET% DirectX optimise avec VRR et Flip Model actifs
+echo %COLOR_GREEN%[OK]%COLOR_RESET% DirectX : VRR desactive, Flip Model ^(SwapEffectUpgrade^) actif
 
 :: 4.3 - Desactivation NVIDIA telemetry
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de la telemetrie NVIDIA (collecte de donnees)...
@@ -1958,7 +1957,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% HVCI/CFG conserves (compatibilite anti-cheat
  
 :: Vulnerable Driver Blocklist (WinSux)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Optimisation CI Policy (Driver Blocklist)...
-reg add "HKLM\System\ControlSet001\Control\CI\Config" /v VulnerableDriverBlocklistEnable /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Config" /v VulnerableDriverBlocklistEnable /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Blocklist de pilotes vulnerables desactivee
  
 :: USB Polling / WHQL Settings
@@ -2047,7 +2046,8 @@ reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender" /v DisableAntiSpyware /f >
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableBlockAtFirstSeen /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender" /v VerifiedAndReputableTrustModeEnabled /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender" /v SmartLockerMode /f >nul 2>&1
-reg add "HKLM\System\ControlSet001\Control\CI\Config" /v VulnerableDriverBlocklistEnable /t REG_DWORD /d 1 /f >nul 2>&1
+reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableRoutinelyTakingAction /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Config" /v VulnerableDriverBlocklistEnable /t REG_DWORD /d 1 /f >nul 2>&1
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation de SmartScreen...
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v EnableSmartScreen /f >nul 2>&1
@@ -2114,7 +2114,8 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v DisableAntiSpyware /t REG_
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableBlockAtFirstSeen /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v VerifiedAndReputableTrustModeEnabled /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v SmartLockerMode /t REG_DWORD /d 0 /f >nul 2>&1
- 
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableRoutinelyTakingAction /t REG_DWORD /d 1 /f >nul 2>&1
+
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des taches planifiees Defender et ExploitGuard...
 schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cleanup" /Disable >nul 2>&1
 schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Scheduled Scan" /Disable >nul 2>&1
@@ -3143,8 +3144,8 @@ echo %COLOR_CYAN%===============================================================
 echo.
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Verification et activation de la restauration systeme si necessaire...
-:: Verifier si la restauration systeme est activee via PowerShell (plus fiable)
-powershell -NoProfile -Command "try { $status = Get-ComputerRestorePoint -ErrorAction SilentlyContinue; if ($status) { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+:: DisableSR + protection volume C: via WMI root\default SystemRestore.GetDiskList (paires: code lettre ASCII, 1=actif)
+powershell -NoProfile -Command "try { $p = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore' -ErrorAction SilentlyContinue; if ($null -ne $p -and $p.DisableSR -eq 1) { exit 1 }; $sr = Get-WmiObject -Class SystemRestore -Namespace root\default -ErrorAction SilentlyContinue; if ($null -eq $sr) { exit 1 }; $r = $sr.GetDiskList(); if ($null -eq $r) { exit 1 }; if ($null -ne $r.ReturnValue -and [int]$r.ReturnValue -ne 0) { exit 1 }; $a = @($r.DiskList); if ($a.Count -lt 2) { exit 1 }; for ($i = 0; $i -lt $a.Count; $i += 2) { $d = $a[$i]; $st = if ($i + 1 -lt $a.Count) { [int]$a[$i + 1] } else { 0 }; if ($st -ne 1) { continue }; if ($d -eq 67) { exit 0 }; if ($d -is [string] -and $d -match '^C') { exit 0 } }; exit 1 } catch { exit 1 }" >nul 2>&1
 if errorlevel 1 (
     echo %COLOR_YELLOW%[*]%COLOR_RESET% Activation de la restauration systeme...
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore" /v "RPSessionInterval" /t REG_DWORD /d 1 /f >nul 2>&1
@@ -3156,19 +3157,17 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Creation d'un point de restauration en cours
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Cette operation peut prendre 30-60 secondes...
 echo.
 
-:: Creation du point de restauration avec timeout de 120 secondes et timestamp
-for /f "tokens=1-3 delims=/ " %%a in ("%DATE%") do set "RP_DATE=%%a-%%b-%%c"
-for /f "tokens=1-3 delims=:." %%a in ("%TIME%") do set "RP_TIME=%%a-%%b-%%c"
-set "RP_TIMESTAMP=%RP_DATE%_%RP_TIME%"
-set "RP_DATE="
-set "RP_TIME="
-powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; try { $startTime = Get-Date; $job = Start-Job { Checkpoint-Computer -Description 'Optimizations_%RP_TIMESTAMP%' -RestorePointType 'MODIFY_SETTINGS' }; $completed = $job | Wait-Job -Timeout 120; if (-not $completed) { Stop-Job $job; Remove-Job $job; throw 'Timeout' }; $result = Receive-Job $job; Remove-Job $job; exit 0 } catch { exit 1 }" >nul 2>&1
+:: Creation du point de restauration (appel synchrone : plus fiable que Start-Job pour Checkpoint-Computer)
+:: Horodatage independant de la locale Windows (evite dim.-22-03_... avec %%DATE%% en francais)
+:: Ne pas entourer le format de quotes simples : le FOR / ('...') de CMD s'arrete a la premiere '
+for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "RP_TIMESTAMP=%%a"
+powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; try { $desc = 'Optimizations_%RP_TIMESTAMP%'; Checkpoint-Computer -Description $desc -RestorePointType 'MODIFY_SETTINGS'; exit 0 } catch { exit 1 }" >nul 2>&1
 if not errorlevel 1 (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Point de restauration cree avec succes.
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Nom : Optimizations_%RP_TIMESTAMP%
 ) else (
     echo %COLOR_RED%[ATTENTION]%COLOR_RESET% Echec de la creation du point de restauration.
-    echo %COLOR_YELLOW%[*]%COLOR_RESET% Raison possible : timeout depasse ou restauration desactivee.
+    echo %COLOR_YELLOW%[*]%COLOR_RESET% Raison possible : restauration desactivee, espace disque insuffisant ou strategie groupe.
 )
 set "RP_TIMESTAMP="
 pause
@@ -3231,7 +3230,7 @@ del /s /q /f "%SystemRoot%\memory.dmp" >nul 2>&1
 set /a CLEAN_STEP+=1
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Rapports d'erreurs"
 rd /s /q "C:\ProgramData\Microsoft\Windows\WER" >nul 2>&1
-md "C:\Windows\WER" >nul 2>&1
+if not exist "C:\ProgramData\Microsoft\Windows\WER" md "C:\ProgramData\Microsoft\Windows\WER" >nul 2>&1
 
 :: ETAPE 6
 set /a CLEAN_STEP+=1
@@ -3510,8 +3509,8 @@ set "HW_RAM=?"
 set "IS_LAPTOP=0"
 
 :: Un seul appel PowerShell robuste (conserve le gain de performance sans les problemes de parsing CMD)
-:: Utilise '~' comme delimiteur car il est moins susceptible de causer des problemes que '|'
-for /f "tokens=1-5 delims=~" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$o=Get-CimInstance Win32_OperatingSystem;$c=Get-CimInstance Win32_Processor;$g=@(Get-CimInstance Win32_VideoController)[0].Name;$r=[math]::Round((Get-CimInstance Win32_PhysicalMemory|Measure-Object Capacity -Sum).Sum/1GB,0);if($r -eq 0){$r=[math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB,0)};$b=if(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue){1}else{0}; Write-Output ($o.Caption+' ('+$o.Version+')'+'~'+$c.Name.Trim()+'~'+$g+'~'+$r+'~'+$b)" 2^>nul') do (
+:: Utilise '~' comme delimiteur ; pas de quotes simples dans -Command (meme piege que Get-Date dans FOR / (')) — [char] pour espace/paren/tilde
+for /f "tokens=1-5 delims=~" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$o=Get-CimInstance Win32_OperatingSystem;$c=Get-CimInstance Win32_Processor;$g=@(Get-CimInstance Win32_VideoController)[0].Name;$r=[math]::Round((Get-CimInstance Win32_PhysicalMemory|Measure-Object Capacity -Sum).Sum/1GB,0);if($r -eq 0){$r=[math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB,0)};$b=if(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue){1}else{0}; Write-Output ($o.Caption+[char]32+[char]40+[char]32+$o.Version+[char]41+[char]126+$c.Name.Trim()+[char]126+$g+[char]126+$r+[char]126+$b)" 2^>nul') do (
     if not "%%a"=="" set "HW_OS=%%a"
     if not "%%b"=="" set "HW_CPU=%%b"
     if not "%%c"=="" set "HW_GPU=%%c"
