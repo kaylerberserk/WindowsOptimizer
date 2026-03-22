@@ -517,44 +517,12 @@ echo # Telemetry Block Start >> "%HOSTS%"
 echo # --- Telemetry Block (Optimizer Script) --->> "%HOSTS%"
 echo 0.0.0.0 vortex.data.microsoft.com>> "%HOSTS%"
 echo 0.0.0.0 vortex-win.data.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 telecommand.telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 telecommand.telemetry.microsoft.com.nsatc.net>> "%HOSTS%"
-echo 0.0.0.0 oca.telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 oca.telemetry.microsoft.com.nsatc.net>> "%HOSTS%"
-echo 0.0.0.0 sqm.telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 sqm.telemetry.microsoft.com.nsatc.net>> "%HOSTS%"
-echo 0.0.0.0 watson.telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 watson.telemetry.microsoft.com.nsatc.net>> "%HOSTS%"
-echo 0.0.0.0 redir.metaservices.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 choice.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 choice.microsoft.com.nsatc.net>> "%HOSTS%"
-echo 0.0.0.0 df.telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 reports.wes.df.telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 services.wes.df.telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 sqm.df.telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 watson.ppe.telemetry.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 telemetry.appex.bing.net>> "%HOSTS%"
-echo 0.0.0.0 telemetry.urs.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 settings-sandbox.data.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 survey.watson.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 watson.live.com>> "%HOSTS%"
-echo 0.0.0.0 statsfe2.ws.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 corpext.msitadfs.glbdns2.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 compatexchange.cloudapp.net>> "%HOSTS%"
-echo 0.0.0.0 statsfe1.ws.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 feedback.microsoft-hohm.com>> "%HOSTS%"
-echo 0.0.0.0 feedback.windows.com>> "%HOSTS%"
-echo 0.0.0.0 feedback.search.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 settings-win.data.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 self.events.data.microsoft.com>> "%HOSTS%"
 echo 0.0.0.0 v10.vortex-win.data.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 onecollector.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 diagnostics.support.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 watsonc.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 ds.microsoft.com>> "%HOSTS%"
-echo 0.0.0.0 storeedgefd.dsx.mp.microsoft.com>> "%HOSTS%"
 echo 0.0.0.0 v10.events.data.microsoft.com>> "%HOSTS%"
+echo 0.0.0.0 telecommand.telemetry.microsoft.com>> "%HOSTS%"
+echo 0.0.0.0 oca.telemetry.microsoft.com>> "%HOSTS%"
+echo 0.0.0.0 watson.telemetry.microsoft.com>> "%HOSTS%"
+echo 0.0.0.0 watsonc.microsoft.com>> "%HOSTS%"
 echo # --- End Telemetry Block --->> "%HOSTS%"
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Domaines telemetrie bloques via hosts
 
@@ -1920,6 +1888,18 @@ echo %COLOR_WHITE%  Avantages : Reduction de la latence systeme, moins d'overhea
 echo %COLOR_WHITE%  Risques   : Exposition a des attaques par canal auxiliaire%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+if not "%~1"=="call" (
+echo.
+echo %COLOR_WHITE%  Pourquoi demander une confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%  - Les mitigations Spectre/Meltdown et noyau limitent les fuites de donnees%COLOR_RESET%
+echo %COLOR_WHITE%    via le CPU ; les desactiver peut ameliorer perfs/latence mais affaiblit la defense.%COLOR_RESET%
+echo %COLOR_WHITE%  - La blocklist de pilotes vulnerables aide Windows a bloquer des drivers dangereux.%COLOR_RESET%
+echo %COLOR_WHITE%  - Ces cles de registre sont sensibles : erreur = instabilite ou surface d'attaque.%COLOR_RESET%
+echo %COLOR_WHITE%  - Indique surtout pour bench/jeux competitifs sur machine isolee et comprise.%COLOR_RESET%
+echo.
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
+if errorlevel 2 goto :MENU_PRINCIPAL
+)
 
 :: 8.1 - Desactivation des protections Kernel SEHOP Exception Chain 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des protections noyau (SEHOP, Exception Chain)... 
@@ -2070,11 +2050,30 @@ if "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_DEFENDER_SECTION
+if not "%~1"=="call" (
 cls
-echo %COLOR_RED%[-]%COLOR_RESET% %STYLE_BOLD%Desactivation de Windows Defender...%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% CONFIRMATION : DESACTIVER WINDOWS DEFENDER%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+echo %COLOR_WHITE%Pourquoi une derniere confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%- Defender est l'antivirus integre : scan temps reel, pare-feu SmartScreen lies.%COLOR_RESET%
+echo %COLOR_WHITE%- Sans lui, fichiers telecharges, scripts et USB ne sont plus filtres de la meme facon.%COLOR_RESET%
+echo %COLOR_WHITE%- Certains jeux gagnent des FPS en le coupant ; le risque malware augmente fortement.%COLOR_RESET%
+echo %COLOR_WHITE%- Si vous gardez un autre AV, desactivez-le d'abord cote politique pour eviter conflits.%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%ATTENTION: Desactiver Windows Defender expose votre systeme a des risques.%COLOR_RESET%
 echo.
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
+if errorlevel 2 exit /b
+)
+cls
+echo %COLOR_RED%[-]%COLOR_RESET% %STYLE_BOLD%Desactivation de Windows Defender...%COLOR_RESET%
+echo.
+if "%~1"=="call" (
+echo %COLOR_YELLOW%ATTENTION: Desactiver Windows Defender expose votre systeme a des risques.%COLOR_RESET%
+echo.
+)
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de Tamper Protection...
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender\Features" /v TamperProtection /t REG_DWORD /d 0 /f >nul 2>&1
@@ -2181,9 +2180,27 @@ if "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_UAC_SECTION
+if not "%~1"=="call" (
+cls
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% CONFIRMATION : DESACTIVER L'UAC%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+echo %COLOR_WHITE%Pourquoi une derniere confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%- L'UAC demande une elevation explicite avant qu'un programme obtienne des droits admin.%COLOR_RESET%
+echo %COLOR_WHITE%- La desactivation supprime ces invites : un malware peut agir sans boite de dialogue.%COLOR_RESET%
+echo %COLOR_WHITE%- Ce script desactive aussi des avertissements SmartScreen / marquage zone Internet.%COLOR_RESET%
+echo %COLOR_WHITE%- Reserve aux bancs de test ou utilisateurs conscients du risque.%COLOR_RESET%
+echo.
+echo %COLOR_YELLOW%LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.%COLOR_RESET%
+echo.
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC et les avertissements lies ? [O/N]: %COLOR_RESET%"
+if errorlevel 2 exit /b
+)
 cls
 echo %COLOR_RED%[-]%COLOR_RESET% %STYLE_BOLD%Desactivation complete de l'UAC et des avertissements...%COLOR_RESET%
-echo %COLOR_YELLOW%LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.%COLOR_RESET%
+if "%~1"=="call" echo %COLOR_YELLOW%LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.%COLOR_RESET%
+if "%~1"=="call" echo.
 
 :: UAC OFF = plus de demande Oui/Non
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 0 /f >nul 2>&1
@@ -2265,6 +2282,21 @@ pause
 exit /b
 
 :DESACTIVER_ANIMATIONS_SECTION
+if not "%~1"=="call" (
+cls
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% CONFIRMATION : DESACTIVER LES ANIMATIONS WINDOWS%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+echo %COLOR_WHITE%Pourquoi une derniere confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%- Les animations consomment un peu de GPU/CPU ; les couper peut fluidifier un PC faible.%COLOR_RESET%
+echo %COLOR_WHITE%- Cela modifie le registre utilisateur et bcdedit ^(animation du logo au demarrage^).%COLOR_RESET%
+echo %COLOR_WHITE%- L'interface parait plus « seche » ^(transparence, barres des taches, menus^).%COLOR_RESET%
+echo %COLOR_WHITE%- Un redemarrage est necessaire pour tout voir ; reversible via le menu Activer.%COLOR_RESET%
+echo.
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
+if errorlevel 2 exit /b
+)
 cls
 echo %COLOR_RED%[-]%COLOR_RESET% Desactivation des animations Windows...
 echo.
@@ -2390,6 +2422,20 @@ if "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_COPILOT
+if not "%~1"=="call" (
+cls
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% CONFIRMATION : DESACTIVER COPILOT%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+echo %COLOR_WHITE%Pourquoi une confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%- Copilot s'appuie sur des services cloud ; ce script applique des strategies et peut%COLOR_RESET%
+echo %COLOR_WHITE%  ajouter des lignes au fichier hosts pour bloquer des endpoints lies.%COLOR_RESET%
+echo %COLOR_WHITE%- Vous perdez l'assistant integre tant que les cles / hosts restent en place.%COLOR_RESET%
+echo.
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Copilot ? [O/N]: %COLOR_RESET%"
+if errorlevel 2 exit /b
+)
 cls
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
@@ -2437,6 +2483,19 @@ if "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_WIDGETS
+if not "%~1"=="call" (
+cls
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% CONFIRMATION : DESACTIVER LES WIDGETS%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+echo %COLOR_WHITE%Pourquoi une confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%- Les widgets ^(meteo, actus^) utilisent le panneau lateral et du reseau en arriere-plan.%COLOR_RESET%
+echo %COLOR_WHITE%- La desactivation masque ce flux : utile pour perf / distraction, moins pour veille info.%COLOR_RESET%
+echo.
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les Widgets ? [O/N]: %COLOR_RESET%"
+if errorlevel 2 exit /b
+)
 cls
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
@@ -2477,6 +2536,20 @@ if "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_RECALL
+if not "%~1"=="call" (
+cls
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% CONFIRMATION : DESACTIVER RECALL / ANALYSE IA%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+echo %COLOR_WHITE%Pourquoi une confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%- Recall peut enregistrer l'activite ecran pour recherche semantique ^(fort impact confidentialite^).%COLOR_RESET%
+echo %COLOR_WHITE%- Desactiver coupe ces fonctions et des politiques IA associees ^(snapshots, insights^).%COLOR_RESET%
+echo %COLOR_WHITE%- Indique si vous privilegiez la vie privee plutot que les outils de recherche integree.%COLOR_RESET%
+echo.
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Recall et restrictions IA liees ? [O/N]: %COLOR_RESET%"
+if errorlevel 2 exit /b
+)
 cls
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
@@ -2505,6 +2578,20 @@ if "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_TOUT_COPILOT
+if not "%~1"=="call" (
+cls
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% CONFIRMATION : TOUT DESACTIVER ^(COPILOT + WIDGETS + RECALL / IA^)%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+echo %COLOR_WHITE%Pourquoi une confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%- Cette action cumule Copilot, barre lateral widgets, et politiques Recall / Windows AI.%COLOR_RESET%
+echo %COLOR_WHITE%- Effet combine : moins de taches et de trafic reseau lies a ces fonctionnalites.%COLOR_RESET%
+echo %COLOR_WHITE%- Vous perdez l'assistant, le flux actus et les outils bases sur l'analyse locale/cloud.%COLOR_RESET%
+echo.
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de tout desactiver ^(Copilot + Widgets + Recall/IA^) ? [O/N]: %COLOR_RESET%"
+if errorlevel 2 exit /b
+)
 cls
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
@@ -2569,10 +2656,16 @@ echo %COLOR_CYAN%===============================================================
 echo %STYLE_BOLD%%COLOR_WHITE% DESINSTALLATION COMPLETE DE ONEDRIVE%COLOR_RESET%
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
-
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Tentative de desinstallation de OneDrive...
+echo %COLOR_WHITE%Pourquoi demander confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%- OneDrive synchronise Documents/Bureau/Images vers le cloud Microsoft.%COLOR_RESET%
+echo %COLOR_WHITE%- Le desinstaller coupe la sync et les liens « nuage » ; Office peut perdre l'auto-save cloud.%COLOR_RESET%
+echo %COLOR_WHITE%- Les chemins du dossier OneDrive ^(%USERPROFILE%\OneDrive^) seront supprimes si presents.%COLOR_RESET%
+echo %COLOR_WHITE%- Pratique pour liberer ressources et vie privee ; gardez une copie locale avant de valider.%COLOR_RESET%
+echo.
+echo %COLOR_YELLOW%[*]%COLOR_RESET% La suite arretera OneDrive, nettoiera registre et raccourcis, puis desinstallera.
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Cela peut prendre quelques instants.
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de vouloir continuer (O/N) ? %COLOR_RESET%"
+echo.
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desinstaller OneDrive ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :MENU_GESTION_WINDOWS
 
 :: Arreter les processus OneDrive
@@ -2661,10 +2754,16 @@ echo %STYLE_BOLD%%COLOR_WHITE% DESINSTALLATION COMPLETE DE MICROSOFT EDGE%COLOR_
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
 
+echo %COLOR_WHITE%Pourquoi demander confirmation :%COLOR_RESET%
+echo %COLOR_WHITE%- Edge est le moteur WebView2 pour nombre d'applis Windows ^(Widgets, Store, aide^).%COLOR_RESET%
+echo %COLOR_WHITE%- Le retirer peut casser des applis qui s'appuient sur le runtime integre.%COLOR_RESET%
+echo %COLOR_WHITE%- Windows Update peut tenter de reinstaller un navigateur de base ; comportement variable selon version.%COLOR_RESET%
+echo %COLOR_WHITE%- Utile pour allegement / preference ; risque de compatibilite reel sur certaines configs.%COLOR_RESET%
+echo.
 echo %COLOR_RED%ATTENTION: La desinstallation de Microsoft Edge peut entrainer des problemes%COLOR_RESET%
 echo %COLOR_RED%de compatibilite avec certaines applications Windows.%COLOR_RESET%
 echo.
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de vouloir continuer (O/N) ? %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desinstaller Microsoft Edge ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :MENU_GESTION_WINDOWS
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
@@ -2672,6 +2771,10 @@ echo %COLOR_WHITE% SUPPRESSION DES DONNEES UTILISATEUR%COLOR_RESET%
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
 
+echo %COLOR_WHITE%Pourquoi une question separee :%COLOR_RESET%
+echo %COLOR_WHITE%- Sans suppression, profils et caches restent sur le disque ^(reinstall ou autre navigateur^).%COLOR_RESET%
+echo %COLOR_WHITE%- Avec suppression, favoris et mots de passe locaux peuvent etre perdus sans recuperation facile.%COLOR_RESET%
+echo.
 echo %COLOR_YELLOW%Voulez-vous supprimer les donnees utilisateur d'Edge ?%COLOR_RESET%
 echo %COLOR_WHITE%- Historique de navigation%COLOR_RESET%
 echo %COLOR_WHITE%- Cookies et donnees de sites%COLOR_RESET%
@@ -2680,7 +2783,7 @@ echo %COLOR_WHITE%- Mots de passe sauvegardes%COLOR_RESET%
 echo %COLOR_WHITE%- Extensions et themes%COLOR_RESET%
 echo %COLOR_WHITE%- Parametres et preferences%COLOR_RESET%
 echo.
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Supprimer les donnees utilisateur (O/N) ? %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de supprimer les donnees utilisateur Edge ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 (
     set "SUPPR_DATA=NON"
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Les donnees utilisateur seront preservees.
@@ -2858,13 +2961,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver les protections de securite (Spectre/Meltdown) ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : mitigations CPU/noyau contre fuites laterales ; desactiver%COLOR_RESET%
+echo %COLOR_WHITE%peut reduire latence CPU mais augmente le risque sur machine multi-utilisateurs ou exposee.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Reduit la latence systeme et l'overhead CPU
 echo       %COLOR_YELLOW%Expose le systeme a des attaques par canal auxiliaire%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les protections (recommande)
 echo.
 set "DESACTIVER_SECURITE=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver les protections ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :DESKTOP_SECURITE_NON
 if errorlevel 1 set "DESACTIVER_SECURITE=1"
 :DESKTOP_SECURITE_NON
@@ -2875,13 +2981,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver Windows Defender ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : sans antivirus integre, moins de charge disque/CPU mais%COLOR_RESET%
+echo %COLOR_WHITE%aucune analyse temps reel des telechargements ; a combiner avec un autre AV si besoin.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Ameliore les performances en desactivant l'antivirus
 echo       %COLOR_YELLOW%Expose le systeme aux virus et logiciels malveillants%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver Windows Defender (recommande)
 echo.
 set "DESACTIVER_DEFENDER=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :DESKTOP_DEFENDER_NON
 if errorlevel 1 set "DESACTIVER_DEFENDER=1"
 :DESKTOP_DEFENDER_NON
@@ -2892,13 +3001,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver les animations Windows ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : effets DWM, menus et demarrage ; utile sur PC limite,%COLOR_RESET%
+echo %COLOR_WHITE%un peu plus brut visuellement ; reversible via le menu Activer les animations.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Ameliore les performances en supprimant les animations
 echo       %COLOR_YELLOW%L'interface sera moins fluide visuellement%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les animations (recommande)
 echo.
 set "DESACTIVER_ANIMATIONS=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver les animations ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :DESKTOP_ANIMATIONS_NON
 if errorlevel 1 set "DESACTIVER_ANIMATIONS=1"
 :DESKTOP_ANIMATIONS_NON
@@ -2909,13 +3021,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver les fonctionnalites IA de Windows ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : Copilot, widgets, Recall consomment CPU/reseau et%COLOR_RESET%
+echo %COLOR_WHITE%envoient des donnees vers Microsoft ; couper tout ameliore confidentialite et perf.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Desactive Copilot, Recall, widgets et autres fonctionnalites IA
 echo       %COLOR_YELLOW%Ameliore les performances et la confidentialite%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les fonctionnalites IA
 echo.
 set "DESACTIVER_IA=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver les fonctionnalites IA ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces fonctionnalites IA ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :DESKTOP_IA_NON
 if errorlevel 1 set "DESACTIVER_IA=1"
 :DESKTOP_IA_NON
@@ -2926,13 +3041,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver le Controle de Compte Utilisateur (UAC) ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : sans UAC, les programmes peuvent obtenir des droits admin%COLOR_RESET%
+echo %COLOR_WHITE%sans votre accord explicite ; ce script coupe aussi des avertissements lies.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Ne plus demander de confirmation (Oui/Non) pour les actions admin
 echo       %COLOR_YELLOW%Reduit la securite en permettant aux applis de s'executer sans alerte%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver l'UAC (recommande)
 echo.
 set "DESACTIVER_UAC=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver l'UAC ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :DESKTOP_UAC_NON
 if errorlevel 1 set "DESACTIVER_UAC=1"
 :DESKTOP_UAC_NON
@@ -3006,13 +3124,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver les protections de securite (Spectre/Meltdown) ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : mitigations CPU/noyau contre fuites laterales ; desactiver%COLOR_RESET%
+echo %COLOR_WHITE%peut reduire latence CPU mais augmente le risque sur machine multi-utilisateurs ou exposee.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Reduit la latence systeme et l'overhead CPU
 echo       %COLOR_YELLOW%Expose le systeme a des attaques par canal auxiliaire%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les protections (recommande)
 echo.
 set "DESACTIVER_SECURITE=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver les protections ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :LAPTOP_SECURITE_NON
 if errorlevel 1 set "DESACTIVER_SECURITE=1"
 :LAPTOP_SECURITE_NON
@@ -3023,13 +3144,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver Windows Defender ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : sans antivirus integre, moins de charge disque/CPU mais%COLOR_RESET%
+echo %COLOR_WHITE%aucune analyse temps reel des telechargements ; a combiner avec un autre AV si besoin.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Ameliore les performances en desactivant l'antivirus
 echo       %COLOR_YELLOW%Expose le systeme aux virus et logiciels malveillants%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver Windows Defender (recommande)
 echo.
 set "DESACTIVER_DEFENDER=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :LAPTOP_DEFENDER_NON
 if errorlevel 1 set "DESACTIVER_DEFENDER=1"
 :LAPTOP_DEFENDER_NON
@@ -3040,13 +3164,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver les animations Windows ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : effets DWM, menus et demarrage ; utile sur PC limite,%COLOR_RESET%
+echo %COLOR_WHITE%un peu plus brut visuellement ; reversible via le menu Activer les animations.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Ameliore les performances en supprimant les animations
 echo       %COLOR_YELLOW%L'interface sera moins fluide visuellement%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les animations (recommande)
 echo.
 set "DESACTIVER_ANIMATIONS=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver les animations ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :LAPTOP_ANIMATIONS_NON
 if errorlevel 1 set "DESACTIVER_ANIMATIONS=1"
 :LAPTOP_ANIMATIONS_NON
@@ -3057,13 +3184,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver les fonctionnalites IA de Windows ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : Copilot, widgets, Recall consomment CPU/reseau et%COLOR_RESET%
+echo %COLOR_WHITE%envoient des donnees vers Microsoft ; couper tout ameliore confidentialite et perf.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Desactive Copilot, Recall, widgets et autres fonctionnalites IA
 echo       %COLOR_YELLOW%Ameliore les performances et la confidentialite%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les fonctionnalites IA
 echo.
 set "DESACTIVER_IA=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver les fonctionnalites IA ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces fonctionnalites IA ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :LAPTOP_IA_NON
 if errorlevel 1 set "DESACTIVER_IA=1"
 :LAPTOP_IA_NON
@@ -3074,13 +3204,16 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Voulez-vous desactiver le Controle de Compte Utilisateur (UAC) ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_WHITE%Pourquoi cette question : sans UAC, les programmes peuvent obtenir des droits admin%COLOR_RESET%
+echo %COLOR_WHITE%sans votre accord explicite ; ce script coupe aussi des avertissements lies.%COLOR_RESET%
+echo.
 echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Ne plus demander de confirmation (Oui/Non) pour les actions admin
 echo       %COLOR_YELLOW%Reduit la securite en permettant aux applis de s'executer sans alerte%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver l'UAC (recommande)
 echo.
 set "DESACTIVER_UAC=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Desactiver l'UAC ? [O/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :LAPTOP_UAC_NON
 if errorlevel 1 set "DESACTIVER_UAC=1"
 :LAPTOP_UAC_NON
