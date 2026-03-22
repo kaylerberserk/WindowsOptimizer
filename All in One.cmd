@@ -196,11 +196,11 @@ echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_GREEN%Gerer les Animations Windows%CO
 echo %COLOR_YELLOW%[4]%COLOR_RESET% %COLOR_GREEN%Gerer Copilot / Widgets / Recall (Windows 11)%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- APPLICATIONS MICROSOFT ---%COLOR_RESET%
-echo %COLOR_YELLOW%[5]%COLOR_RED%Desinstaller OneDrive Completement%COLOR_RESET%
-echo %COLOR_YELLOW%[6]%COLOR_RED%Desinstaller Edge Completement%COLOR_RESET%
+echo %COLOR_YELLOW%[5]%COLOR_RESET% %COLOR_RED%Desinstaller OneDrive Completement%COLOR_RESET%
+echo %COLOR_YELLOW%[6]%COLOR_RESET% %COLOR_RED%Desinstaller Edge Completement%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- RUNTIMES ET DEPENDANCES ---%COLOR_RESET%
-echo %COLOR_YELLOW%[7]%COLOR_GREEN%Installer Runtimes (Visual C++ + DirectX June 2010)%COLOR_RESET%
+echo %COLOR_YELLOW%[7]%COLOR_RESET% %COLOR_GREEN%Installer Runtimes (Visual C++ + DirectX June 2010)%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Principal%COLOR_RESET%
@@ -1825,7 +1825,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Systeme d'alimentation restaure
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation gestion d'energie PCIe...
 powercfg /setacvalueindex SCHEME_CURRENT 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 1 >nul 2>&1
 powercfg /S SCHEME_CURRENT >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a558fe8" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\501a4d13-42af-4429-9fd1-a8218c268e20\ee12f906-d277-404b-b6da-e5fa1a576df5" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Gestion d'energie PCIe reactivee
 
 :: 20. Masquage des plans d'alimentation avances
@@ -3641,7 +3641,7 @@ set "IS_LAPTOP=0"
 
 :: Un seul appel PowerShell robuste (conserve le gain de performance sans les problemes de parsing CMD)
 :: Utilise '~' comme delimiteur ; pas de quotes simples dans -Command (meme piege que Get-Date dans FOR / (')) — [char] pour espace/paren/tilde
-for /f "tokens=1-5 delims=~" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$o=Get-CimInstance Win32_OperatingSystem;$c=Get-CimInstance Win32_Processor;$g=@(Get-CimInstance Win32_VideoController)[0].Name;$r=[math]::Round((Get-CimInstance Win32_PhysicalMemory|Measure-Object Capacity -Sum).Sum/1GB,0);if($r -eq 0){$r=[math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB,0)};$b=if(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue){1}else{0}; Write-Output ($o.Caption+[char]32+[char]40+[char]32+$o.Version+[char]41+[char]126+$c.Name.Trim()+[char]126+$g+[char]126+$r+[char]126+$b)" 2^>nul') do (
+for /f "tokens=1-5 delims=~" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$o=Get-CimInstance Win32_OperatingSystem;$c=Get-CimInstance Win32_Processor;$g=@(Get-CimInstance Win32_VideoController)[0].Name;$r=[math]::Round((Get-CimInstance Win32_PhysicalMemory|Measure-Object Capacity -Sum).Sum/1GB,0);if($r -eq 0){$r=[math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB,0)};$b=if(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue){1}else{0}; Write-Output ($o.Caption+[char]32+[char]40+$o.Version+[char]41+[char]126+$c.Name.Trim()+[char]126+$g+[char]126+$r+[char]126+$b)" 2^>nul') do (
     if not "%%a"=="" set "HW_OS=%%a"
     if not "%%b"=="" set "HW_CPU=%%b"
     if not "%%c"=="" set "HW_GPU=%%c"
