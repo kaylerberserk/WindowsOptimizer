@@ -51,7 +51,7 @@ git clone https://github.com/kaylerberserk/Optimizer.git
 | **🖥️ Système** | Priorités CPU, profil gaming, démarrage rapide |
 | **🧠 Mémoire** | Fichier d'échange optimisé, Superfetch, cache |
 | **💾 Stockage** | SSD/NVMe mode performance, DirectStorage |
-| **🎮 Gaming** | GameDVR OFF, timer 0.5ms, input lag minimal |
+| **🎮 Gaming** | GameDVR OFF, timer 0.5ms, input lag minimal ; DirectX : **VRR désactivé** + **Flip Model** (SwapEffect) selon préférences GPU (réduit le stutter sur certaines configs) |
 | **🌐 Réseau** | BBR2, DNS optimisé, QoS gaming |
 | **⚡ Énergie** | Plan performance, core parking OFF |
 | **🛡️ Vie Privée** | Télémétrie OFF, 30+ domaines bloqués |
@@ -60,11 +60,11 @@ git clone https://github.com/kaylerberserk/Optimizer.git
 
 | Option | Description |
 |--------|-------------|
-| Windows Defender | Activer/Désactiver |
+| Windows Defender | Activer/Désactiver (les politiques sensibles, ex. actions automatiques / quarantaine, ne sont appliquées **que** lors d’une désactivation explicite via ce menu) |
 | UAC | Niveau normal ou OFF |
 | OneDrive | Désinstallation complète |
 | Edge | Désinstallation complète |
-| Visual C++ Redist | Installation 2005-2022 |
+| Runtimes | Visual C++ **2015–2022** (V14) + DirectX Redist **June 2010** (option 7) |
 
 ---
 
@@ -77,7 +77,7 @@ git clone https://github.com/kaylerberserk/Optimizer.git
 | **Anti-Cheat** | ✅ Compatible avec Vanguard, Easy Anti-Cheat, BattlEye |
 | **HVCI/CFG** | ✅ Préservés (requis par les jeux compétitifs) |
 | **Windows Hello, Bluetooth, VPN, Xbox** | ✅ Fonctionnent normalement |
-| **Réversibilité** | ✅ Oui. Utilisez l'option R du menu pour créer un point de restauration avant. |
+| **Réversibilité** | ✅ Oui. Option **R** : point de restauration avec horodatage **indépendant de la locale** et contrôle WMI que la protection système sur **C:** est active avant création. |
 
 ### 🔒 Ce que le script modifie
 
@@ -160,7 +160,7 @@ Les services désactivés sont principalement de la télémétrie, tracking util
 ✅ **Oui.** Le code est entièrement visible et auditable. Aucune modification cachée.
 
 **❓ Puis-je vérifier les modifications avant de les appliquer ?**  
-✅ **Oui.** Le script affiche chaque modification avant de l'appliquer.
+✅ **Oui.** Le fichier `All in One.cmd` est un script texte ouvert : ouvrez-le dans un éditeur, parcourez les sections (menus, `reg`, PowerShell) puis lancez-le quand vous êtes prêt. Les choix du menu s’affichent avant les blocs concernés.
 
 ---
 
