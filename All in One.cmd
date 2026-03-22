@@ -504,10 +504,10 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% Ajout des blocages telemetrie dans le fichie
 set "HOSTS=%SystemRoot%\System32\drivers\etc\hosts"
 
 :: Verifier si deja ajoute
-findstr /c:"Telemetry Block" "%HOSTS%" >nul 2>&1
+findstr /c:"Telemetry Block Start" "%HOSTS%" >nul 2>&1
 if not errorlevel 1 (
-    echo %COLOR_GREEN%[OK]%COLOR_RESET% Blocages telemetrie deja presents dans hosts
-    goto :HOSTS_DONE
+    echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression de l'ancien bloc telemetrie...
+    powershell -NoProfile -Command "(Get-Content '%HOSTS%') -replace '(?s)# --- Telemetry Block.*?# --- End Telemetry Block ---', '' | Set-Content '%HOSTS%'"
 )
 
 :: Ajouter les blocages
