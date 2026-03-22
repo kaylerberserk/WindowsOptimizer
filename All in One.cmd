@@ -504,17 +504,13 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% Ajout des blocages telemetrie dans le fichie
 set "HOSTS=%SystemRoot%\System32\drivers\etc\hosts"
 
 :: Verifier si deja ajoute
-findstr /c:"Telemetry Block Start" "%HOSTS%" >nul 2>&1
-if not errorlevel 1 (
-    echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression de l'ancien bloc telemetrie...
-    powershell -NoProfile -Command "(Get-Content '%HOSTS%') -replace '(?s)# --- Telemetry Block.*?# --- End Telemetry Block ---', '' | Set-Content '%HOSTS%'"
-)
-
-:: Ajouter les blocages
-attrib -r "%HOSTS%" >nul 2>&1
-echo.>> "%HOSTS%"
-echo # Telemetry Block Start >> "%HOSTS%"
-echo # --- Telemetry Block (Optimizer Script) --->> "%HOSTS%"
+findstr /c:"vortex.data.microsoft.com" "%HOSTS%" >nul 2>&1
+if errorlevel 1 (
+    :: Ajouter les blocages
+    attrib -r "%HOSTS%" >nul 2>&1
+    echo.>> "%HOSTS%"
+    echo # Telemetry Block Start >> "%HOSTS%"
+    echo # --- Telemetry Block (Optimizer Script) --->> "%HOSTS%"
 echo 0.0.0.0 vortex.data.microsoft.com>> "%HOSTS%"
 echo 0.0.0.0 vortex-win.data.microsoft.com>> "%HOSTS%"
 echo 0.0.0.0 v10.vortex-win.data.microsoft.com>> "%HOSTS%"
