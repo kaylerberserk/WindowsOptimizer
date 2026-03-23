@@ -136,7 +136,7 @@ echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- PC DE BUREAU UNIQUEMENT ---%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_YELLOW%[7]%COLOR_RESET% %COLOR_RED%Gerer Economies d'Energie (Activer/Restaurer)%COLOR_RESET%
-echo %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Desactiver Protections Securite (Spectre/Meltdown)%COLOR_RESET%
+echo %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Gerer Protections Securite (Desactiver/Restaurer)%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- OPTIMISATIONS ALL IN ONE ---%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
@@ -166,7 +166,7 @@ if errorlevel 13 goto :CREER_POINT_RESTAURATION
 if errorlevel 12 goto :NETTOYAGE_AVANCE_WINDOWS
 if errorlevel 11 goto :TOUT_OPTIMISER_LAPTOP
 if errorlevel 10 goto :TOUT_OPTIMISER_DESKTOP
-if errorlevel 9 goto :DESACTIVER_PROTECTIONS_SECURITE
+if errorlevel 9 goto :TOGGLE_PROTECTIONS_SECURITE
 if errorlevel 8 goto :TOGGLE_ECONOMIES_ENERGIE
 if errorlevel 7 goto :OPTIMISATIONS_PERIPHERIQUES
 if errorlevel 6 goto :OPTIMISATIONS_RESEAU
@@ -1120,7 +1120,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\QoS\Fortnite_TCP" /v "DSCP Val
 
 :: 5.12 - Desactivation NetBIOS over TCP/IP (WINS)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de NetBIOS over TCP/IP...
-for /f "tokens=*" %%i in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces" 2^>nul') do (
+for /f "tokens=*" %%i in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces" /s 2^>nul ^| findstr /i /r "\\Tcpip_.*$"') do (
   reg add "%%i" /v NetbiosOptions /t REG_DWORD /d 2 /f >nul 2>&1
 )
 echo %COLOR_GREEN%[OK]%COLOR_RESET% NetBIOS desactive
@@ -1595,7 +1595,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% WPBT desactive
  
 :: 7.27 - Nettoyage des protocoles reseau (Bindings)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des protocoles reseau inutiles (Bindings)...
-powershell -NoProfile -Command "$adapters = @('ms_lldp', 'ms_lltdio', 'ms_implat', 'ms_rspndr', 'ms_server', 'ms_msclient'); foreach ($id in $adapters) { Disable-NetAdapterBinding -Name '*' -ComponentID $id -ErrorAction SilentlyContinue }" >nul 2>&1
+powershell -NoProfile -Command "$bindingIds = @('ms_lldp', 'ms_lltdio', 'ms_implat', 'ms_rspndr', 'ms_server', 'ms_msclient'); $nics = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' }; foreach ($nic in $nics) { foreach ($id in $bindingIds) { Disable-NetAdapterBinding -Name $nic.Name -ComponentID $id -ErrorAction SilentlyContinue } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Bindings reseau nettoyes (LLDP, LLTDIO, etc.)
 
 
@@ -1720,10 +1720,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Economies d'energie NIC restaurees (Ethernet
 :: 8. Restaurer les parametres processeur par defaut
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration des parametres processeur par defaut...
 :: Min: 5%, Max: 100%, Core Parking: 10%, Intervalle: 30ms
-powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 5 >nul 2>&1
-powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100 >nul 2>&1
-powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 4d2b0152-7d5c-498b-88e2-34345392a2c5 30 >nul 2>&1
-powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 10 >nul 2>&1
+echo %COLOR_CYAN%[INFO]%COLOR_RESET% Valeurs processeur constructeur/edition non universelles : non forcees.
 powercfg /S SCHEME_CURRENT >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Parametres processeur restaures
 
@@ -1807,9 +1804,9 @@ for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Clas
     reg delete "%%K" /v "ITR" /f >nul 2>&1
     reg delete "%%K" /v "EnableLLI" /f >nul 2>&1
     reg delete "%%K" /v "EnableDownShift" /f >nul 2>&1
-    reg delete "%%K" /v "WaitAutoNegComplete" /f >nul 2>&1
+    reg delete "%%K" /v "*WaitAutoNegComplete" /f >nul 2>&1
     :: Restaurer PnPCapabilities (24 = autoriser la gestion d'energie)
-    reg add "%%K" /v PnPCapabilities /t REG_DWORD /d 0 /f >nul 2>&1
+    reg delete "%%K" /v PnPCapabilities /f >nul 2>&1
   )
 )
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Fonctions d'economie d'energie reseau reactivees
@@ -1820,6 +1817,11 @@ reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WcmSvc\GroupPolicy" /v fDis
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v PlatformAoAcOverride /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v SleepStudyDisabled /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Systeme d'alimentation restaure
+
+::: 18b. Restaurer les peripheriques HID/PCI/USB modifies (section 7.23)
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration des parametres d'economie des peripheriques HID/PCI/USB...
+powershell -NoProfile -Command "$buses=@('HID','PCI','USB'); foreach($bus in $buses){ foreach($cs in @('CurrentControlSet','ControlSet001')){ $base='HKLM:\SYSTEM\'+$cs+'\Enum\'+$bus; if(!(Test-Path $base)){ continue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p=$_.PSPath; Remove-ItemProperty -Path $p -Name EnhancedPowerManagementEnabled -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $p -Name SelectiveSuspendEnabled -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $p -Name SelectiveSuspendOn -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $p -Name WaitWakeEnabled -ErrorAction SilentlyContinue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'WDF' } | ForEach-Object { Remove-ItemProperty -Path $_.PSPath -Name IdleInWorkingState -ErrorAction SilentlyContinue } } }" >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Parametres d'economie des peripheriques restaures
 
 :: 19. Reactiver gestion d'energie PCIe
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation gestion d'energie PCIe...
@@ -1871,6 +1873,30 @@ if errorlevel 3 goto :MENU_PRINCIPAL
 if errorlevel 2 goto :REVERT_ECONOMIES_ENERGIE
 if errorlevel 1 goto :DESACTIVER_ECONOMIES_ENERGIE
 goto :TOGGLE_ECONOMIES_ENERGIE
+
+:TOGGLE_PROTECTIONS_SECURITE
+cls
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% GESTION DES PROTECTIONS DE SECURITE%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+echo %COLOR_WHITE%  Cette section permet de desactiver ou restaurer les mitigations%COLOR_RESET%
+echo %COLOR_WHITE%  de securite sensibles (Spectre/Meltdown, noyau, CI policy).%COLOR_RESET%
+echo.
+echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_RED%Desactiver Protections Securite (mode perf)%COLOR_RESET%
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Restaurer Protections Securite (recommande)%COLOR_RESET%
+echo.
+echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Principal%COLOR_RESET%
+echo.
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
+if errorlevel 3 goto :MENU_PRINCIPAL
+if errorlevel 2 goto :RESTAURER_PROTECTIONS_SECURITE
+if errorlevel 1 goto :DESACTIVER_PROTECTIONS_SECURITE
+goto :TOGGLE_PROTECTIONS_SECURITE
 
 :DESACTIVER_PROTECTIONS_SECURITE
 cls
@@ -1955,8 +1981,47 @@ if "%~1"=="call" (
   exit /b
 ) else (
   pause
-  goto :MENU_PRINCIPAL
+  goto :TOGGLE_PROTECTIONS_SECURITE
 )
+
+:RESTAURER_PROTECTIONS_SECURITE
+cls
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE% RESTAURATION DES PROTECTIONS DE SECURITE%COLOR_RESET%
+echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo.
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration des protections noyau (SEHOP, Exception Chain)...
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v KernelSEHOPEnabled /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v DisableExceptionChainValidation /f >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Protections noyau restaurees
+echo.
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration des mitigations Spectre/Meltdown et CPU...
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v FeatureSettings /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v FeatureSettingsOverride /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v FeatureSettingsOverrideMask /t REG_DWORD /d 3 /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v MoveImages /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v EnableGdsMitigation /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v PerformMmioMitigation /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v RestrictIndirectBranchPrediction /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v EnableKvashadow /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v KvaOpt /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v DisableStibp /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v EnableRetpoline /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v DisableBranchPrediction /f >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Mitigations CPU restaurees
+echo.
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation de la blocklist de pilotes vulnerables...
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Config" /v VulnerableDriverBlocklistEnable /t REG_DWORD /d 1 /f >nul 2>&1
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v WHQLSettings /f >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% CI policy restauree
+echo.
+echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Protections de securite restaurees.
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Un redemarrage est recommande pour appliquer les modifications.
+echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo.
+pause
+goto :TOGGLE_PROTECTIONS_SECURITE
 
 :TOGGLE_DEFENDER
 cls
@@ -1994,13 +2059,7 @@ sc config WdBoot start= boot >nul 2>&1
 sc config WdFilter start= boot >nul 2>&1
 sc config SecurityHealthService start= demand >nul 2>&1
 
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\Sense" /v Start /t REG_DWORD /d 3 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\WdBoot" /v Start /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\WdFilter" /v Start /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\WdNisDrv" /v Start /t REG_DWORD /d 3 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\WdNisSvc" /v Start /t REG_DWORD /d 3 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\WinDefend" /v Start /t REG_DWORD /d 2 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Services\SecurityHealthService" /v Start /t REG_DWORD /d 3 /f >nul 2>&1
+:: On evite de forcer les valeurs Start en dur (elles varient selon edition/version) ; sc config suffit.
 
 sc start WinDefend >nul 2>&1
 sc start WdNisSvc >nul 2>&1
@@ -2028,7 +2087,8 @@ reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v DisableRoutine
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Config" /v VulnerableDriverBlocklistEnable /t REG_DWORD /d 1 /f >nul 2>&1
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation de SmartScreen...
-reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v EnableSmartScreen /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v EnableSmartScreen /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v ShellSmartScreenLevel /t REG_SZ /d "Warn" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreenEnabled /t REG_SZ /d "Warn" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost" /v EnableWebContentEvaluation /t REG_DWORD /d 1 /f >nul 2>&1
 
@@ -2169,6 +2229,8 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v Cons
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v PromptOnSecureDesktop /t REG_DWORD /d 1 /f >nul 2>&1
 
 :: SmartScreen Explorer par defaut
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v EnableSmartScreen /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v ShellSmartScreenLevel /t REG_SZ /d "Warn" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreenEnabled /t REG_SZ /d "Warn" /f >nul 2>&1
 
 :: Reactiver le suivi de zone (fichiers telecharges marques comme Internet)
@@ -2407,10 +2469,10 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Sh
 reg delete "HKCU\SOFTWARE\Microsoft\Windows\Shell\Copilot" /v IsCopilotAvailable /f >nul 2>&1
 reg delete "HKCU\SOFTWARE\Microsoft\Windows\Shell\Copilot" /v CopilotDisabledReason /f >nul 2>&1
 reg delete "HKCU\SOFTWARE\Microsoft\Windows\Shell\Copilot\BingChat" /v IsUserEligible /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\systemAIModels" /v Value /t REG_SZ /d "Allow" /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps" /v AgentActivationEnabled /t REG_DWORD /d 1 /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\systemAIModels" /v Value /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps" /v AgentActivationEnabled /f >nul 2>&1
 reg delete "HKCU\Software\Microsoft\Windows\Shell\ClickToDo" /v DisableClickToDo /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\input\Settings" /v InsightsEnabled /t REG_DWORD /d 1 /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\input\Settings" /v InsightsEnabled /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableAgentWorkspaces /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableRemoteAgentConnectors /f >nul 2>&1
 set "HOSTS=%windir%\System32\drivers\etc\hosts"
@@ -2524,11 +2586,11 @@ reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v AllowClickToD
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableAgentWorkspaces /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableRemoteAgentConnectors /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableImageInsights /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\systemAIModels" /v Value /t REG_SZ /d "Allow" /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userActivityFeedGlobal" /v Value /t REG_SZ /d "Allow" /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps" /v AgentActivationEnabled /t REG_DWORD /d 1 /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\systemAIModels" /v Value /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userActivityFeedGlobal" /v Value /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps" /v AgentActivationEnabled /f >nul 2>&1
 reg delete "HKCU\Software\Microsoft\Windows\Shell\ClickToDo" /v DisableClickToDo /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\input\Settings" /v InsightsEnabled /t REG_DWORD /d 1 /f >nul 2>&1
+reg delete "HKCU\Software\Microsoft\input\Settings" /v InsightsEnabled /f >nul 2>&1
 call :FINISH_IA_ACTION "Recall" "active" "%~1"
 if "%~1"=="call" exit /b
 exit /b
@@ -3650,9 +3712,9 @@ for /f "tokens=1-5 delims=~" %%a in ('powershell -NoProfile -ExecutionPolicy Byp
 )
 
 :: Detection NVIDIA securisee (le '(' evite les crashs si HW_GPU contient des caractères speciaux)
-echo(!HW_GPU! | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1"
+(echo(!HW_GPU! | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1")
 
-:: Fallbacks wmci/ver si PowerShell a vraiment echoue totalement
+:: Fallbacks wmic/ver si PowerShell a vraiment echoue totalement
 if /i "%HW_OS%"=="Windows" for /f "tokens=2 delims=[]" %%i in ('ver') do set "HW_OS=%%i"
 if "%HW_CPU%"=="CPU Inconnu" for /f "tokens=2 delims==" %%i in ('wmic cpu get Name /value 2^>nul ^| find "="') do set "HW_CPU=%%i"
 if "%HW_GPU%"=="GPU Inconnu" for /f "tokens=2 delims==" %%i in ('wmic path win32_VideoController get Name /value 2^>nul ^| find "="') do set "HW_GPU=%%i"
@@ -3669,7 +3731,7 @@ if not errorlevel 1 (
     exit /b
 )
 :: Repli si ICMP est bloque (entreprise, pare-feu) : test HTTP leger (service Microsoft)
-powershell -NoProfile -Command "try { $c=(Invoke-WebRequest -Uri 'http://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 5).Content; if ($c -match 'Microsoft') { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
+powershell -NoProfile -Command "try { $c=(Invoke-WebRequest -Uri 'https://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 5).Content; if ($c -match 'Microsoft') { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
 if not errorlevel 1 set "HAS_INTERNET=1"
 exit /b
 
