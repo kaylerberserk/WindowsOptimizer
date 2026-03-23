@@ -1719,10 +1719,13 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Economies d'energie NIC restaurees (Ethernet
 
 :: 8. Restaurer les parametres processeur par defaut
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration des parametres processeur par defaut...
-:: Min: 5%, Max: 100%, Core Parking: 10%, Intervalle: 30ms
-echo %COLOR_CYAN%[INFO]%COLOR_RESET% Valeurs processeur constructeur/edition non universelles : non forcees.
+:: Min: 5%, Max: 100%, Core Parking: 10%, Intervalle: 30ms (valeurs defaut Windows)
+powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 893dee8e-2bef-41e0-89c6-b55d0929964c 5 >nul 2>&1
+powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 bc5038f7-23e0-4960-96da-33abaf5935ec 100 >nul 2>&1
+powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 4d2b0152-7d5c-498b-88e2-34345392a2c5 30 >nul 2>&1
+powercfg /setacvalueindex scheme_current 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 10 >nul 2>&1
 powercfg /S SCHEME_CURRENT >nul 2>&1
-echo %COLOR_GREEN%[OK]%COLOR_RESET% Parametres processeur restaures
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Parametres processeur restaures (Min=5%%, Max=100%%, Parking=10%%, Interval=30ms)
 
 :: 12. Masquer les options de scheduling hybride
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Masquage des options de scheduling hybride...
@@ -2229,8 +2232,6 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v Cons
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v PromptOnSecureDesktop /t REG_DWORD /d 1 /f >nul 2>&1
 
 :: SmartScreen Explorer par defaut
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v EnableSmartScreen /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v ShellSmartScreenLevel /t REG_SZ /d "Warn" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreenEnabled /t REG_SZ /d "Warn" /f >nul 2>&1
 
 :: Reactiver le suivi de zone (fichiers telecharges marques comme Internet)
