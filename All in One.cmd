@@ -46,7 +46,7 @@ set "HW_RAM=Detection..."
 :: [OK]      VERT    = Action terminee avec succes
 :: [TERMINE] VERT    = Section completee
 :: [INFO]    JAUNE   = Information / Conseil
-:: [!]       JAUNE   = Avertissement (attention requise)
+:: [^!]       JAUNE   = Avertissement (attention requise)
 :: [-]       ROUGE   = Suppression / Action negative
 :: [ERREUR]  ROUGE   = Erreur critique / Echec
 :: [ATTENTION] ROUGE = Risque de securite
@@ -829,7 +829,8 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Support des chemins longs active
 
 :: 3.3 - TRIM sur volumes SSD
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Execution du TRIM sur les disques SSD detectes...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ssd=Get-PhysicalDisk|?{$_.MediaType -eq 'SSD'};if($ssd){Write-Host 'SSD detecte(s):' $ssd.Count;Get-Volume|?{$_.DriveLetter -and $_.FileSystem -match 'NTFS|ReFS'}|%{Start-Job {Optimize-Volume -DriveLetter $args[0] -ReTrim -ErrorAction SilentlyContinue} -ArgumentList $_.DriveLetter|Out-Null}}" >nul 2>&1
+echo %COLOR_CYAN%[INFO]%COLOR_RESET% Operation synchrone : le script attend la fin du TRIM avant de continuer.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ssd=Get-PhysicalDisk|?{$_.MediaType -eq 'SSD'};if($ssd){$jobs=@();Get-Volume|?{$_.DriveLetter -and $_.FileSystem -match 'NTFS|ReFS'}|%{$jobs+=Start-Job {Optimize-Volume -DriveLetter $args[0] -ReTrim -ErrorAction SilentlyContinue} -ArgumentList $_.DriveLetter};if($jobs.Count -gt 0){$jobs|Wait-Job|Out-Null;$jobs|Receive-Job|Out-Null;$jobs|Remove-Job -Force|Out-Null}}" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Commande TRIM executee sur les SSD
 
 :: 3.4 - Optimisation pilote NVMe natif et Boost Speed Windows 11
@@ -984,7 +985,7 @@ if "!HAS_NVIDIA!"=="1" (
     del "!NPI_DIR!\Kaylers_profile.nip" >nul 2>&1
     rmdir "!NPI_DIR!" >nul 2>&1
 ) else (
-    echo %COLOR_YELLOW%[!]%COLOR_RESET% GPU NVIDIA non detecte - NVIDIA Profile Inspector ignore
+    echo %COLOR_YELLOW%[^!]%COLOR_RESET% GPU NVIDIA non detecte - NVIDIA Profile Inspector ignore
 )
 
 :NPI_DONE
@@ -1241,7 +1242,8 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% GPU Power Management optimise
 
 :: 7.2 - NIC Energy Saving Ethernet et WiFi
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des economies d'energie reseau (NIC - Ethernet et WiFi)...
-powershell -NoProfile -Command "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $adapter=$_.Name; $energyProps = @('Energy-Efficient Ethernet','Green Ethernet','Power Saving Mode','Gigabit Lite','Ethernet a economie d''energie','Ethernet vert','802.11 Power Save','Power Management','Allow the computer to turn off this device','Gestion de l''alimentation 802.11','Mode d''economie d''energie','Power Save Mode'); foreach($propName in $energyProps) { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Disabled' -ErrorAction Stop } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Desactive' -ErrorAction Stop } catch {} } }; try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Interrupt Moderation' -DisplayValue 'Enabled' -ErrorAction SilentlyContinue } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Moderation interruption' -DisplayValue 'Active' -ErrorAction SilentlyContinue } catch {} }; try { Set-NetAdapterAdvancedProperty -Name $adapter -RegistryKeyword '*InterruptModeration' -RegistryValue 1 -ErrorAction SilentlyContinue } catch{}; try { Set-NetAdapterAdvancedProperty -Name $adapter -RegistryKeyword '*InterruptModerationRate' -RegistryValue 3 -ErrorAction SilentlyContinue } catch{} }" >nul 2>&1
+powershell -NoProfile -Command "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $adapter=$_.Name; $energyProps = @('Energy-Efficient Ethernet','Green Ethernet','Power Saving Mode','Gigabit Lite','Ethernet a economie d''energie','Ethernet vert','802.11 Power Save','Power Management','Allow the computer to turn off this device','Gestion de l''alimentation 802.11','Mode d''economie d''energie','Power Save Mode'); foreach($propName in $energyProps) { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Disabled' -ErrorAction Stop } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Desactive' -ErrorAction Stop } catch {} } }; try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Interrupt Moderation' -DisplayValue 'Enabled' -ErrorAction SilentlyContinue } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Moderation interruption' -DisplayValue 'Active' -ErrorAction SilentlyContinue } catch {} }; try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Interrupt Moderation Rate' -DisplayValue 'Moderate' -ErrorAction SilentlyContinue } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Taux de moderation des interruptions' -DisplayValue 'Modere' -ErrorAction SilentlyContinue } catch {} }; try { Set-NetAdapterAdvancedProperty -Name $adapter -RegistryKeyword '*InterruptModeration' -RegistryValue 1 -ErrorAction SilentlyContinue } catch{}; try { Set-NetAdapterAdvancedProperty -Name $adapter -RegistryKeyword '*InterruptModerationRate' -RegistryValue 2 -ErrorAction SilentlyContinue } catch{} }" >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Interrupt Moderation force sur Enabled + Moderate.
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Economies d'energie NIC desactivees (Ethernet + WiFi)
 
 
@@ -1402,7 +1404,7 @@ if "!IS_LAPTOP!"=="0" (
     powercfg /hibernate off >nul 2>&1
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Hibernation desactivee - Espace disque libere
 ) else (
-    echo %COLOR_YELLOW%[!]%COLOR_RESET% Hibernation conservee ^(PC Portable detecte^)
+    echo %COLOR_YELLOW%[^!]%COLOR_RESET% Hibernation conservee ^(PC Portable detecte^)
 )
 
 :: 7.9 - USB Selective Suspend (Optimisation latence)
@@ -1414,7 +1416,7 @@ if "!IS_LAPTOP!"=="0" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v DisableSelectiveSuspend /t REG_DWORD /d 1 /f >nul 2>&1
     echo %COLOR_GREEN%[OK]%COLOR_RESET% USB optimise - Latence minimale ^(Selective Suspend OFF^)
 ) else (
-    echo %COLOR_YELLOW%[!]%COLOR_RESET% USB Selective Suspend conserve ^(PC Portable detecte^)
+    echo %COLOR_YELLOW%[^!]%COLOR_RESET% USB Selective Suspend conserve ^(PC Portable detecte^)
 )
 
 :: 7.10 - Configuration generale du systeme d'alimentation
@@ -1483,7 +1485,7 @@ if exist "%STR_STARTUP%" (
     )
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Raccourci ajoute au demarrage automatique
 ) else (
-    echo %COLOR_YELLOW%[!]%COLOR_RESET% Impossible de creer le raccourci - creation manuelle recommandee
+    echo %COLOR_YELLOW%[^!]%COLOR_RESET% Impossible de creer le raccourci - creation manuelle recommandee
 )
 
 :STR_DONE
@@ -1549,7 +1551,7 @@ for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Clas
 
 :: 7.21 - Cartes reseau
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des fonctions d'economie d'energie reseau...
-powershell -NoProfile -Command "$class='Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}'; $keys=Get-ChildItem -Path $class -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' }; foreach($k in $keys){ $p=$k.PSPath; $item=Get-ItemProperty -Path $p -ErrorAction SilentlyContinue; if(-not $item){ continue }; $desc=$item.DriverDesc; $id=$item.NetCfgInstanceId; if([string]::IsNullOrWhiteSpace($desc) -or [string]::IsNullOrWhiteSpace($id)){ continue }; $stringValues=@{'*EEE'='0';'*SelectiveSuspend'='0';'*WakeOnMagicPacket'='0';'*ModernStandbyWoLMagicPacket'='0';'EnableGreenEthernet'='0';'ULPMode'='0';'*WakeOnPattern'='0';'*PMARPOffload'='0';'*PMNSOffload'='0';'EnablePME'='0';'PowerSavingMode'='0';'ReduceSpeedOnPowerDown'='0';'EnableDynamicPowerGating'='0';'AutoPowerSaveModeEnabled'='0';'AdvancedEEE'='0';'EEELinkAdvertisement'='0';'GigaLite'='0';'S5WakeOnLan'='0';'WakeOnLink'='0';'SipsEnabled'='0';'*FlowControl'='0';'*InterruptModeration'='1';'*InterruptModerationRate'='3';'ITR'='0';'EnableLLI'='1';'EnableDownShift'='0'}; foreach($name in $stringValues.Keys){ New-ItemProperty -Path $p -Name $name -PropertyType String -Value $stringValues[$name] -Force -ErrorAction SilentlyContinue | Out-Null }; New-ItemProperty -Path $p -Name 'PnPCapabilities' -PropertyType DWord -Value 24 -Force -ErrorAction SilentlyContinue | Out-Null }" >nul 2>&1
+powershell -NoProfile -Command "$class='Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}'; $keys=Get-ChildItem -Path $class -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' }; foreach($k in $keys){ $p=$k.PSPath; $item=Get-ItemProperty -Path $p -ErrorAction SilentlyContinue; if(-not $item){ continue }; $desc=$item.DriverDesc; $id=$item.NetCfgInstanceId; if([string]::IsNullOrWhiteSpace($desc) -or [string]::IsNullOrWhiteSpace($id)){ continue }; $stringValues=@{'*EEE'='0';'*SelectiveSuspend'='0';'*WakeOnMagicPacket'='0';'*ModernStandbyWoLMagicPacket'='0';'EnableGreenEthernet'='0';'ULPMode'='0';'*WakeOnPattern'='0';'*PMARPOffload'='0';'*PMNSOffload'='0';'EnablePME'='0';'PowerSavingMode'='0';'ReduceSpeedOnPowerDown'='0';'EnableDynamicPowerGating'='0';'AutoPowerSaveModeEnabled'='0';'AdvancedEEE'='0';'EEELinkAdvertisement'='0';'GigaLite'='0';'S5WakeOnLan'='0';'WakeOnLink'='0';'SipsEnabled'='0';'*FlowControl'='0';'*InterruptModeration'='1';'*InterruptModerationRate'='2';'ITR'='0';'EnableLLI'='1';'EnableDownShift'='0'}; foreach($name in $stringValues.Keys){ New-ItemProperty -Path $p -Name $name -PropertyType String -Value $stringValues[$name] -Force -ErrorAction SilentlyContinue | Out-Null }; New-ItemProperty -Path $p -Name 'PnPCapabilities' -PropertyType DWord -Value 24 -Force -ErrorAction SilentlyContinue | Out-Null }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Economies d'energie et optimisations reseau appliquees sur toutes les cartes
 
 :: 7.22 - Energie PCIe
@@ -1561,8 +1563,6 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\501a4d13-42af
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Gestion d'energie PCIe desactivee
 for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg add "%%K" /v "DisableASPM" /t REG_DWORD /d 1 /f >nul 2>&1
-  reg add "%%K" /v "DisableDynamicPstate" /t REG_DWORD /d 1 /f >nul 2>&1
-  reg add "%%K" /v "PowerMizerEnable" /t REG_DWORD /d 0 /f >nul 2>&1
   reg add "%%K" /v "RMForcedMaxPerf" /t REG_DWORD /d 1 /f >nul 2>&1
 )
 echo %COLOR_GREEN%[OK]%COLOR_RESET% GPU optimise
@@ -1714,7 +1714,7 @@ for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Clas
 
 :: 11. Restaurer les economies d'energie reseau (NIC - Ethernet et WiFi)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation des economies d'energie reseau (NIC)...
-powershell -NoProfile -Command "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $adapter=$_.Name; $energyProps = @('Energy-Efficient Ethernet','Green Ethernet','Power Saving Mode','Gigabit Lite','Ethernet a economie d''energie','Ethernet vert','802.11 Power Save','Power Management','Allow the computer to turn off this device','Gestion de l''alimentation 802.11','Mode d''economie d''energie','Power Save Mode'); foreach($propName in $energyProps) { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Enabled' -ErrorAction Stop } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Enabled' -ErrorAction Stop } catch {} } }; try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Interrupt Moderation' -DisplayValue 'Enabled' -ErrorAction SilentlyContinue } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Moderation interruption' -DisplayValue 'Enabled' -ErrorAction SilentlyContinue } catch {} }; try { Set-NetAdapterAdvancedProperty -Name $adapter -RegistryKeyword '*InterruptModeration' -RegistryValue 0 -ErrorAction SilentlyContinue } catch {}; try { Set-NetAdapterAdvancedProperty -Name $adapter -RegistryKeyword '*InterruptModerationRate' -RegistryValue 0 -ErrorAction SilentlyContinue } catch {} }" >nul 2>&1
+powershell -NoProfile -Command "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $adapter=$_.Name; $energyProps = @('Energy-Efficient Ethernet','Green Ethernet','Power Saving Mode','Gigabit Lite','Ethernet a economie d''energie','Ethernet vert','802.11 Power Save','Power Management','Allow the computer to turn off this device','Gestion de l''alimentation 802.11','Mode d''economie d''energie','Power Save Mode'); foreach($propName in $energyProps) { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Enabled' -ErrorAction Stop } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Enabled' -ErrorAction Stop } catch {} } }; try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Interrupt Moderation' -DisplayValue 'Enabled' -ErrorAction SilentlyContinue } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Moderation interruption' -DisplayValue 'Active' -ErrorAction SilentlyContinue } catch {} }; try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Interrupt Moderation Rate' -DisplayValue 'Moderate' -ErrorAction SilentlyContinue } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName 'Taux de moderation des interruptions' -DisplayValue 'Modere' -ErrorAction SilentlyContinue } catch {} }; try { Set-NetAdapterAdvancedProperty -Name $adapter -RegistryKeyword '*InterruptModeration' -RegistryValue 1 -ErrorAction SilentlyContinue } catch {}; try { Set-NetAdapterAdvancedProperty -Name $adapter -RegistryKeyword '*InterruptModerationRate' -RegistryValue 2 -ErrorAction SilentlyContinue } catch {} }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Economies d'energie NIC restaurees (Ethernet + WiFi)
 
 :: 8. Restaurer les parametres processeur par defaut
@@ -1907,7 +1907,7 @@ echo %COLOR_CYAN%===============================================================
 echo %STYLE_BOLD%%COLOR_WHITE% SECTION 8 : DESACTIVATION DES PROTECTIONS DE SECURITE%COLOR_RESET%
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
-echo %COLOR_RED%  AVERTISSEMENT :%COLOR_RESET%
+echo %COLOR_YELLOW%[^!]%COLOR_RESET% AVERTISSEMENT :
 echo %COLOR_WHITE%  Cette section desactive les protections contre les vulnerabilites%COLOR_RESET%
 echo %COLOR_WHITE%  materielles (Spectre, Meltdown) et certaines mitigations noyau.%COLOR_RESET%
 echo.
@@ -2048,7 +2048,7 @@ goto :TOGGLE_DEFENDER
 
 :ACTIVER_DEFENDER_SECTION
 cls
-echo %COLOR_GREEN%[+]%COLOR_RESET% %STYLE_BOLD%Reactivation de Windows Defender...%COLOR_RESET%
+echo %COLOR_YELLOW%[*]%COLOR_RESET% %STYLE_BOLD%Reactivation de Windows Defender...%COLOR_RESET%
 echo.
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation de Tamper Protection...
@@ -2123,16 +2123,16 @@ echo %COLOR_WHITE%- Sans lui, fichiers telecharges, scripts et USB ne sont plus 
 echo %COLOR_WHITE%- Certains jeux gagnent des FPS en le coupant ; le risque malware augmente fortement.%COLOR_RESET%
 echo %COLOR_WHITE%- Si vous gardez un autre AV, desactivez-le d'abord cote politique pour eviter conflits.%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%ATTENTION: Desactiver Windows Defender expose votre systeme a des risques.%COLOR_RESET%
+echo %COLOR_RED%[INFO]%COLOR_RESET% ATTENTION: Desactiver Windows Defender expose votre systeme a des risques.
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 exit /b
 )
 cls
-echo %COLOR_RED%[-]%COLOR_RESET% %STYLE_BOLD%Desactivation de Windows Defender...%COLOR_RESET%
+echo %COLOR_YELLOW%[*]%COLOR_RESET% %STYLE_BOLD%Desactivation de Windows Defender...%COLOR_RESET%
 echo.
 if "%~1"=="call" (
-echo %COLOR_YELLOW%ATTENTION: Desactiver Windows Defender expose votre systeme a des risques.%COLOR_RESET%
+echo %COLOR_RED%[INFO]%COLOR_RESET% ATTENTION: Desactiver Windows Defender expose votre systeme a des risques.
 echo.
 )
 
@@ -2253,14 +2253,14 @@ echo %COLOR_WHITE%- La desactivation supprime ces invites : un malware peut agir
 echo %COLOR_WHITE%- Ce script desactive aussi des avertissements SmartScreen / marquage zone Internet.%COLOR_RESET%
 echo %COLOR_WHITE%- Reserve aux bancs de test ou utilisateurs conscients du risque.%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.%COLOR_RESET%
+echo %COLOR_YELLOW%[^!]%COLOR_RESET% LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC et les avertissements lies ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 exit /b
 )
 cls
-echo %COLOR_RED%[-]%COLOR_RESET% %STYLE_BOLD%Desactivation complete de l'UAC et des avertissements...%COLOR_RESET%
-if "%~1"=="call" echo %COLOR_YELLOW%LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.%COLOR_RESET%
+echo %COLOR_YELLOW%[*]%COLOR_RESET% %STYLE_BOLD%Desactivation complete de l'UAC et des avertissements...%COLOR_RESET%
+if "%~1"=="call" echo %COLOR_YELLOW%[^!]%COLOR_RESET% LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.
 if "%~1"=="call" echo.
 
 :: UAC OFF = plus de demande Oui/Non
@@ -2337,7 +2337,7 @@ reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v D
 bcdedit /set bootuxdisabled off >nul 2>&1
 
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Animations Windows activees.
-echo %COLOR_YELLOW%[!]%COLOR_RESET% Un redemarrage est requis pour appliquer les modifications.
+echo %COLOR_YELLOW%[^!]%COLOR_RESET% Un redemarrage est requis pour appliquer les modifications.
 if "%~1"=="call" exit /b
 pause
 exit /b
@@ -2352,14 +2352,14 @@ echo.
 echo %COLOR_WHITE%Pourquoi une derniere confirmation :%COLOR_RESET%
 echo %COLOR_WHITE%- Les animations consomment un peu de GPU/CPU ; les couper peut fluidifier un PC faible.%COLOR_RESET%
 echo %COLOR_WHITE%- Cela modifie le registre utilisateur et bcdedit ^(animation du logo au demarrage^).%COLOR_RESET%
-echo %COLOR_WHITE%- L'interface parait plus « seche » ^(transparence, barres des taches, menus^).%COLOR_RESET%
+echo %COLOR_WHITE%- L'interface parait plus ?? seche ?? ^(transparence, barres des taches, menus^).%COLOR_RESET%
 echo %COLOR_WHITE%- Un redemarrage est necessaire pour tout voir ; reversible via le menu Activer.%COLOR_RESET%
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 exit /b
 )
 cls
-echo %COLOR_RED%[-]%COLOR_RESET% Desactivation des animations Windows...
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des animations Windows...
 echo.
 
 :: VisualFXSetting=3 (Personnalise) pour que Windows utilise uniquement les cles
@@ -2396,7 +2396,7 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v Disa
 bcdedit /set bootuxdisabled on >nul 2>&1
 
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Animations Windows desactivees.
-echo %COLOR_YELLOW%[!]%COLOR_RESET% Un redemarrage est requis pour appliquer les modifications.
+echo %COLOR_YELLOW%[^!]%COLOR_RESET% Un redemarrage est requis pour appliquer les modifications.
 if "%~1"=="call" exit /b
 pause
 exit /b
@@ -2692,7 +2692,7 @@ exit /b
 setlocal DisableDelayedExpansion
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Action terminee : %~1 %~2.%COLOR_RESET%
-echo %COLOR_YELLOW%[!]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour finaliser les changements.%COLOR_RESET%
+echo %COLOR_YELLOW%[^!]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour finaliser les changements.%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 if "%~3"=="call" (
   endlocal
@@ -2719,7 +2719,7 @@ echo %COLOR_CYAN%===============================================================
 echo.
 echo %COLOR_WHITE%Pourquoi demander confirmation :%COLOR_RESET%
 echo %COLOR_WHITE%- OneDrive synchronise Documents/Bureau/Images vers le cloud Microsoft.%COLOR_RESET%
-echo %COLOR_WHITE%- Le desinstaller coupe la sync et les liens « nuage » ; Office peut perdre l'auto-save cloud.%COLOR_RESET%
+echo %COLOR_WHITE%- Le desinstaller coupe la sync et les liens ?? nuage ?? ; Office peut perdre l'auto-save cloud.%COLOR_RESET%
 echo %COLOR_WHITE%- Les chemins du dossier OneDrive ^(%USERPROFILE%\OneDrive^) seront supprimes si presents.%COLOR_RESET%
 echo %COLOR_WHITE%- Pratique pour liberer ressources et vie privee ; gardez une copie locale avant de valider.%COLOR_RESET%
 echo.
@@ -2821,7 +2821,7 @@ echo %COLOR_WHITE%- Le retirer peut casser des applis qui s'appuient sur le runt
 echo %COLOR_WHITE%- Windows Update peut tenter de reinstaller un navigateur de base ; comportement variable selon version.%COLOR_RESET%
 echo %COLOR_WHITE%- Utile pour allegement / preference ; risque de compatibilite reel sur certaines configs.%COLOR_RESET%
 echo.
-echo %COLOR_RED%ATTENTION: La desinstallation de Microsoft Edge peut entrainer des problemes%COLOR_RESET%
+echo %COLOR_RED%[^!] ATTENTION:%COLOR_RESET% La desinstallation de Microsoft Edge peut entrainer des problemes
 echo %COLOR_RED%de compatibilite avec certaines applications Windows.%COLOR_RESET%
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desinstaller Microsoft Edge ? [O/N]: %COLOR_RESET%"
@@ -2836,7 +2836,7 @@ echo %COLOR_WHITE%Pourquoi une question separee :%COLOR_RESET%
 echo %COLOR_WHITE%- Sans suppression, profils et caches restent sur le disque ^(reinstall ou autre navigateur^).%COLOR_RESET%
 echo %COLOR_WHITE%- Avec suppression, favoris et mots de passe locaux peuvent etre perdus sans recuperation facile.%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%Voulez-vous supprimer les donnees utilisateur d'Edge ?%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Voulez-vous supprimer les donnees utilisateur d'Edge ?
 echo %COLOR_WHITE%- Historique de navigation%COLOR_RESET%
 echo %COLOR_WHITE%- Cookies et donnees de sites%COLOR_RESET%
 echo %COLOR_WHITE%- Favoris/Signets%COLOR_RESET%
@@ -2850,7 +2850,7 @@ if errorlevel 2 (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Les donnees utilisateur seront preservees.
 ) else (
     set "SUPPR_DATA=OUI"
-    echo %COLOR_RED%[-]%COLOR_RESET% Les donnees utilisateur seront supprimees.
+    echo %COLOR_YELLOW%[^!]%COLOR_RESET% Les donnees utilisateur seront supprimees.
 )
 
 echo.
@@ -2900,11 +2900,11 @@ schtasks /delete /tn "MicrosoftEdgeUpdateTaskMachineUA" /f >nul 2>&1
 
 :: Gestion conditionnelle des donnees utilisateur
 if "%SUPPR_DATA%"=="OUI" (
-    echo %COLOR_RED%[*]%COLOR_RESET% Suppression des donnees utilisateur Edge...
+    echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression des donnees utilisateur Edge...
     if exist "%LOCALAPPDATA%\Microsoft\Edge" rd "%LOCALAPPDATA%\Microsoft\Edge" /s /q >nul 2>&1
     if exist "%APPDATA%\Microsoft\Edge" rd "%APPDATA%\Microsoft\Edge" /s /q >nul 2>&1
     reg delete "HKEY_CURRENT_USER\Software\Microsoft\Edge" /f >nul 2>&1
-    echo %COLOR_RED%[-]%COLOR_RESET% Donnees utilisateur supprimees.
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% Donnees utilisateur supprimees.
 ) else (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Conservation des donnees utilisateur...
     reg delete "HKEY_CURRENT_USER\Software\Microsoft\Edge\BrowserSwitcher" /f >nul 2>&1
@@ -2960,7 +2960,7 @@ if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" (
         echo %COLOR_GREEN%[OK]%COLOR_RESET% Microsoft Edge desinstalle avec succes !
         echo %COLOR_GREEN%[OK]%COLOR_RESET% Icone supprimee de la barre des taches !
         if "%SUPPR_DATA%"=="OUI" (
-            echo %COLOR_RED%[-]%COLOR_RESET% Donnees utilisateur supprimees.
+            echo %COLOR_GREEN%[OK]%COLOR_RESET% Donnees utilisateur supprimees.
         ) else (
             echo %COLOR_GREEN%[OK]%COLOR_RESET% Donnees utilisateur conservees.
         )
@@ -3141,30 +3141,33 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Toutes les optimisations Deskto
 echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Plan de performances "Ultimate Performance" active.%COLOR_RESET%
 echo %COLOR_CYAN%[#]%COLOR_RESET% %COLOR_WHITE%Optimisations systeme, memoire, GPU et disques terminees.%COLOR_RESET%
 echo.
+set "SUM_TAG=[INFO]"
 if "%DESACTIVER_SECURITE%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Les protections de securite ont ete desactivees.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Les protections de securite ont ete desactivees.%COLOR_RESET%
 )
 if "%DESACTIVER_DEFENDER%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Windows Defender a ete desactive.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Windows Defender a ete desactive.%COLOR_RESET%
 )
 if "%DESACTIVER_ANIMATIONS%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Les animations Windows ont ete desactivees.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Les animations Windows ont ete desactivees.%COLOR_RESET%
 )
 if "%DESACTIVER_IA%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Les fonctionnalites IA de Windows ont ete desactivees.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Les fonctionnalites IA de Windows ont ete desactivees.%COLOR_RESET%
 )
 if "%DESACTIVER_UAC%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Le Controle de Compte Utilisateur ^(UAC^) a ete desactive.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Le Controle de Compte Utilisateur ^(UAC^) a ete desactive.%COLOR_RESET%
 )
 echo.
-echo %COLOR_YELLOW%[!]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour appliquer toutes les modifications.%COLOR_RESET%
+echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour appliquer toutes les modifications.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 choice /C YN /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [Y/N]: %COLOR_RESET%"
+if errorlevel 2 goto :RESTART_AFTER_CHOICE_DESKTOP
+if errorlevel 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
+
+:RESTART_AFTER_CHOICE_DESKTOP
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if errorlevel 2 goto :MENU_PRINCIPAL
-if errorlevel 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
 goto :MENU_PRINCIPAL
 
 :TOUT_OPTIMISER_LAPTOP
@@ -3304,30 +3307,33 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Toutes les optimisations Laptop
 echo %COLOR_CYAN%[#]%COLOR_RESET% %COLOR_WHITE%Les economies d'energie ont ete preservees pour la batterie.%COLOR_RESET%
 echo %COLOR_CYAN%[#]%COLOR_RESET% %COLOR_WHITE%Optimisations systeme, memoire, GPU et disques terminees.%COLOR_RESET%
 echo.
+set "SUM_TAG=[INFO]"
 if "%DESACTIVER_SECURITE%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Les protections de securite ont ete desactivees.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Les protections de securite ont ete desactivees.%COLOR_RESET%
 )
 if "%DESACTIVER_DEFENDER%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Windows Defender a ete desactive.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Windows Defender a ete desactive.%COLOR_RESET%
 )
 if "%DESACTIVER_ANIMATIONS%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Les animations Windows ont ete desactivees.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Les animations Windows ont ete desactivees.%COLOR_RESET%
 )
 if "%DESACTIVER_IA%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Les fonctionnalites IA de Windows ont ete desactivees.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Les fonctionnalites IA de Windows ont ete desactivees.%COLOR_RESET%
 )
 if "%DESACTIVER_UAC%"=="1" (
-  echo %COLOR_RED%[INFO]%COLOR_RESET% %COLOR_WHITE%Le Controle de Compte Utilisateur ^(UAC^) a ete desactive.%COLOR_RESET%
+  echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Le Controle de Compte Utilisateur ^(UAC^) a ete desactive.%COLOR_RESET%
 )
 echo.
-echo %COLOR_YELLOW%[!]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour appliquer toutes les modifications.%COLOR_RESET%
+echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour appliquer toutes les modifications.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 choice /C YN /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [Y/N]: %COLOR_RESET%"
+if errorlevel 2 goto :RESTART_AFTER_CHOICE_LAPTOP
+if errorlevel 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
+
+:RESTART_AFTER_CHOICE_LAPTOP
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if errorlevel 2 goto :MENU_PRINCIPAL
-if errorlevel 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
 goto :MENU_PRINCIPAL
 
 :CREER_POINT_RESTAURATION
@@ -3360,7 +3366,7 @@ if not errorlevel 1 (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Point de restauration cree avec succes.
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Nom : Optimizations_%RP_TIMESTAMP%
 ) else (
-    echo %COLOR_RED%[ATTENTION]%COLOR_RESET% Echec de la creation du point de restauration.
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% Echec de la creation du point de restauration.
     echo %COLOR_YELLOW%[*]%COLOR_RESET% Raison possible : restauration desactivee, espace disque insuffisant ou strategie groupe.
 )
 set "RP_TIMESTAMP="
@@ -3377,7 +3383,7 @@ echo.
 :: Analyse espace initial
 for /f %%a in ('powershell -nologo -command "[int]((Get-PSDrive -Name C).Free / 1MB)"') do set space_before_mb=%%a
 
-echo %COLOR_YELLOW%[!] AVERTISSEMENT%COLOR_RESET%
+echo %COLOR_YELLOW%[^!] AVERTISSEMENT%COLOR_RESET%
 echo %COLOR_WHITE%  Ce script va supprimer : fichiers temporaires, logs, caches,%COLOR_RESET%
 echo %COLOR_WHITE%  rapports d'erreurs, corbeille, et anciens pilotes dupliques.%COLOR_RESET%
 echo.
@@ -3512,7 +3518,7 @@ echo   %COLOR_WHITE%Espace avant :%COLOR_RESET% %COLOR_YELLOW%%space_before_gb% 
 echo   %COLOR_WHITE%Espace apres :%COLOR_RESET% %COLOR_GREEN%%space_after_gb% Go%COLOR_RESET%
 echo   %COLOR_WHITE%Espace gagne :%COLOR_RESET% %COLOR_CYAN%%space_freed_gb% Go%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%[!]%COLOR_RESET% Un redemarrage est recommande pour finaliser.
+echo %COLOR_YELLOW%[^!]%COLOR_RESET% Un redemarrage est recommande pour finaliser.
 echo.
 choice /C ON /N /M "%COLOR_YELLOW%Redemarrer maintenant ? (O/N): %COLOR_RESET%"
 if errorlevel 2 goto :MENU_PRINCIPAL
@@ -3703,7 +3709,7 @@ set "HW_RAM=?"
 set "IS_LAPTOP=0"
 
 :: Un seul appel PowerShell robuste (conserve le gain de performance sans les problemes de parsing CMD)
-:: Utilise '~' comme delimiteur ; pas de quotes simples dans -Command (meme piege que Get-Date dans FOR / (')) — [char] pour espace/paren/tilde
+:: Utilise '~' comme delimiteur ; pas de quotes simples dans -Command (meme piege que Get-Date dans FOR / (')) ??? [char] pour espace/paren/tilde
 for /f "tokens=1-5 delims=~" %%a in ('powershell -NoProfile -ExecutionPolicy Bypass -Command "$o=Get-CimInstance Win32_OperatingSystem;$c=Get-CimInstance Win32_Processor;$g=@(Get-CimInstance Win32_VideoController)[0].Name;$r=[math]::Round((Get-CimInstance Win32_PhysicalMemory|Measure-Object Capacity -Sum).Sum/1GB,0);if($r -eq 0){$r=[math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory/1GB,0)};$b=if(Get-CimInstance Win32_Battery -ErrorAction SilentlyContinue){1}else{0}; Write-Output ($o.Caption+[char]32+[char]40+$o.Version+[char]41+[char]126+$c.Name.Trim()+[char]126+$g+[char]126+$r+[char]126+$b)" 2^>nul') do (
     if not "%%a"=="" set "HW_OS=%%a"
     if not "%%b"=="" set "HW_CPU=%%b"
@@ -3712,7 +3718,7 @@ for /f "tokens=1-5 delims=~" %%a in ('powershell -NoProfile -ExecutionPolicy Byp
     if not "%%e"=="" set "IS_LAPTOP=%%e"
 )
 
-:: Detection NVIDIA securisee (le '(' evite les crashs si HW_GPU contient des caractères speciaux)
+:: Detection NVIDIA securisee (le '(' evite les crashs si HW_GPU contient des caract??res speciaux)
 (echo(!HW_GPU! | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1")
 
 :: Fallbacks wmic/ver si PowerShell a vraiment echoue totalement
@@ -3737,7 +3743,7 @@ if not errorlevel 1 set "HAS_INTERNET=1"
 exit /b
 
 :END_SCRIPT
-:: Sans expansion retardée : évite que les "!" dans les textes ([!], AU REVOIR!, etc.) cassent la fin du script
+:: Sans expansion retardee : evite que les "!" dans les textes ([^!], AU REVOIR!, etc.) cassent la fin du script
 setlocal DisableDelayedExpansion
 cls
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
@@ -3745,7 +3751,7 @@ echo %STYLE_BOLD%%COLOR_WHITE% AU REVOIR! %COLOR_RESET%
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
 echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Merci d'avoir utilise le script d'optimisation! %COLOR_RESET%
-echo %COLOR_YELLOW%[!]%COLOR_RESET% %COLOR_WHITE%N'oubliez pas de redemarrer votre PC pour finaliser tout.%COLOR_RESET%
+echo %COLOR_YELLOW%[^!]%COLOR_RESET% %COLOR_WHITE%N'oubliez pas de redemarrer votre PC pour finaliser tout.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 timeout /t 3 /nobreak >nul
