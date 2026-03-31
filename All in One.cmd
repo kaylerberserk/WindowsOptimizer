@@ -841,7 +841,7 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Over
 reg add "HKLM\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v 735209102 /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Boost NVMe active
 
-:: 3.5 - Write cache buffer flushing au niveau peripherique (Ultimate 21 — SCSI + NVMe)
+:: 3.5 - Write cache buffer flushing au niveau peripherique (Ultimate 21 -- SCSI + NVMe)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% CacheIsPowerProtected sur disques SCSI et NVMe ^(equiv. Write Cache Buffer Flushing Off^)...
 powershell -NoProfile -Command "foreach($cs in @('CurrentControlSet','ControlSet001')){ foreach($bus in @('SCSI','NVME')){ $base='HKLM:\SYSTEM\'+$cs+'\Enum\'+$bus; if(^!(Test-Path $base)){ continue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $diskPath = Join-Path $_.PSPath 'Disk'; if(^!(Test-Path $diskPath)){ New-Item -Path $diskPath -Force | Out-Null }; New-ItemProperty -Path $diskPath -Name CacheIsPowerProtected -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null } } }; exit 0" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Cle Device Parameters\Disk\CacheIsPowerProtected appliquee ^(SCSI + NVMe^)
@@ -1572,7 +1572,7 @@ for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Clas
 )
 echo %COLOR_GREEN%[OK]%COLOR_RESET% GPU optimise
 
-:: 7.23 - Desactivation economies d'energie sur TOUS les devices (ACPI/HID/PCI/USB — aligne Ultimate 17)
+:: 7.23 - Desactivation economies d'energie sur TOUS les devices (ACPI/HID/PCI/USB -- aligne Ultimate 17)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation economies d'energie sur TOUS les peripheriques (ACPI, HID, PCI, USB)...
 powershell -NoProfile -Command "$buses=@('ACPI','HID','PCI','USB'); foreach($bus in $buses){ foreach($cs in @('CurrentControlSet','ControlSet001')){ $base='HKLM:\SYSTEM\'+$cs+'\Enum\'+$bus; if(^!(Test-Path $base)){ continue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p=$_.PSPath; New-ItemProperty -Path $p -Name EnhancedPowerManagementEnabled -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name SelectiveSuspendEnabled -PropertyType Binary -Value ([byte[]](0)) -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name SelectiveSuspendOn -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name WaitWakeEnabled -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'WDF' } | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name IdleInWorkingState -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null } } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Power savings desactivees sur tous les devices ACPI, HID, PCI et USB
