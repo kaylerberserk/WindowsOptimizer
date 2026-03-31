@@ -841,11 +841,16 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Over
 reg add "HKLM\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v 735209102 /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Boost NVMe active
 
-:: 3.5 - DirectStorage / NVMe avance
+:: 3.5 - Write cache buffer flushing au niveau peripherique (Ultimate 21 — SCSI + NVMe)
+echo %COLOR_YELLOW%[*]%COLOR_RESET% CacheIsPowerProtected sur disques SCSI et NVMe ^(equiv. Write Cache Buffer Flushing Off^)...
+powershell -NoProfile -Command "foreach($cs in @('CurrentControlSet','ControlSet001')){ foreach($bus in @('SCSI','NVME')){ $base='HKLM:\SYSTEM\'+$cs+'\Enum\'+$bus; if(^!(Test-Path $base)){ continue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $diskPath = Join-Path $_.PSPath 'Disk'; if(^!(Test-Path $diskPath)){ New-Item -Path $diskPath -Force | Out-Null }; New-ItemProperty -Path $diskPath -Name CacheIsPowerProtected -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null } } }; exit 0" >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Cle Device Parameters\Disk\CacheIsPowerProtected appliquee ^(SCSI + NVMe^)
+
+:: 3.6 - DirectStorage / NVMe avance
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Optimisation DirectStorage et I/O NVMe...
 echo %COLOR_GREEN%[OK]%COLOR_RESET% DirectStorage optimise ^(FUA deleguee au controleur NVMe^)
 
-:: 3.6 - Defragmentation automatique geree par Windows (TRIM automatique)
+:: 3.7 - Defragmentation automatique geree par Windows (TRIM automatique)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Verification de la defragmentation automatique...
 :: Windows 11 detecte automatiquement les SSD et effectue du TRIM au lieu de defragmentation
 :: Il est important de NE PAS desactiver cette tache pour maintenir le TRIM automatique
@@ -1549,9 +1554,9 @@ for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Clas
   reg add "%%K" /v "*WakeOnPattern" /t REG_DWORD /d 0 /f >nul 2>&1
 )
 
-:: 7.21 - Cartes reseau
+:: 7.21 - Cartes reseau (aligne Ultimate 18 : toutes les instances + CurrentControlSet et ControlSet001)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des fonctions d'economie d'energie reseau...
-powershell -NoProfile -Command "$class='Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}'; $keys=Get-ChildItem -Path $class -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' }; foreach($k in $keys){ $p=$k.PSPath; $item=Get-ItemProperty -Path $p -ErrorAction SilentlyContinue; if(-not $item){ continue }; $desc=$item.DriverDesc; $id=$item.NetCfgInstanceId; if([string]::IsNullOrWhiteSpace($desc) -or [string]::IsNullOrWhiteSpace($id)){ continue }; $stringValues=@{'*EEE'='0';'*SelectiveSuspend'='0';'*WakeOnMagicPacket'='0';'*ModernStandbyWoLMagicPacket'='0';'EnableGreenEthernet'='0';'ULPMode'='0';'*WakeOnPattern'='0';'*PMARPOffload'='0';'*PMNSOffload'='0';'EnablePME'='0';'PowerSavingMode'='0';'ReduceSpeedOnPowerDown'='0';'EnableDynamicPowerGating'='0';'AutoPowerSaveModeEnabled'='0';'AdvancedEEE'='0';'EEELinkAdvertisement'='0';'GigaLite'='0';'S5WakeOnLan'='0';'WakeOnLink'='0';'SipsEnabled'='0';'*FlowControl'='0';'*InterruptModeration'='1';'*InterruptModerationRate'='2';'ITR'='0';'EnableLLI'='1';'EnableDownShift'='0'}; foreach($name in $stringValues.Keys){ New-ItemProperty -Path $p -Name $name -PropertyType String -Value $stringValues[$name] -Force -ErrorAction SilentlyContinue | Out-Null }; New-ItemProperty -Path $p -Name 'PnPCapabilities' -PropertyType DWord -Value 24 -Force -ErrorAction SilentlyContinue | Out-Null }" >nul 2>&1
+powershell -NoProfile -Command "$g='{4d36e972-e325-11ce-bfc1-08002be10318}'; foreach($cs in @('CurrentControlSet','ControlSet001')){ $class='Registry::HKEY_LOCAL_MACHINE\SYSTEM\'+$cs+'\Control\Class\'+$g; if(^!(Test-Path $class)){ continue }; Get-ChildItem -Path $class -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; $stringValues=@{'*EEE'='0';'*SelectiveSuspend'='0';'*WakeOnMagicPacket'='0';'*ModernStandbyWoLMagicPacket'='0';'EnableGreenEthernet'='0';'ULPMode'='0';'*WakeOnPattern'='0';'*PMARPOffload'='0';'*PMNSOffload'='0';'EnablePME'='0';'PowerSavingMode'='0';'ReduceSpeedOnPowerDown'='0';'EnableDynamicPowerGating'='0';'AutoPowerSaveModeEnabled'='0';'AdvancedEEE'='0';'EEELinkAdvertisement'='0';'GigaLite'='0';'S5WakeOnLan'='0';'WakeOnLink'='0';'SipsEnabled'='0';'*FlowControl'='0';'*InterruptModeration'='1';'*InterruptModerationRate'='2';'ITR'='0';'EnableLLI'='1';'EnableDownShift'='0'}; foreach($name in $stringValues.Keys){ New-ItemProperty -Path $p -Name $name -PropertyType String -Value $stringValues[$name] -Force -ErrorAction SilentlyContinue | Out-Null }; New-ItemProperty -Path $p -Name 'PnPCapabilities' -PropertyType DWord -Value 24 -Force -ErrorAction SilentlyContinue | Out-Null } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Economies d'energie et optimisations reseau appliquees sur toutes les cartes
 
 :: 7.22 - Energie PCIe
@@ -1567,21 +1572,10 @@ for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Clas
 )
 echo %COLOR_GREEN%[OK]%COLOR_RESET% GPU optimise
 
-:: 7.23 - Desactivation economies d'energie sur TOUS les devices (HID/PCI/USB)
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation economies d'energie sur TOUS les peripheriques (HID, PCI, USB)...
-powershell -NoProfile -Command "$buses=@('HID','PCI','USB'); foreach($bus in $buses){ foreach($cs in @('CurrentControlSet','ControlSet001')){ $base='HKLM:\SYSTEM\'+$cs+'\Enum\'+$bus; if(!(Test-Path $base)){ continue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p=$_.PSPath; New-ItemProperty -Path $p -Name EnhancedPowerManagementEnabled -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name SelectiveSuspendEnabled -PropertyType Binary -Value ([byte[]](0)) -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name SelectiveSuspendOn -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name WaitWakeEnabled -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'WDF' } | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name IdleInWorkingState -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null } } }" >nul 2>&1
-echo %COLOR_GREEN%[OK]%COLOR_RESET% Power savings desactivees sur tous les devices HID, PCI et USB
- 
-:: 7.24 - Optimisations Stockage NVMe
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Optimisation des pilotes NVMe...
-reg add "HKLM\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v "735209102" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v "1853569164" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v "156965516" /t REG_DWORD /d 1 /f >nul 2>&1
-echo %COLOR_GREEN%[OK]%COLOR_RESET% Pilotes NVMe optimises
-:: SafeBoot fix pour le nouveau driver NVMe
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot\Network\{75416E63-5912-4DFA-AE8F-3EFACCAFFB14}" /ve /t REG_SZ /d "Storage disks" /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\SafeBoot\Minimal\{75416E63-5912-4DFA-AE8F-3EFACCAFFB14}" /ve /t REG_SZ /d "Storage disks" /f >nul 2>&1
-echo %COLOR_GREEN%[OK]%COLOR_RESET% SafeBoot NVMe configure
+:: 7.23 - Desactivation economies d'energie sur TOUS les devices (ACPI/HID/PCI/USB — aligne Ultimate 17)
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation economies d'energie sur TOUS les peripheriques (ACPI, HID, PCI, USB)...
+powershell -NoProfile -Command "$buses=@('ACPI','HID','PCI','USB'); foreach($bus in $buses){ foreach($cs in @('CurrentControlSet','ControlSet001')){ $base='HKLM:\SYSTEM\'+$cs+'\Enum\'+$bus; if(^!(Test-Path $base)){ continue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p=$_.PSPath; New-ItemProperty -Path $p -Name EnhancedPowerManagementEnabled -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name SelectiveSuspendEnabled -PropertyType Binary -Value ([byte[]](0)) -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name SelectiveSuspendOn -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name WaitWakeEnabled -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'WDF' } | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name IdleInWorkingState -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null } } }" >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Power savings desactivees sur tous les devices ACPI, HID, PCI et USB
  
 :: 7.25 - Bridage Energie (Power Throttling)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation du Power Throttling global...
@@ -1774,44 +1768,9 @@ for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Clas
   reg delete "%%K" /v "*WakeOnPattern" /f >nul 2>&1
 )
 
-:: 17. Reactiver les fonctions d'economie d'energie reseau
+:: 17. Reactiver les fonctions d'economie d'energie reseau (aligne Ultimate 18 : toutes les cartes + les deux ControlSet)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation des fonctions d'economie d'energie reseau...
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
-  reg query "%%K" /v "*SpeedDuplex" >nul 2>&1
-  if not errorlevel 1 (
-    :: Reactiver economies d'energie avec valeurs par defaut (generalement 1 ou selon le pilote)
-    reg delete "%%K" /v "*EEE" /f >nul 2>&1
-    reg delete "%%K" /v "*SelectiveSuspend" /f >nul 2>&1
-    reg delete "%%K" /v "*WakeOnMagicPacket" /f >nul 2>&1
-    reg delete "%%K" /v "EnableGreenEthernet" /f >nul 2>&1
-    reg delete "%%K" /v "ULPMode" /f >nul 2>&1
-    reg delete "%%K" /v "*WakeOnPattern" /f >nul 2>&1
-    reg delete "%%K" /v "*PMARPOffload" /f >nul 2>&1
-    reg delete "%%K" /v "*PMNSOffload" /f >nul 2>&1
-    reg delete "%%K" /v "*PMWiFiRekeyOffload" /f >nul 2>&1
-    reg delete "%%K" /v "EnablePME" /f >nul 2>&1
-    reg delete "%%K" /v "PowerSavingMode" /f >nul 2>&1
-    reg delete "%%K" /v "ReduceSpeedOnPowerDown" /f >nul 2>&1
-    reg delete "%%K" /v "EnableDynamicPowerGating" /f >nul 2>&1
-    reg delete "%%K" /v "AutoPowerSaveModeEnabled" /f >nul 2>&1
-    reg delete "%%K" /v "AdvancedEEE" /f >nul 2>&1
-    reg delete "%%K" /v "EEELinkAdvertisement" /f >nul 2>&1
-    reg delete "%%K" /v "GigaLite" /f >nul 2>&1
-    reg delete "%%K" /v "S5WakeOnLan" /f >nul 2>&1
-    reg delete "%%K" /v "WakeOnLink" /f >nul 2>&1
-    reg delete "%%K" /v "WolShutdownLinkSpeed" /f >nul 2>&1
-    :: Restaurer valeurs par defaut pour optimisations latence
-    reg delete "%%K" /v "*FlowControl" /f >nul 2>&1
-    reg delete "%%K" /v "*InterruptModeration" /f >nul 2>&1
-    reg delete "%%K" /v "*InterruptModerationRate" /f >nul 2>&1
-    reg delete "%%K" /v "ITR" /f >nul 2>&1
-    reg delete "%%K" /v "EnableLLI" /f >nul 2>&1
-    reg delete "%%K" /v "EnableDownShift" /f >nul 2>&1
-    reg delete "%%K" /v "*WaitAutoNegComplete" /f >nul 2>&1
-    :: Restaurer PnPCapabilities (24 = autoriser la gestion d'energie)
-    reg delete "%%K" /v PnPCapabilities /f >nul 2>&1
-  )
-)
+powershell -NoProfile -Command "$g='{4d36e972-e325-11ce-bfc1-08002be10318}'; $dels=@('PnPCapabilities','*EEE','*SelectiveSuspend','*WakeOnMagicPacket','*ModernStandbyWoLMagicPacket','EnableGreenEthernet','ULPMode','*WakeOnPattern','*PMARPOffload','*PMNSOffload','*PMWiFiRekeyOffload','EnablePME','PowerSavingMode','ReduceSpeedOnPowerDown','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','AdvancedEEE','EEELinkAdvertisement','GigaLite','S5WakeOnLan','WakeOnLink','WolShutdownLinkSpeed','SipsEnabled','*FlowControl','*InterruptModeration','*InterruptModerationRate','ITR','EnableLLI','EnableDownShift','*WaitAutoNegComplete'); foreach($cs in @('CurrentControlSet','ControlSet001')){ $root='Registry::HKEY_LOCAL_MACHINE\SYSTEM\'+$cs+'\Control\Class\'+$g; if(^!(Test-Path $root)){ continue }; Get-ChildItem -Path $root -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; foreach($n in $dels){ Remove-ItemProperty -Path $p -Name $n -ErrorAction SilentlyContinue } } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Fonctions d'economie d'energie reseau reactivees
 
 :: 18. Restauration du systeme d'alimentation
@@ -1821,9 +1780,9 @@ reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v PlatformAoAcOverride
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v SleepStudyDisabled /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Systeme d'alimentation restaure
 
-::: 18b. Restaurer les peripheriques HID/PCI/USB modifies (section 7.23)
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration des parametres d'economie des peripheriques HID/PCI/USB...
-powershell -NoProfile -Command "$buses=@('HID','PCI','USB'); foreach($bus in $buses){ foreach($cs in @('CurrentControlSet','ControlSet001')){ $base='HKLM:\SYSTEM\'+$cs+'\Enum\'+$bus; if(!(Test-Path $base)){ continue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p=$_.PSPath; Remove-ItemProperty -Path $p -Name EnhancedPowerManagementEnabled -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $p -Name SelectiveSuspendEnabled -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $p -Name SelectiveSuspendOn -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $p -Name WaitWakeEnabled -ErrorAction SilentlyContinue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'WDF' } | ForEach-Object { Remove-ItemProperty -Path $_.PSPath -Name IdleInWorkingState -ErrorAction SilentlyContinue } } }" >nul 2>&1
+::: 18b. Restaurer les peripheriques ACPI/HID/PCI/USB modifies (section 7.23)
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration des parametres d'economie des peripheriques ACPI, HID, PCI et USB...
+powershell -NoProfile -Command "$buses=@('ACPI','HID','PCI','USB'); foreach($bus in $buses){ foreach($cs in @('CurrentControlSet','ControlSet001')){ $base='HKLM:\SYSTEM\'+$cs+'\Enum\'+$bus; if(^!(Test-Path $base)){ continue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p=$_.PSPath; Remove-ItemProperty -Path $p -Name EnhancedPowerManagementEnabled -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $p -Name SelectiveSuspendEnabled -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $p -Name SelectiveSuspendOn -ErrorAction SilentlyContinue; Remove-ItemProperty -Path $p -Name WaitWakeEnabled -ErrorAction SilentlyContinue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'WDF' } | ForEach-Object { Remove-ItemProperty -Path $_.PSPath -Name IdleInWorkingState -ErrorAction SilentlyContinue } } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Parametres d'economie des peripheriques restaures
 
 :: 19. Reactiver gestion d'energie PCIe
@@ -2041,11 +2000,13 @@ choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET
 if errorlevel 3 goto :MENU_GESTION_WINDOWS
 if errorlevel 2 (
   call :DESACTIVER_DEFENDER_SECTION
+
   goto :TOGGLE_DEFENDER
 )
 call :ACTIVER_DEFENDER_SECTION
 goto :TOGGLE_DEFENDER
 
+:: ___DEFENDER_ULT_EMBEDDED_SUBS___
 :ACTIVER_DEFENDER_SECTION
 cls
 echo %COLOR_YELLOW%[*]%COLOR_RESET% %STYLE_BOLD%Reactivation de Windows Defender...%COLOR_RESET%
