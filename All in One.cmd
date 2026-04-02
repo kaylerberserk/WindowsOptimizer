@@ -90,7 +90,7 @@ set /a LOAD_STEP+=1
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Verification de la connexion Internet"
 call :REFRESH_INTERNET_STATUS
 
-:: Etape 4 : Materiel Core et Optimisation Memoire
+:: Etape 4 : Materiel Core
 set /a LOAD_STEP+=1
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Analyse des composants systeme"
 call :DETECT_HARDWARE
@@ -723,7 +723,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Touche F1 (aide) desactivee
 
 :: 1.11 - Desactivation audio enhancements (latence audio)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des ameliorations audio...
-powershell -NoProfile -Command "$path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e96c-e325-11ce-bfc1-08002be10318}'; Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p = $_.Name.Replace('HKEY_LOCAL_MACHINE', 'HKLM'); reg add \"$p\" /v 'FxNonDestructiveSoftMixer' /t REG_DWORD /d 0 /f; reg add \"$p\" /v 'FxRender' /t REG_DWORD /d 0 /f; reg add \"$p\" /v 'DisableAudioEndpointDucking' /t REG_DWORD /d 1 /f } " >nul 2>&1
+powershell -NoProfile -Command "$path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e96c-e325-11ce-bfc1-08002be10318}'; Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p = $_.PSPath; Set-ItemProperty -Path $p -Name 'FxNonDestructiveSoftMixer' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $p -Name 'FxRender' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $p -Name 'DisableAudioEndpointDucking' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue } " >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Optimisation des peripheriques de rendu audio (PowerShell)
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Audio" /v DisableAudioEnhancement /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Audio" /v ImmersiveAudio /t REG_DWORD /d 0 /f >nul 2>&1
@@ -830,7 +830,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Support des chemins longs active
 :: 3.3 - TRIM sur volumes SSD
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Execution du TRIM sur les disques SSD detectes...
 echo %COLOR_CYAN%[INFO]%COLOR_RESET% Operation synchrone : le script attend la fin du TRIM avant de continuer.
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ssd=Get-PhysicalDisk|?{$_.MediaType -eq 'SSD'};if($ssd){$jobs=@();Get-Volume|?{$_.DriveLetter -and $_.FileSystem -match 'NTFS|ReFS'}|%{$jobs+=Start-Job {Optimize-Volume -DriveLetter $args[0] -ReTrim -ErrorAction SilentlyContinue} -ArgumentList $_.DriveLetter};if($jobs.Count -gt 0){$jobs|Wait-Job|Out-Null;$jobs|Receive-Job|Out-Null;$jobs|Remove-Job -Force|Out-Null}}" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ssd = Get-PhysicalDisk | Where-Object { $_.MediaType -eq 'SSD' }; if ($ssd) { $volumes = Get-Volume | Where-Object { $_.DriveLetter -and ($_.FileSystem -match 'NTFS|ReFS') }; foreach ($vol in $volumes) { Optimize-Volume -DriveLetter $vol.DriveLetter -ReTrim -ErrorAction SilentlyContinue } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Commande TRIM executee sur les SSD
 
 :: 3.4 - Optimisation pilote NVMe natif et Boost Speed Windows 11
@@ -843,7 +843,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Boost NVMe active
 
 :: 3.5 - Write cache buffer flushing au niveau peripherique (Ultimate 21 -- SCSI + NVMe)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% CacheIsPowerProtected sur disques SCSI et NVMe ^(equiv. Write Cache Buffer Flushing Off^)...
-powershell -NoProfile -Command "Get-ChildItem -Path 'HKLM:\SYSTEM\CurrentControlSet\Enum\SCSI', 'HKLM:\SYSTEM\CurrentControlSet\Enum\NVMe' -ErrorAction SilentlyContinue | Get-ChildItem -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p = Join-Path $_.Name 'Disk'; if(!(Test-Path \"Registry::$p\")){ New-Item -Path \"Registry::$p\" -Force | Out-Null }; New-ItemProperty -Path \"Registry::$p\" -Name CacheIsPowerProtected -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null }" >nul 2>&1
+powershell -NoProfile -Command "Get-ChildItem -Path 'HKLM:\SYSTEM\CurrentControlSet\Enum\SCSI', 'HKLM:\SYSTEM\CurrentControlSet\Enum\NVMe' -ErrorAction SilentlyContinue | Get-ChildItem -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p = Join-Path -Path $_.PSPath -ChildPath 'Disk'; if((Test-Path -Path $p) -eq $false){ New-Item -Path $p -Force | Out-Null }; Set-ItemProperty -Path $p -Name 'CacheIsPowerProtected' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Cle Device Parameters\Disk\CacheIsPowerProtected appliquee ^(SCSI + NVMe^)
 
 :: 3.6 - DirectStorage / NVMe avance
@@ -905,7 +905,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% DirectX : VRR desactive, Flip Model (SwapEff
 
 :: 4.3 - Mode MSI (GPU) et P-State P0 (NVIDIA)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Activation MSI (GPU) et P0 State (Performance NVIDIA)...
-powershell -NoProfile -Command "Get-PnpDevice -Class Display | ForEach-Object { $id = $_.InstanceId; reg add \"HKLM\SYSTEM\CurrentControlSet\Enum\$id\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties\" /v \"MSISupported\" /t REG_DWORD /d 1 /f }" >nul 2>&1
+powershell -NoProfile -Command "Get-PnpDevice -Class Display -ErrorAction SilentlyContinue | ForEach-Object { $p = 'HKLM:\SYSTEM\CurrentControlSet\Enum\' + $_.InstanceId + '\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties'; if(Test-Path $p){ Set-ItemProperty -Path $p -Name 'MSISupported' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue } }" >nul 2>&1
 reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client" /v "OptInOrOutPreference" /t REG_DWORD /d 0 /f >nul 2>&1
 :: 4.4 - Desactivation AMD telemetry et ULPS
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de la telemetrie AMD et ULPS...
@@ -1558,7 +1558,7 @@ for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Clas
 
 :: 7.23 - Cartes reseau (aligne Ultimate 18 : toutes les instances + CurrentControlSet et ControlSet001)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des fonctions d'economie d'energie reseau...
-powershell -NoProfile -Command "Get-ChildItem -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}' -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; $stringValues=@{'*EEE'='0';'*SelectiveSuspend'='0';'*WakeOnMagicPacket'='0';'*ModernStandbyWoLMagicPacket'='0';'EnableGreenEthernet'='0';'ULPMode'='0';'*WakeOnPattern'='0';'*PMARPOffload'='0';'*PMNSOffload'='0';'EnablePME'='0';'PowerSavingMode'='0';'ReduceSpeedOnPowerDown'='0';'EnableDynamicPowerGating'='0';'AutoPowerSaveModeEnabled'='0';'AdvancedEEE'='0';'EEELinkAdvertisement'='0';'GigaLite'='0';'S5WakeOnLan'='0';'WakeOnLink'='0';'SipsEnabled'='0';'*FlowControl'='0';'*InterruptModeration'='1';'*InterruptModerationRate'='2';'ITR'='0';'EnableLLI'='1';'EnableDownShift'='0'}; foreach($name in $stringValues.Keys){ New-ItemProperty -Path $p -Name $name -PropertyType String -Value $stringValues[$name] -Force -ErrorAction SilentlyContinue | Out-Null }; New-ItemProperty -Path $p -Name 'PnPCapabilities' -PropertyType DWord -Value 24 -Force -ErrorAction SilentlyContinue | Out-Null } }" >nul 2>&1
+powershell -NoProfile -Command "Get-ChildItem -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}' -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; $props=@{'*EEE'='0';'*SelectiveSuspend'='0';'*WakeOnMagicPacket'='0';'*ModernStandbyWoLMagicPacket'='0';'EnableGreenEthernet'='0';'ULPMode'='0';'*WakeOnPattern'='0';'*PMARPOffload'='0';'*PMNSOffload'='0';'EnablePME'='0';'PowerSavingMode'='0';'ReduceSpeedOnPowerDown'='0';'EnableDynamicPowerGating'='0';'AutoPowerSaveModeEnabled'='0';'AdvancedEEE'='0';'EEELinkAdvertisement'='0';'GigaLite'='0';'S5WakeOnLan'='0';'WakeOnLink'='0';'SipsEnabled'='0';'*FlowControl'='0';'*InterruptModeration'='1';'*InterruptModerationRate'='2';'ITR'='0';'EnableLLI'='1';'EnableDownShift'='0'}; foreach($n in $props.Keys){ Set-ItemProperty -Path $p -Name $n -Value $props[$n] -Force -ErrorAction SilentlyContinue }; Set-ItemProperty -Path $p -Name 'PnPCapabilities' -Value 24 -Type DWord -Force -ErrorAction SilentlyContinue } " >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Economies d'energie et optimisations reseau appliquees sur toutes les cartes
 
 :: 7.24 - Energie PCIe
@@ -1576,13 +1576,11 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% GPU optimise
 
 :: 7.25 - Desactivation economies d'energie sur TOUS les devices (ACPI/HID/PCI/USB -- aligne Ultimate 17)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation economies d'energie sur TOUS les peripheriques (ACPI, HID, PCI, USB)...
-powershell -NoProfile -Command "$bases=@('HKLM:\SYSTEM\CurrentControlSet\Enum\ACPI','HKLM:\SYSTEM\CurrentControlSet\Enum\HID','HKLM:\SYSTEM\CurrentControlSet\Enum\PCI','HKLM:\SYSTEM\CurrentControlSet\Enum\USB','HKLM:\SYSTEM\CurrentControlSet\Enum\USBSTOR'); foreach($base in $bases){ if(Test-Path $base){ Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p=$_.PSPath; New-ItemProperty -Path $p -Name EnhancedPowerManagementEnabled -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name SelectiveSuspendEnabled -PropertyType Binary -Value ([byte[]](0)) -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name SelectiveSuspendOn -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name WaitWakeEnabled -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'WDF' } | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name IdleInWorkingState -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null } } }" >nul 2>&1
+powershell -NoProfile -Command "$bases=@('HKLM:\SYSTEM\CurrentControlSet\Enum\ACPI','HKLM:\SYSTEM\CurrentControlSet\Enum\HID','HKLM:\SYSTEM\CurrentControlSet\Enum\PCI','HKLM:\SYSTEM\CurrentControlSet\Enum\USB','HKLM:\SYSTEM\CurrentControlSet\Enum\USBSTOR'); foreach($base in $bases){ if(Test-Path $base){ Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p=$_.PSPath; Set-ItemProperty -Path $p -Name EnhancedPowerManagementEnabled -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $p -Name SelectiveSuspendEnabled -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $p -Name SelectiveSuspendOn -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $p -Name WaitWakeEnabled -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue }; Get-ChildItem -Path $base -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'WDF' } | ForEach-Object { Set-ItemProperty -Path $_.PSPath -Name IdleInWorkingState -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue } } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Power savings desactivees sur tous les devices ACPI, HID, PCI et USB
  
-:: 7.26 - Bridage Energie (Power Throttling)
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation du Power Throttling global...
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v PowerThrottlingOff /t REG_DWORD /d 1 /f >nul 2>&1
-echo %COLOR_GREEN%[OK]%COLOR_RESET% Power Throttling desactive
+:: 7.26 - Bridage Energie (Power Throttling) deja traite en section 7.15
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Power Throttling (bridage CPU) deja configure
 
 :: 7.27 - Desactivation Windows Platform Binary Table (WPBT)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation WPBT (anti bloatware OEM firmware)...
@@ -2158,10 +2156,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v EnableSmartScreen /
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreenEnabled /t REG_SZ /d "Off" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\AppHost" /v EnableWebContentEvaluation /t REG_DWORD /d 0 /f >nul 2>&1
 
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des taches planifiees Defender...
-schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cleanup" /Disable >nul 2>&1
-schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Scheduled Scan" /Disable >nul 2>&1
-schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Update" /Disable >nul 2>&1
+:: Taches Defender traitees ci-dessus
 
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Services Defender desactives
 
@@ -3685,9 +3680,9 @@ set "HW_GPU=GPU Inconnu"
 set "HW_RAM=?"
 set "IS_LAPTOP=0"
 
-:: Regroupement de Disable-MMAgent (optimisation memoire) et de la detection materielle
+:: Regroupement de la detection materielle (Un seul appel PS pour tout)
 :: On utilise WriteAllLines pour eviter le "BOM" (caractere invisible au debut) qui empeche CMD de lire la 1ere ligne
-powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; if(Get-Command Disable-MMAgent){ Disable-MMAgent -mc }; $o=Get-CimInstance Win32_OperatingSystem; $c=Get-CimInstance Win32_Processor; $v=Get-CimInstance Win32_VideoController | Select-Object -First 1; $m=Get-CimInstance Win32_PhysicalMemory; if($m -eq $null){$m=Get-CimInstance Win32_ComputerSystem}; $b=if(Get-CimInstance Win32_Battery){1}else{0}; $res=@(); $cap=if($o.Caption){$o.Caption}else{ $p=Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'; if($p.ProductName){$p.ProductName}else{\"Microsoft Windows\"} }; $res += 'OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Name.Trim()}; if($v){$res+='GPU:'+$v.Name}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}else{if($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}}; $res+='BAT:'+$b; [System.IO.File]::WriteAllLines(\"$env:TEMP\hw_info.tmp\", $res)" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem; $c=Get-CimInstance Win32_Processor; $v=Get-CimInstance Win32_VideoController | Select-Object -First 1; $m=Get-CimInstance Win32_PhysicalMemory; if($m -eq $null){$m=Get-CimInstance Win32_ComputerSystem}; $b=if(Get-CimInstance Win32_Battery){1}else{0}; $res=@(); $cap=if($o.Caption){$o.Caption}else{ $p=Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'; if($p.ProductName){$p.ProductName}else{\"Microsoft Windows\"} }; $res += 'OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Name.Trim()}; if($v){$res+='GPU:'+$v.Name}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}else{if($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}}; $res+='BAT:'+$b; [System.IO.File]::WriteAllLines(\"$env:TEMP\hw_info.tmp\", $res)" >nul 2>&1
 
 if exist "%TEMP%\hw_info.tmp" (
     for /f "usebackq tokens=1* delims=:" %%a in ("%TEMP%\hw_info.tmp") do (
