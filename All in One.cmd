@@ -7,6 +7,14 @@ reg add HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
 :: Definir le titre de la console
 title Script d'Optimisation Windows - All in One
 
+:: Verifier PowerShell AVANT de l'utiliser pour ESC
+where powershell >nul 2>&1
+if errorlevel 1 (
+    echo [ERREUR] PowerShell n'est pas disponible. Ce script ne peut pas continuer.
+    pause
+    exit /B 1
+)
+
 :: Definition robuste du caractere ESC (code ASCII 27)
 for /f "delims=" %%a in ('powershell -NoProfile -Command "$([char]27)"') do set "ESC=%%a"
 
@@ -74,16 +82,9 @@ if errorlevel 1 (
     exit /B 1
 )
 
-:: Etape 2 : PowerShell
+:: Etape 2 : PowerShell (deja verifie au lancement)
 set /a LOAD_STEP+=1
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Verification de PowerShell"
-where powershell >nul 2>&1
-if errorlevel 1 (
-    echo.
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% PowerShell n'est pas disponible.
-    pause
-    exit /B 1
-)
 
 :: Etape 3 : Internet
 set /a LOAD_STEP+=1
@@ -1018,7 +1019,7 @@ echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Configuration de la pile TCP/IP pour faible latence...
 :: 5.1 - Optimisation du throttling reseau par MMCSS
-reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v NetworkThrottlingIndex /t REG_DWORD /d 0xffffffff /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v NetworkThrottlingIndex /t REG_DWORD /d 4294967295 /f >nul 2>&1
 
 :: 5.2 - Pile TCP/UDP moderne CUBIC et BBR2
 netsh int tcp set heuristics disabled >nul 2>&1
@@ -1074,7 +1075,7 @@ powershell -NoLogo -NoProfile -Command ^
   " New-ItemProperty -Path $p -Name TcpAckFrequency -PropertyType DWord -Value 1 -Force | Out-Null; " ^
   " New-ItemProperty -Path $p -Name TCPNoDelay -PropertyType DWord -Value 1 -Force | Out-Null; " ^
   " New-ItemProperty -Path $p -Name DelayedAckFrequency -PropertyType DWord -Value 1 -Force | Out-Null; " ^
-  " New-ItemProperty -Path $p -Name DelayedAckTicks -PropertyType DWord -Value 1 -Force | Out-Null " ^
+  " New-ItemProperty -Path $p -Name TcpDelAckTicks -PropertyType DWord -Value 0 -Force | Out-Null " ^
   " } }" >nul 2>&1
 
 :: 5.8 - QoS Psched
@@ -1224,7 +1225,7 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de l'ULPS (AMD) et configurati
 :: ULPS OFF - AMD
 for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg add "%%K" /v EnableUlps /t REG_DWORD /d 0 /f >nul 2>&1
-  reg add "%%K" /v EnableUlps_NA /t REG_SZ /d 0 /f >nul 2>&1
+  reg add "%%K" /v EnableUlps_NA /t REG_DWORD /d 0 /f >nul 2>&1
 )
 :: PowerMizer - NVIDIA (Applique a toutes les instances GPU)
 for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
@@ -1232,7 +1233,7 @@ for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Clas
   reg add "%%K" /v PowerMizerLevel /t REG_DWORD /d 1 /f >nul 2>&1
   reg add "%%K" /v PowerMizerLevelAC /t REG_DWORD /d 1 /f >nul 2>&1
   reg add "%%K" /v PerfLevelSrc /t REG_DWORD /d 2222 /f >nul 2>&1
-  reg add "%%K" /v DisableDynamicPstate /t REG_DWORD /d 0 /f >nul 2>&1
+  reg add "%%K" /v DisableDynamicPstate /t REG_DWORD /d 1 /f >nul 2>&1
   reg add "%%K" /v RmDisableRegistryCaching /t REG_DWORD /d 1 /f >nul 2>&1
 )
 echo %COLOR_GREEN%[OK]%COLOR_RESET% GPU Power Management optimise
@@ -1376,12 +1377,10 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% Optimisations CPU specifiques (Intel Hybrid 
 
 :: Intel Hybrid CPUs (Alder Lake/Raptor Lake/Meteor Lake) - Scheduling Policy
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Configuration Intel Thread Director (Hybrid CPUs)...
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\93b8b6dc-0698-4d1c-9ee4-0644e900c85d" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Intel Thread Director configure (P-cores prioritaires)
 
 :: AMD Ryzen - Desactivation Core Parking
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation Core Parking (AMD Ryzen)...
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318584" /v Attributes /t REG_DWORD /d 0 /f >nul 2>&1
 :: Appliquer immediatement : desactiver le core parking via powercfg sur le plan actif
 powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR 0cc5b647-c1df-4637-891a-dec35c318584 0 >nul 2>&1
 powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR 0cc5b647-c1df-4637-891a-dec35c318584 0 >nul 2>&1
@@ -1527,17 +1526,11 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de la mise en veille des disqu
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" /v IdlePowerMode /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v DisableStorageQoS /t REG_DWORD /d 1 /f >nul 2>&1
-for %%i in (EnableHIPM EnableDIPM EnableHDDParking) do (
-  for /f "tokens=*" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services" /s /f "%%i" /v 2^>nul ^| findstr /i "^HKEY"') do (
-    reg add "%%a" /v %%i /t REG_DWORD /d 0 /f >nul 2>&1
-  )
-)
+powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path \"HKLM:\SYSTEM\CurrentControlSet\Control\Class\$c\" -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; Set-ItemProperty -Path $p -Name 'EnableHIPM' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $p -Name 'EnableDIPM' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $p -Name 'EnableHDDParking' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue } }" >nul 2>&1
 
 :: 7.20 - Optimisations avancees des services
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression des limites de latence I/O...
-for /f "tokens=*" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services" /s /f "IoLatencyCap" /v 2^>nul ^| findstr /i "^HKEY"') do (
-  reg add "%%a" /v IoLatencyCap /t REG_DWORD /d 0 /f >nul 2>&1
-)
+powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path \"HKLM:\SYSTEM\CurrentControlSet\Control\Class\$c\" -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; Set-ItemProperty -Path $p -Name 'IoLatencyCap' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Limites de latence stockage supprimees
 
 :: 7.21 - GPU PreferMaxPerf
@@ -1739,18 +1732,12 @@ reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernS
 reg delete "HKLM\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" /v IdlePowerMode /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v DisableStorageQoS /f >nul 2>&1
 :: Supprimer HIPM/DIPM/HDDParking pour revenir aux valeurs par defaut systeme
-for %%i in (EnableHIPM EnableDIPM EnableHDDParking) do (
-  for /f "tokens=*" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services" /s /f "%%i" /v 2^>nul ^| findstr /i "^HKEY"') do (
-    reg delete "%%a" /v %%i /f >nul 2>&1
-  )
-)
+powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path \"HKLM:\SYSTEM\CurrentControlSet\Control\Class\$c\" -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; Remove-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -ErrorAction SilentlyContinue } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Mise en veille des disques reactivee
 
 :: 15. Restaurer les limites de latence I/O
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration des limites de latence I/O...
-for /f "tokens=*" %%a in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services" /s /f "IoLatencyCap" /v 2^>nul ^| findstr /i "^HKEY"') do (
-  reg delete "%%a" /v IoLatencyCap /f >nul 2>&1
-)
+powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path \"HKLM:\SYSTEM\CurrentControlSet\Control\Class\$c\" -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; Remove-ItemProperty -Path $p -Name 'IoLatencyCap' -ErrorAction SilentlyContinue } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Limites de latence I/O restaurees
 
 :: 16. Restauration de la gestion d'energie GPU et PCI
@@ -1988,6 +1975,7 @@ echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Protections de securite restaurees.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Un redemarrage est recommande pour appliquer les modifications.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+if "%~1"=="call" exit /b
 pause
 goto :TOGGLE_PROTECTIONS_SECURITE
 
@@ -2649,7 +2637,7 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableImageInsights /t REG_DWORD /d 1 /f >nul 2>&1
 
 if "%~1"=="call" exit /b
-call :FINISH_ACTION "Toutes les fonctions IA/Widgets" "desactivees"
+call :FINISH_ACTION "Toutes les fonctions IA/Widgets" "desactivees" "call"
 exit /b
 
 :FINISH_ACTION
@@ -2662,7 +2650,7 @@ if "%~3"=="call" (
   endlocal
   exit /b
 )
-choice /C YN /N /M "%COLOR_YELLOW%Redemarrer maintenant ? [Y/N]:%COLOR_RESET%"
+choice /C ON /N /M "%COLOR_YELLOW%Redemarrer maintenant ? [O/N]:%COLOR_RESET%"
 if errorlevel 2 (
   endlocal
   exit /b
@@ -2699,11 +2687,11 @@ taskkill /f /im OneDriveSetup.exe >nul 2>&1
 taskkill /f /im FileCoAuth.exe >nul 2>&1
 taskkill /f /im FileSyncHelper.exe >nul 2>&1
 taskkill /f /im OneDriveStandaloneUpdater.exe >nul 2>&1
-timeout /t 3 >nul
+timeout /t 3 /nobreak >nul
 taskkill /f /im explorer.exe >nul 2>&1
-timeout /t 2 >nul
+timeout /t 2 /nobreak >nul
 start explorer.exe
-timeout /t 3 >nul
+timeout /t 3 /nobreak >nul
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Deconnexion des comptes OneDrive...
 powershell -Command "try { Import-Module -Name Microsoft.PowerShell.Management -Force; Get-ChildItem 'HKCU:\SOFTWARE\Microsoft\OneDrive\Accounts' -ErrorAction SilentlyContinue | ForEach-Object { Remove-Item $_.PSPath -Recurse -Force -ErrorAction SilentlyContinue } } catch {}" >nul 2>&1
@@ -2733,7 +2721,9 @@ reg delete "HKLM\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Run" /v "
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression des taches planifiees OneDrive...
 for /f "tokens=1 delims=," %%x in ('schtasks /query /fo csv 2^>nul ^| find "OneDrive"') do (
-    schtasks /delete /TN %%x /f >nul 2>&1
+    set "TASKNAME=%%~x"
+    set "TASKNAME=!TASKNAME:"=!"
+    schtasks /delete /TN "!TASKNAME!" /f >nul 2>&1
 )
 
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Desinstallation de OneDrive terminee (si installe).
@@ -2752,14 +2742,22 @@ for %%C in (
         del "%%~C" /q /s /f >nul 2>&1
     )
 )
-takeown /f "%USERPROFILE%\OneDrive" /r /d y >nul 2>&1
-rd "%USERPROFILE%\OneDrive" /s /q >nul 2>&1
-takeown /f "%LOCALAPPDATA%\Microsoft\OneDrive" /r /d y >nul 2>&1
-rd "%LOCALAPPDATA%\Microsoft\OneDrive" /s /q >nul 2>&1
-takeown /f "%PROGRAMDATA%\Microsoft OneDrive" /r /d y >nul 2>&1
-rd "%PROGRAMDATA%\Microsoft OneDrive" /s /q >nul 2>&1
-takeown /f "%SystemDrive%\OneDriveTemp" /r /d y >nul 2>&1
-rd "%SystemDrive%\OneDriveTemp" /s /q >nul 2>&1
+if exist "%USERPROFILE%\OneDrive" (
+    takeown /f "%USERPROFILE%\OneDrive" /r /d y >nul 2>&1
+    rd "%USERPROFILE%\OneDrive" /s /q >nul 2>&1
+)
+if exist "%LOCALAPPDATA%\Microsoft\OneDrive" (
+    takeown /f "%LOCALAPPDATA%\Microsoft\OneDrive" /r /d y >nul 2>&1
+    rd "%LOCALAPPDATA%\Microsoft\OneDrive" /s /q >nul 2>&1
+)
+if exist "%PROGRAMDATA%\Microsoft OneDrive" (
+    takeown /f "%PROGRAMDATA%\Microsoft OneDrive" /r /d y >nul 2>&1
+    rd "%PROGRAMDATA%\Microsoft OneDrive" /s /q >nul 2>&1
+)
+if exist "%SystemDrive%\OneDriveTemp" (
+    takeown /f "%SystemDrive%\OneDriveTemp" /r /d y >nul 2>&1
+    rd "%SystemDrive%\OneDriveTemp" /s /q >nul 2>&1
+)
 
 :: Supprimer les raccourcis OneDrive du menu Demarrer
 del "%APPDATA%\Microsoft\Windows\Start Menu\Programs\Microsoft OneDrive.lnk" /f /q >nul 2>&1
@@ -2769,7 +2767,7 @@ del "%UserProfile%\Desktop\OneDrive.lnk" /f /q >nul 2>&1
 del "%ALLUSERSPROFILE%\Microsoft\Windows\Start Menu\Programs\OneDrive.lnk" /f /q >nul 2>&1
 
 echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Nettoyage complet de OneDrive termine.%COLOR_RESET%
-call :FINISH_ACTION "OneDrive" "desinstalle"
+call :FINISH_ACTION "OneDrive" "desinstalle" "call"
 goto :MENU_GESTION_WINDOWS
 
 :DESINSTALLER_EDGE
@@ -2938,7 +2936,7 @@ if "%SUPPR_DATA%"=="NON" (
     echo  %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Vos favoris, mots de passe et historique ont ete preserves.%COLOR_RESET%
 )
 echo  %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%L'icone Edge a ete supprimee de la barre des taches.%COLOR_RESET%
-call :FINISH_ACTION "Microsoft Edge" "desinstalle"
+call :FINISH_ACTION "Microsoft Edge" "desinstalle" "call"
 goto :MENU_GESTION_WINDOWS
 
 :OUTIL_ACTIVATION
@@ -3125,7 +3123,7 @@ echo.
 echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour appliquer toutes les modifications.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-choice /C YN /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [Y/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :RESTART_AFTER_CHOICE_DESKTOP
 if errorlevel 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
 
@@ -3291,7 +3289,7 @@ echo.
 echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour appliquer toutes les modifications.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-choice /C YN /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [Y/N]: %COLOR_RESET%"
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :RESTART_AFTER_CHOICE_LAPTOP
 if errorlevel 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
 
@@ -3346,12 +3344,13 @@ echo.
 
 :: Analyse espace initial
 for /f %%a in ('powershell -nologo -command "[int]((Get-PSDrive -Name C).Free / 1MB)"') do set space_before_mb=%%a
+if not defined space_before_mb set "space_before_mb=0"
 
 echo %COLOR_YELLOW%[^!] AVERTISSEMENT%COLOR_RESET%
 echo %COLOR_WHITE%  Ce script va supprimer : fichiers temporaires, logs, caches,%COLOR_RESET%
 echo %COLOR_WHITE%  rapports d'erreurs, corbeille, et anciens pilotes dupliques.%COLOR_RESET%
 echo.
-choice /C ON /N /M "%COLOR_YELLOW%Continuer ? (O/N): %COLOR_RESET%"
+choice /C ON /N /M "%COLOR_YELLOW%Continuer ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :MENU_PRINCIPAL
 
 cls
@@ -3393,8 +3392,8 @@ del /s /q /f "%SystemRoot%\memory.dmp" >nul 2>&1
 :: ETAPE 5
 set /a CLEAN_STEP+=1
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Rapports d'erreurs"
-rd /s /q "C:\ProgramData\Microsoft\Windows\WER" >nul 2>&1
-if not exist "C:\ProgramData\Microsoft\Windows\WER" md "C:\ProgramData\Microsoft\Windows\WER" >nul 2>&1
+rd /s /q "%ProgramData%\Microsoft\Windows\WER" >nul 2>&1
+if not exist "%ProgramData%\Microsoft\Windows\WER" md "%ProgramData%\Microsoft\Windows\WER" >nul 2>&1
 
 :: ETAPE 6
 set /a CLEAN_STEP+=1
@@ -3454,7 +3453,7 @@ if exist "%SystemDrive%\Windows.old" (
 :: ETAPE 14
 set /a CLEAN_STEP+=1
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Optimisation disque (TRIM/Defrag)"
-defrag C: /O /H >nul 2>&1
+defrag %SystemDrive% /O /H >nul 2>&1
 
 :: ETAPE 15
 set /a CLEAN_STEP+=1
@@ -3484,7 +3483,7 @@ echo   %COLOR_WHITE%Espace gagne :%COLOR_RESET% %COLOR_CYAN%%space_freed_gb% Go%
 echo.
 echo %COLOR_YELLOW%[^!]%COLOR_RESET% Un redemarrage est recommande pour finaliser.
 echo.
-choice /C ON /N /M "%COLOR_YELLOW%Redemarrer maintenant ? (O/N): %COLOR_RESET%"
+choice /C ON /N /M "%COLOR_YELLOW%Redemarrer maintenant ? [O/N]: %COLOR_RESET%"
 if errorlevel 2 goto :MENU_PRINCIPAL
 shutdown /r /t 10 /c "Redemarrage pour finaliser le nettoyage"
 goto :MENU_PRINCIPAL
@@ -3696,7 +3695,7 @@ if exist "%TEMP%\hw_info.tmp" (
 )
 
 :: Detection NVIDIA
-echo %HW_GPU% | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1"
+echo "%HW_GPU%" | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1"
 
 :: Fallback ultime si echec total
 if /i "%HW_OS%"=="Windows" for /f "tokens=2 delims=[]" %%i in ('ver') do set "HW_OS=%%i"
@@ -3729,5 +3728,6 @@ echo %COLOR_YELLOW%[^!]%COLOR_RESET% %COLOR_WHITE%N'oubliez pas de redemarrer vo
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 timeout /t 3 /nobreak >nul
+endlocal
 endlocal
 exit /b 0
