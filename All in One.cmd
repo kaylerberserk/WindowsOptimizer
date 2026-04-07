@@ -1481,11 +1481,11 @@ if exist "%STR_STARTUP%" (
     goto :STR_DONE
 )
 
-:: Telecharger le raccourci
-powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://github.com/kaylerberserk/Optimizer/raw/main/Tools/Timer%%20%%26%%20Interrupt/SetTimerResolution.exe%%20-%%20Raccourci.lnk' -OutFile '%STR_STARTUP%' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
+:: Creer le raccourci de demarrage dynamiquement
+powershell -NoProfile -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%STR_STARTUP%'); $Shortcut.TargetPath = '%SystemRoot%\SetTimerResolution.exe'; $Shortcut.Arguments = '--no-console'; $Shortcut.WorkingDirectory = '%SystemRoot%'; $Shortcut.Description = 'SetTimerResolution - Optimizer'; $Shortcut.Save()" >nul 2>&1
 if exist "%STR_STARTUP%" (
     for %%A in ("%STR_STARTUP%") do if %%~zA LSS 100 (
-        echo %COLOR_RED%[-]%COLOR_RESET% Erreur : Raccourci SetTimerResolution corrompu
+        echo %COLOR_RED%[-]%COLOR_RESET% Erreur : Raccourci SetTimerResolution invalide
         del "%STR_STARTUP%"
         goto :STR_DONE
     )
