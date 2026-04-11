@@ -838,9 +838,12 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% CacheIsPowerProtected sur disques SCSI et NV
 powershell -NoProfile -Command "Get-ChildItem -Path 'HKLM:\SYSTEM\CurrentControlSet\Enum\SCSI', 'HKLM:\SYSTEM\CurrentControlSet\Enum\NVMe' -ErrorAction SilentlyContinue | Get-ChildItem -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -eq 'Device Parameters' } | ForEach-Object { $p = Join-Path -Path $_.PSPath -ChildPath 'Disk'; if((Test-Path -Path $p) -eq $false){ New-Item -Path $p -Force | Out-Null }; Set-ItemProperty -Path $p -Name 'CacheIsPowerProtected' -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Cle Device Parameters\Disk\CacheIsPowerProtected appliquee ^(SCSI + NVMe^)
 
-:: 3.6 - DirectStorage / NVMe avance
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Optimisation DirectStorage et I/O NVMe...
-echo %COLOR_GREEN%[OK]%COLOR_RESET% DirectStorage optimise ^(FUA deleguee au controleur NVMe^)
+:: 3.6 - DirectStorage (FeatureManagement overrides)
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Activation DirectStorage (FeatureManagement overrides)...
+reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v 156965516 /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v 1853569164 /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v 735209102 /t REG_DWORD /d 1 /f >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% DirectStorage active ^(FeatureManagement overrides appliques^)
 
 :: 3.7 - Defragmentation automatique geree par Windows (TRIM automatique)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Verification de la defragmentation automatique...
@@ -887,10 +890,10 @@ reg add "HKCU\SYSTEM\GameConfigStore" /v GameDVR_HonorUserFSEBehaviorMode /t REG
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% GameDVR desactive - Game Mode conserve pour les performances
 
-:: 4.2 - Preferences DirectX (VRR desactive, Flip Model actif)
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Application des preferences DirectX (VRR desactive, Flip Model actif)...
-reg add "HKCU\Software\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /t REG_SZ /d "VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;" /f >nul 2>&1
-echo %COLOR_GREEN%[OK]%COLOR_RESET% DirectX : VRR desactive, Flip Model (SwapEffectUpgrade) actif
+:: 4.2 - Preferences DirectX (Auto HDR, VRR desactive, Flip Model actif)
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Application des preferences DirectX (Auto HDR, VRR OFF, Flip Model)...
+reg add "HKCU\Software\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /t REG_SZ /d "AutoHDREnable=1;VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;" /f >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% DirectX : Auto HDR actif, VRR OFF, Flip Model (SwapEffectUpgrade) actif
 
 :: 4.3 - Mode MSI (GPU) et P-State P0 (NVIDIA)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Activation MSI (GPU) et P0 State (Performance NVIDIA)...
@@ -1492,11 +1495,15 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation ASPM sur le bus PCI Express...
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\pci\Parameters" /v ASPMOptOut /t REG_DWORD /d 1 /f >nul 2>&1
 
-:: 7.19 - Optimisations stockage et disques
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de la mise en veille des disques...
+:: 7.19 - Optimisations stockage et disques (DirectStorage haute consommation)
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de la mise en veille des disques et DirectStorage haute consommation...
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" /v IdlePowerMode /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v DisableStorageQoS /t REG_DWORD /d 1 /f >nul 2>&1
+:: DirectStorage : mode haute consommation (NVMe perf max + decompression GPU)
+reg add "HKLM\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" /v "ForcedLowPowerMode" /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\DirectStorage" /v "EnableDecompressionInGPU" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Microsoft\DirectStorage" /v "EnableDirectStorage" /t REG_DWORD /d 1 /f >nul 2>&1
 powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path \"HKLM:\SYSTEM\CurrentControlSet\Control\Class\$c\" -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; Set-ItemProperty -Path $p -Name 'EnableHIPM' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $p -Name 'EnableDIPM' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue; Set-ItemProperty -Path $p -Name 'EnableHDDParking' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue } }" >nul 2>&1
 
 :: 7.20 - Optimisations avancees des services
@@ -1694,11 +1701,15 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation ASPM sur le bus PCI Express...
 reg delete "HKLM\SYSTEM\CurrentControlSet\Services\pci\Parameters" /v ASPMOptOut /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% ASPM reactive
 
-:: 14. Reactiver la mise en veille des disques
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation de la mise en veille des disques...
+:: 14. Reactiver la mise en veille des disques et restaurer DirectStorage defaut
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation de la mise en veille des disques et DirectStorage par defaut...
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" /v IdlePowerMode /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v DisableStorageQoS /f >nul 2>&1
+:: Revert DirectStorage haute consommation
+reg delete "HKLM\SYSTEM\CurrentControlSet\Services\stornvme\Parameters\Device" /v "ForcedLowPowerMode" /f >nul 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\DirectStorage" /v "EnableDecompressionInGPU" /f >nul 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\DirectStorage" /v "EnableDirectStorage" /f >nul 2>&1
 :: Supprimer HIPM/DIPM/HDDParking pour revenir aux valeurs par defaut systeme
 powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path \"HKLM:\SYSTEM\CurrentControlSet\Control\Class\$c\" -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; Remove-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -ErrorAction SilentlyContinue } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Mise en veille des disques reactivee
@@ -1709,11 +1720,13 @@ powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be1031
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Limites de latence I/O restaurees
 
 :: 16. Restauration de la gestion d'energie GPU et PCI
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration de la gestion d'energie GPU...
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration de la gestion d'energie GPU et preferences DirectX...
 for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg delete "%%K" /v PreferMaxPerf /f >nul 2>&1
 )
-echo %COLOR_GREEN%[OK]%COLOR_RESET% Gestion d'energie GPU restauree
+:: Revert Auto HDR et DirectX UserGpuPreferences
+reg delete "HKCU\Software\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /f >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Gestion d'energie GPU et preferences DirectX restaurees
 :: 16b. Reactiver la mise en veille des peripheriques PCI (D3Cold)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation de la gestion d'energie PCI...
 for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
