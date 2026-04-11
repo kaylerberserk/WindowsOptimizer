@@ -68,11 +68,11 @@ echo %STYLE_BOLD%%COLOR_WHITE%             INITIALISATION DU SCRIPT D'OPTIMISATI
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
 
-set /a LOAD_TOTAL=5
-set /a LOAD_STEP=0
+set /a "LOAD_TOTAL=5"
+set /a "LOAD_STEP=0"
 
 :: Etape 1 : Privileges
-set /a LOAD_STEP+=1
+set /a "LOAD_STEP+=1"
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Verification des privileges administrateur"
 net session >nul 2>&1
 if errorlevel 1 (
@@ -83,21 +83,21 @@ if errorlevel 1 (
 )
 
 :: Etape 2 : PowerShell (deja verifie au lancement)
-set /a LOAD_STEP+=1
+set /a "LOAD_STEP+=1"
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Verification de PowerShell"
 
 :: Etape 3 : Internet
-set /a LOAD_STEP+=1
+set /a "LOAD_STEP+=1"
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Verification de la connexion Internet"
 call :REFRESH_INTERNET_STATUS
 
 :: Etape 4 : Materiel Core
-set /a LOAD_STEP+=1
+set /a "LOAD_STEP+=1"
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Analyse des composants systeme"
 call :DETECT_HARDWARE
 
 :: Etape 5 : Finalisation
-set /a LOAD_STEP+=1
+set /a "LOAD_STEP+=1"
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Preparation de l'interface"
 timeout /t 1 /nobreak >nul
 
@@ -158,24 +158,24 @@ echo %COLOR_CYAN%===============================================================
 echo.
 choice /C 012345678DLNRGWTQ /N /M "%STYLE_BOLD%%COLOR_YELLOW%Veuillez choisir une option [0-8, D, L, N, R, G, W, T, Q]: %COLOR_RESET%"
 
-:: Gestion des choix (Ordre decroissant imperatif pour la syntaxe 'if errorlevel X' qui signifie >= X)
-if errorlevel 17 goto :END_SCRIPT
-if errorlevel 16 goto :OUTIL_CHRIS_TITUS
-if errorlevel 15 goto :OUTIL_ACTIVATION
-if errorlevel 14 goto :MENU_GESTION_WINDOWS
-if errorlevel 13 goto :CREER_POINT_RESTAURATION
-if errorlevel 12 goto :NETTOYAGE_AVANCE_WINDOWS
-if errorlevel 11 goto :TOUT_OPTIMISER_LAPTOP
-if errorlevel 10 goto :TOUT_OPTIMISER_DESKTOP
-if errorlevel 9 goto :TOGGLE_PROTECTIONS_SECURITE
-if errorlevel 8 goto :TOGGLE_ECONOMIES_ENERGIE
-if errorlevel 7 goto :OPTIMISATIONS_PERIPHERIQUES
-if errorlevel 6 goto :OPTIMISATIONS_RESEAU
-if errorlevel 5 goto :OPTIMISATIONS_GPU
-if errorlevel 4 goto :OPTIMISATIONS_DISQUES
-if errorlevel 3 goto :OPTIMISATIONS_MEMOIRE
-if errorlevel 2 goto :OPTIMISATIONS_SYSTEME
-if errorlevel 1 goto :CLEANUP_OLD_TWEAKS
+:: Gestion des choix (EQU = egalite stricte, ordre sans importance)
+if %errorlevel% EQU 17 goto :END_SCRIPT
+if %errorlevel% EQU 16 goto :OUTIL_CHRIS_TITUS
+if %errorlevel% EQU 15 goto :OUTIL_ACTIVATION
+if %errorlevel% EQU 14 goto :MENU_GESTION_WINDOWS
+if %errorlevel% EQU 13 goto :CREER_POINT_RESTAURATION
+if %errorlevel% EQU 12 goto :NETTOYAGE_AVANCE_WINDOWS
+if %errorlevel% EQU 11 goto :TOUT_OPTIMISER_LAPTOP
+if %errorlevel% EQU 10 goto :TOUT_OPTIMISER_DESKTOP
+if %errorlevel% EQU 9  goto :TOGGLE_PROTECTIONS_SECURITE
+if %errorlevel% EQU 8  goto :TOGGLE_ECONOMIES_ENERGIE
+if %errorlevel% EQU 7  goto :OPTIMISATIONS_PERIPHERIQUES
+if %errorlevel% EQU 6  goto :OPTIMISATIONS_RESEAU
+if %errorlevel% EQU 5  goto :OPTIMISATIONS_GPU
+if %errorlevel% EQU 4  goto :OPTIMISATIONS_DISQUES
+if %errorlevel% EQU 3  goto :OPTIMISATIONS_MEMOIRE
+if %errorlevel% EQU 2  goto :OPTIMISATIONS_SYSTEME
+if %errorlevel% EQU 1  goto :CLEANUP_OLD_TWEAKS
 goto :MENU_PRINCIPAL
 
 :MENU_GESTION_WINDOWS
@@ -209,15 +209,15 @@ echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
 choice /C 1234567M /N /M "%STYLE_BOLD%%COLOR_YELLOW%Choisissez une option [1-7, M]: %COLOR_RESET%"
-:: Gestion des choix (Ordre decroissant imperatif pour la syntaxe 'if errorlevel X' qui signifie >= X)
-if errorlevel 8 goto :MENU_PRINCIPAL
-if errorlevel 7 goto :INSTALLER_VISUAL_REDIST
-if errorlevel 6 goto :DESINSTALLER_EDGE
-if errorlevel 5 goto :DESINSTALLER_ONEDRIVE
-if errorlevel 4 goto :TOGGLE_COPILOT
-if errorlevel 3 goto :TOGGLE_ANIMATIONS
-if errorlevel 2 goto :TOGGLE_UAC
-if errorlevel 1 goto :TOGGLE_DEFENDER
+:: Gestion des choix (EQU = egalite stricte, ordre sans importance)
+if %errorlevel% EQU 8 goto :MENU_PRINCIPAL
+if %errorlevel% EQU 7 goto :INSTALLER_VISUAL_REDIST
+if %errorlevel% EQU 6 goto :DESINSTALLER_EDGE
+if %errorlevel% EQU 5 goto :DESINSTALLER_ONEDRIVE
+if %errorlevel% EQU 4 goto :TOGGLE_COPILOT
+if %errorlevel% EQU 3 goto :TOGGLE_ANIMATIONS
+if %errorlevel% EQU 2 goto :TOGGLE_UAC
+if %errorlevel% EQU 1 goto :TOGGLE_DEFENDER
 goto :MENU_GESTION_WINDOWS
 
 :CLEANUP_OLD_TWEAKS
@@ -322,12 +322,9 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Nettoyage des tweaks obsoletes termine.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :MENU_PRINCIPAL
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :MENU_PRINCIPAL
 
 :OPTIMISATIONS_SYSTEME
 cls
@@ -735,12 +732,9 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Optimisations systeme appliquees.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :MENU_PRINCIPAL
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :MENU_PRINCIPAL
 
 :OPTIMISATIONS_MEMOIRE
 cls
@@ -792,12 +786,9 @@ echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Optimisations memoire appliquees avec s
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Un redemarrage est recommande pour appliquer les modifications.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :MENU_PRINCIPAL
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :MENU_PRINCIPAL
 
 :OPTIMISATIONS_DISQUES
 cls
@@ -864,12 +855,9 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Optimisations des disques appliquees avec succes.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :MENU_PRINCIPAL
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :MENU_PRINCIPAL
 
 :OPTIMISATIONS_GPU
 cls
@@ -917,7 +905,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Telemetrie AMD desactivee
 :: 4.5 - NVIDIA Low Latency
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Application des optimisations Low Latency NVIDIA...
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v MaxFrameLatency /t REG_DWORD /d 1 /f >nul 2>&1
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg add "%%K" /v LOWLATENCY /t REG_DWORD /d 1 /f >nul 2>&1
   reg add "%%K" /v D3PCLatency /t REG_DWORD /d 1 /f >nul 2>&1
   reg add "%%K" /v F1TransitionLatency /t REG_DWORD /d 1 /f >nul 2>&1
@@ -1000,12 +988,9 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Toutes les optimisations GPU ont ete appliquees.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :MENU_PRINCIPAL
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :MENU_PRINCIPAL
 
 :OPTIMISATIONS_RESEAU
 cls
@@ -1083,7 +1068,7 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% Configuration NIC pour faible latence...
 powershell -NoProfile -Command "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $adapter=$_.Name; $props = Get-NetAdapterAdvancedProperty -Name $adapter; $lsoProps = $props | Where-Object { $_.DisplayName -like '*Large Send*' -or $_.DisplayName -like '*Grand envoi*' }; foreach($prop in $lsoProps) { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $prop.DisplayName -DisplayValue 'Disabled' -ErrorAction Stop } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $prop.DisplayName -DisplayValue 'Desactive' -ErrorAction Stop } catch {} } }; $rscProps = $props | Where-Object { $_.DisplayName -like '*Recv Segment*' -or $_.DisplayName -like '*RSC*' }; foreach($prop in $rscProps) { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $prop.DisplayName -DisplayValue 'Disabled' -ErrorAction Stop } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $prop.DisplayName -DisplayValue 'Desactive' -ErrorAction Stop } catch {} } } }" >nul 2>&1
 
 :: Ne pas forcer le pilote reseau a outrepasser l'auto-negociation du cable (evite le Packet Loss)
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg delete "%%K" /v "*WaitAutoNegComplete" /f >nul 2>&1
 )
 
@@ -1110,7 +1095,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\QoS\Fortnite_TCP" /v "DSCP Val
 
 :: 5.12 - Desactivation NetBIOS over TCP/IP (WINS)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de NetBIOS over TCP/IP...
-for /f "tokens=*" %%i in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces" /s 2^>nul ^| findstr /i /r "\\Tcpip_.*$"') do (
+for /f "tokens=*" %%i in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces" /s ^| findstr /i /r "\\Tcpip_.*$" 2^>nul') do (
   reg add "%%i" /v NetbiosOptions /t REG_DWORD /d 2 /f >nul 2>&1
 )
 echo %COLOR_GREEN%[OK]%COLOR_RESET% NetBIOS desactive
@@ -1124,12 +1109,9 @@ echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Optimisations reseau appliquees avec su
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Un redemarrage est recommande pour appliquer les modifications.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :MENU_PRINCIPAL
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :MENU_PRINCIPAL
 
 :OPTIMISATIONS_PERIPHERIQUES
 cls
@@ -1189,12 +1171,9 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Optimisations des peripheriques appliquees avec succes.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :MENU_PRINCIPAL
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :MENU_PRINCIPAL
 
 :DESACTIVER_ECONOMIES_ENERGIE
 cls
@@ -1214,12 +1193,12 @@ powercfg /setdcvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 100 >nu
 :: GPU Power Management (ULPS & PowerMizer)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de l'ULPS (AMD) et configuration PowerMizer (NVIDIA)...
 :: ULPS OFF - AMD
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg add "%%K" /v EnableUlps /t REG_DWORD /d 0 /f >nul 2>&1
   reg add "%%K" /v EnableUlps_NA /t REG_DWORD /d 0 /f >nul 2>&1
 )
 :: PowerMizer - NVIDIA (Applique a toutes les instances GPU)
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg add "%%K" /v PowerMizerEnable /t REG_DWORD /d 1 /f >nul 2>&1
   reg add "%%K" /v PowerMizerLevel /t REG_DWORD /d 1 /f >nul 2>&1
   reg add "%%K" /v PowerMizerLevelAC /t REG_DWORD /d 1 /f >nul 2>&1
@@ -1460,6 +1439,7 @@ if exist "%STR_EXE%" (
         goto :STR_DONE
     )
     echo %COLOR_GREEN%[OK]%COLOR_RESET% SetTimerResolution installe dans %SystemRoot%
+    goto :STR_SHORTCUT
 ) else (
     echo %COLOR_RED%[-]%COLOR_RESET% Echec du telechargement de SetTimerResolution
     goto :STR_DONE
@@ -1526,17 +1506,17 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Limites de latence stockage supprimees
 
 :: 7.21 - GPU PreferMaxPerf
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Configuration GPU en mode performances maximales...
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg add "%%K" /v PreferMaxPerf /t REG_DWORD /d 1 /f >nul 2>&1
 )
 echo %COLOR_GREEN%[OK]%COLOR_RESET% GPU configure en mode performances maximales
 
 :: 7.22 - PCI & peripheriques reseau
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de la mise en veille des peripheriques PCI...
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg add "%%K" /v D3ColdSupported /t REG_DWORD /d 0 /f >nul 2>&1
 )
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg add "%%K" /v "*WakeOnPattern" /t REG_DWORD /d 0 /f >nul 2>&1
 )
 
@@ -1552,7 +1532,7 @@ powercfg /setdcvalueindex SCHEME_CURRENT 501a4d13-42af-4429-9fd1-a8218c268e20 ee
 powercfg /S SCHEME_CURRENT >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\501a4d13-42af-4429-9fd1-a8218c268e20\ee12f906-d277-404b-b6da-e5fa1a576df5" /v Attributes /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Gestion d'energie PCIe desactivee
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg add "%%K" /v "DisableASPM" /t REG_DWORD /d 1 /f >nul 2>&1
   reg add "%%K" /v "RMForcedMaxPerf" /t REG_DWORD /d 1 /f >nul 2>&1
 )
@@ -1583,12 +1563,9 @@ echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Economies d'energie desactivees - Perfo
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Un redemarrage est recommande pour appliquer les modifications.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :MENU_PRINCIPAL
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :MENU_PRINCIPAL
 
 :REVERT_ECONOMIES_ENERGIE
 cls
@@ -1679,7 +1656,7 @@ powercfg /setdcvalueindex SCHEME_CURRENT SUB_ENERGYSAVER ESBATTTHRESHOLD 20 >nul
 
 :: 10. Restaurer ULPS et PowerMizer (Auto)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration de l'ULPS (AMD) et PowerMizer (Auto)...
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg delete "%%K" /v EnableUlps /f >nul 2>&1
   reg delete "%%K" /v EnableUlps_NA /f >nul 2>&1
   reg delete "%%K" /v PowerMizerEnable /f >nul 2>&1
@@ -1733,16 +1710,16 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Limites de latence I/O restaurees
 
 :: 16. Restauration de la gestion d'energie GPU et PCI
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Restauration de la gestion d'energie GPU...
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg delete "%%K" /v PreferMaxPerf /f >nul 2>&1
 )
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Gestion d'energie GPU restauree
 :: 16b. Reactiver la mise en veille des peripheriques PCI (D3Cold)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Reactivation de la gestion d'energie PCI...
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg delete "%%K" /v D3ColdSupported /f >nul 2>&1
 )
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}" 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
   reg delete "%%K" /v "*WakeOnPattern" /f >nul 2>&1
 )
 
@@ -1782,12 +1759,9 @@ echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Economies d'energie restaurees - Parame
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Un redemarrage est recommande pour appliquer les modifications.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :MENU_PRINCIPAL
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :MENU_PRINCIPAL
 
 :TOGGLE_ECONOMIES_ENERGIE
 cls
@@ -1809,9 +1783,9 @@ echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
-if errorlevel 3 goto :MENU_PRINCIPAL
-if errorlevel 2 goto :REVERT_ECONOMIES_ENERGIE
-if errorlevel 1 goto :DESACTIVER_ECONOMIES_ENERGIE
+if %errorlevel% EQU 3 goto :MENU_PRINCIPAL
+if %errorlevel% EQU 2 goto :REVERT_ECONOMIES_ENERGIE
+if %errorlevel% EQU 1 goto :DESACTIVER_ECONOMIES_ENERGIE
 goto :TOGGLE_ECONOMIES_ENERGIE
 
 :TOGGLE_PROTECTIONS_SECURITE
@@ -1833,9 +1807,9 @@ echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
-if errorlevel 3 goto :MENU_PRINCIPAL
-if errorlevel 2 goto :RESTAURER_PROTECTIONS_SECURITE
-if errorlevel 1 goto :DESACTIVER_PROTECTIONS_SECURITE
+if %errorlevel% EQU 3 goto :MENU_PRINCIPAL
+if %errorlevel% EQU 2 goto :RESTAURER_PROTECTIONS_SECURITE
+if %errorlevel% EQU 1 goto :DESACTIVER_PROTECTIONS_SECURITE
 goto :TOGGLE_PROTECTIONS_SECURITE
 
 :DESACTIVER_PROTECTIONS_SECURITE
@@ -1862,7 +1836,7 @@ echo %COLOR_WHITE%  - Ces cles de registre sont sensibles : erreur = instabilite
 echo %COLOR_WHITE%  - Indique surtout pour bench/jeux competitifs sur machine isolee et comprise.%COLOR_RESET%
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :MENU_PRINCIPAL
+if %errorlevel% EQU 2 goto :MENU_PRINCIPAL
 )
 
 :: 8.1 - Desactivation des protections Kernel SEHOP Exception Chain 
@@ -1923,12 +1897,9 @@ echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Protections de securite desactivees.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Un redemarrage est recommande pour appliquer les modifications.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" (
-  exit /b
-) else (
-  pause
-  goto :TOGGLE_PROTECTIONS_SECURITE
-)
+if /i "%~1"=="call" exit /b
+pause
+goto :TOGGLE_PROTECTIONS_SECURITE
 
 :RESTAURER_PROTECTIONS_SECURITE
 cls
@@ -1966,7 +1937,7 @@ echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Protections de securite restaurees.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Un redemarrage est recommande pour appliquer les modifications.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 pause
 goto :TOGGLE_PROTECTIONS_SECURITE
 
@@ -1982,7 +1953,7 @@ echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%Desactiver Windows Defender (Non 
 echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%COLOR_RESET%
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
-if errorlevel 3 goto :MENU_GESTION_WINDOWS
+if %errorlevel% EQU 3 goto :MENU_GESTION_WINDOWS
 if errorlevel 2 (
   call :DESACTIVER_DEFENDER_SECTION
 
@@ -2053,7 +2024,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Services Defender restaures
 
 echo.
 call :FINISH_ACTION "Windows Defender" "reactive" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_DEFENDER_SECTION
@@ -2077,7 +2048,7 @@ if errorlevel 2 exit /b
 cls
 echo %COLOR_YELLOW%[*]%COLOR_RESET% %STYLE_BOLD%Desactivation de Windows Defender...%COLOR_RESET%
 echo.
-if "%~1"=="call" (
+if /i "%~1"=="call" (
 echo %COLOR_RED%[INFO]%COLOR_RESET% ATTENTION: Desactiver Windows Defender expose votre systeme a des risques.
 echo.
 )
@@ -2141,7 +2112,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Services Defender desactives
 
 echo.
 call :FINISH_ACTION "Windows Defender" "desactive" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :TOGGLE_UAC
@@ -2156,7 +2127,7 @@ echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%Desactiver UAC + Avertissements (
 echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%COLOR_RESET%
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
-if errorlevel 3 goto :MENU_GESTION_WINDOWS
+if %errorlevel% EQU 3 goto :MENU_GESTION_WINDOWS
 if errorlevel 2 (
   call :DESACTIVER_UAC_SECTION
   goto :TOGGLE_UAC
@@ -2180,7 +2151,7 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreen
 :: Reactiver le suivi de zone (fichiers telecharges marques comme Internet)
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Attachments" /v SaveZoneInformation /t REG_DWORD /d 2 /f >nul 2>&1
 call :FINISH_ACTION "UAC" "active" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_UAC_SECTION
@@ -2203,8 +2174,8 @@ if errorlevel 2 exit /b
 )
 cls
 echo %COLOR_YELLOW%[*]%COLOR_RESET% %STYLE_BOLD%Desactivation complete de l'UAC et des avertissements...%COLOR_RESET%
-if "%~1"=="call" echo %COLOR_YELLOW%[^!]%COLOR_RESET% LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.
-if "%~1"=="call" echo.
+if /i "%~1"=="call" echo %COLOR_YELLOW%[^!]%COLOR_RESET% LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.
+if /i "%~1"=="call" echo.
 
 :: UAC OFF = plus de demande Oui/Non
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 0 /f >nul 2>&1
@@ -2217,7 +2188,7 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v SmartScreen
 :: Desactiver "Ce fichier provient d'Internet" (Zone.Identifier)
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Attachments" /v SaveZoneInformation /t REG_DWORD /d 1 /f >nul 2>&1
 call :FINISH_ACTION "UAC" "desactive" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :TOGGLE_ANIMATIONS
@@ -2232,7 +2203,7 @@ echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%Desactiver les animations Windows
 echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%COLOR_RESET%
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
-if errorlevel 3 goto :MENU_GESTION_WINDOWS
+if %errorlevel% EQU 3 goto :MENU_GESTION_WINDOWS
 if errorlevel 2 (
   call :DESACTIVER_ANIMATIONS_SECTION
   goto :TOGGLE_ANIMATIONS
@@ -2281,7 +2252,7 @@ bcdedit /set bootuxdisabled off >nul 2>&1
 
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Animations Windows activees.
 echo %COLOR_YELLOW%[^!]%COLOR_RESET% Un redemarrage est requis pour appliquer les modifications.
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 pause
 exit /b
 
@@ -2340,7 +2311,7 @@ bcdedit /set bootuxdisabled on >nul 2>&1
 
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Animations Windows desactivees.
 echo %COLOR_YELLOW%[^!]%COLOR_RESET% Un redemarrage est requis pour appliquer les modifications.
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 pause
 exit /b
 
@@ -2371,7 +2342,7 @@ echo %COLOR_YELLOW%[D]%COLOR_RESET% %COLOR_RED%Desactiver TOUT (Copilot + Widget
 echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%COLOR_RESET%
 echo.
 choice /C 123456DM /N /M "%STYLE_BOLD%%COLOR_YELLOW%Choisissez une option [1-6, D, M]: %COLOR_RESET%"
-if errorlevel 8 goto :MENU_GESTION_WINDOWS
+if %errorlevel% EQU 8 goto :MENU_GESTION_WINDOWS
 if errorlevel 7 (
   call :DESACTIVER_TOUT_COPILOT
   goto :TOGGLE_COPILOT
@@ -2422,7 +2393,7 @@ reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableRemote
 set "HOSTS=%windir%\System32\drivers\etc\hosts"
 powershell -NoProfile -c "(Get-Content '%HOSTS%') | Where-Object { $_ -notmatch 'copilot\.microsoft\.com|windows\.ai\.microsoft\.com|copilot-telemetry\.microsoft\.com|Copilot Block' } | Set-Content '%HOSTS%'" >nul 2>&1
 call :FINISH_IA_ACTION "Copilot" "active" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_COPILOT
@@ -2469,7 +2440,7 @@ if errorlevel 1 (
     echo # --- End Copilot Block --->> "%HOSTS%"
 )
 call :FINISH_IA_ACTION "Copilot" "desactive" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :ACTIVER_WIDGETS
@@ -2483,7 +2454,7 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% %COLOR_WHITE%Activation des cles de registre
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 1 /f >nul 2>&1
 call :FINISH_IA_ACTION "Widgets" "active" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_WIDGETS
@@ -2510,7 +2481,7 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% %COLOR_WHITE%Application des restrictions po
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 0 /f >nul 2>&1
 call :FINISH_IA_ACTION "Widgets" "desactive" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :ACTIVER_RECALL
@@ -2536,7 +2507,7 @@ reg delete "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\User
 reg delete "HKCU\Software\Microsoft\Windows\Shell\ClickToDo" /v DisableClickToDo /f >nul 2>&1
 reg delete "HKCU\Software\Microsoft\input\Settings" /v InsightsEnabled /f >nul 2>&1
 call :FINISH_IA_ACTION "Recall" "active" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_RECALL
@@ -2578,7 +2549,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableImageInsi
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\Recall" /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\Recall" /f >nul 2>&1
 call :FINISH_IA_ACTION "Recall" "desactive" "%~1"
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 exit /b
 
 :DESACTIVER_TOUT_COPILOT
@@ -2627,7 +2598,7 @@ reg add "HKCU\Software\Microsoft\input\Settings" /v InsightsEnabled /t REG_DWORD
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userActivityFeedGlobal" /v Value /t REG_SZ /d "Deny" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableImageInsights /t REG_DWORD /d 1 /f >nul 2>&1
 
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 call :FINISH_ACTION "Toutes les fonctions IA/Widgets" "desactivees" "call"
 exit /b
 
@@ -2670,7 +2641,7 @@ echo %COLOR_YELLOW%[*]%COLOR_RESET% La suite arretera OneDrive, nettoiera regist
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Cela peut prendre quelques instants.
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desinstaller OneDrive ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :MENU_GESTION_WINDOWS
+if %errorlevel% EQU 2 goto :MENU_GESTION_WINDOWS
 
 :: Arreter les processus OneDrive
 taskkill /f /im OneDrive.exe >nul 2>&1
@@ -2778,7 +2749,7 @@ echo %COLOR_RED%[^!] ATTENTION:%COLOR_RESET% La desinstallation de Microsoft Edg
 echo %COLOR_RED%de compatibilite avec certaines applications Windows.%COLOR_RESET%
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desinstaller Microsoft Edge ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :MENU_GESTION_WINDOWS
+if %errorlevel% EQU 2 goto :MENU_GESTION_WINDOWS
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo %COLOR_WHITE% SUPPRESSION DES DONNEES UTILISATEUR%COLOR_RESET%
@@ -2985,7 +2956,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les protections (recommande)
 echo.
 set "DESACTIVER_SECURITE=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :DESKTOP_SECURITE_NON
+if %errorlevel% EQU 2 goto :DESKTOP_SECURITE_NON
 if errorlevel 1 set "DESACTIVER_SECURITE=1"
 :DESKTOP_SECURITE_NON
 
@@ -3005,7 +2976,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver Windows Defender (recommande)
 echo.
 set "DESACTIVER_DEFENDER=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :DESKTOP_DEFENDER_NON
+if %errorlevel% EQU 2 goto :DESKTOP_DEFENDER_NON
 if errorlevel 1 set "DESACTIVER_DEFENDER=1"
 :DESKTOP_DEFENDER_NON
 
@@ -3025,7 +2996,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les animations (recommande)
 echo.
 set "DESACTIVER_ANIMATIONS=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :DESKTOP_ANIMATIONS_NON
+if %errorlevel% EQU 2 goto :DESKTOP_ANIMATIONS_NON
 if errorlevel 1 set "DESACTIVER_ANIMATIONS=1"
 :DESKTOP_ANIMATIONS_NON
 
@@ -3045,7 +3016,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les fonctionnalites IA
 echo.
 set "DESACTIVER_IA=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces fonctionnalites IA ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :DESKTOP_IA_NON
+if %errorlevel% EQU 2 goto :DESKTOP_IA_NON
 if errorlevel 1 set "DESACTIVER_IA=1"
 :DESKTOP_IA_NON
 
@@ -3065,7 +3036,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver l'UAC (recommande)
 echo.
 set "DESACTIVER_UAC=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :DESKTOP_UAC_NON
+if %errorlevel% EQU 2 goto :DESKTOP_UAC_NON
 if errorlevel 1 set "DESACTIVER_UAC=1"
 :DESKTOP_UAC_NON
 
@@ -3115,7 +3086,7 @@ echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommand
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :RESTART_AFTER_CHOICE_DESKTOP
+if %errorlevel% EQU 2 goto :RESTART_AFTER_CHOICE_DESKTOP
 if errorlevel 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
 
 :RESTART_AFTER_CHOICE_DESKTOP
@@ -3151,7 +3122,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les protections (recommande)
 echo.
 set "DESACTIVER_SECURITE=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :LAPTOP_SECURITE_NON
+if %errorlevel% EQU 2 goto :LAPTOP_SECURITE_NON
 if errorlevel 1 set "DESACTIVER_SECURITE=1"
 :LAPTOP_SECURITE_NON
 
@@ -3171,7 +3142,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver Windows Defender (recommande)
 echo.
 set "DESACTIVER_DEFENDER=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :LAPTOP_DEFENDER_NON
+if %errorlevel% EQU 2 goto :LAPTOP_DEFENDER_NON
 if errorlevel 1 set "DESACTIVER_DEFENDER=1"
 :LAPTOP_DEFENDER_NON
 
@@ -3191,7 +3162,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les animations (recommande)
 echo.
 set "DESACTIVER_ANIMATIONS=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :LAPTOP_ANIMATIONS_NON
+if %errorlevel% EQU 2 goto :LAPTOP_ANIMATIONS_NON
 if errorlevel 1 set "DESACTIVER_ANIMATIONS=1"
 :LAPTOP_ANIMATIONS_NON
 
@@ -3211,7 +3182,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les fonctionnalites IA
 echo.
 set "DESACTIVER_IA=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces fonctionnalites IA ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :LAPTOP_IA_NON
+if %errorlevel% EQU 2 goto :LAPTOP_IA_NON
 if errorlevel 1 set "DESACTIVER_IA=1"
 :LAPTOP_IA_NON
 
@@ -3231,7 +3202,7 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver l'UAC (recommande)
 echo.
 set "DESACTIVER_UAC=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :LAPTOP_UAC_NON
+if %errorlevel% EQU 2 goto :LAPTOP_UAC_NON
 if errorlevel 1 set "DESACTIVER_UAC=1"
 :LAPTOP_UAC_NON
 
@@ -3281,7 +3252,7 @@ echo %COLOR_RED%!SUM_TAG!%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommand
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :RESTART_AFTER_CHOICE_LAPTOP
+if %errorlevel% EQU 2 goto :RESTART_AFTER_CHOICE_LAPTOP
 if errorlevel 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
 
 :RESTART_AFTER_CHOICE_LAPTOP
@@ -3342,7 +3313,7 @@ echo %COLOR_WHITE%  Ce script va supprimer : fichiers temporaires, logs, caches,
 echo %COLOR_WHITE%  rapports d'erreurs, corbeille, et anciens pilotes dupliques.%COLOR_RESET%
 echo.
 choice /C ON /N /M "%COLOR_YELLOW%Continuer ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :MENU_PRINCIPAL
+if %errorlevel% EQU 2 goto :MENU_PRINCIPAL
 
 cls
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
@@ -3351,43 +3322,43 @@ echo %COLOR_CYAN%===============================================================
 echo.
 
 :: Initialiser la barre de progression (15 etapes)
-set /a CLEAN_TOTAL=15
-set /a CLEAN_STEP=0
+set /a "CLEAN_TOTAL=15"
+set /a "CLEAN_STEP=0"
 
 :: ETAPE 1
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Fichiers temporaires utilisateur"
 del /s /q /f "%temp%\*.*" >nul 2>&1
 for /d %%d in ("%temp%\*") do rd /s /q "%%d" >nul 2>&1
 
 :: ETAPE 2
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Fichiers temporaires Windows"
 del /s /q /f "%SystemRoot%\Temp\*.*" >nul 2>&1
 for /d %%d in ("%SystemRoot%\Temp\*") do rd /s /q "%%d" >nul 2>&1
 
 :: ETAPE 3
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Logs systeme"
 del /s /q /f "%SystemRoot%\Logs\*.log" >nul 2>&1
 del /s /q /f "%SystemRoot%\System32\LogFiles\*.log" >nul 2>&1
 del /s /q /f "%SystemRoot%\Panther\*.log" >nul 2>&1
 
 :: ETAPE 4
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Fichiers de crash"
 del /s /q /f "%SystemRoot%\Minidump\*.*" >nul 2>&1
 del /q /f "%SystemRoot%\*.dmp" >nul 2>&1
 del /s /q /f "%SystemRoot%\memory.dmp" >nul 2>&1
 
 :: ETAPE 5
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Rapports d'erreurs"
 rd /s /q "%ProgramData%\Microsoft\Windows\WER" >nul 2>&1
 if not exist "%ProgramData%\Microsoft\Windows\WER" md "%ProgramData%\Microsoft\Windows\WER" >nul 2>&1
 
 :: ETAPE 6
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Cache Windows Update"
 net stop wuauserv >nul 2>&1
 net stop bits >nul 2>&1
@@ -3398,18 +3369,18 @@ net start wuauserv >nul 2>&1
 net start bits >nul 2>&1
 
 :: ETAPE 7
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Corbeille"
 powershell -Command "Clear-RecycleBin -Force -ErrorAction SilentlyContinue" >nul 2>&1
 
 :: ETAPE 8
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Journaux CBS/DISM"
 del /s /q /f "%SystemRoot%\Logs\CBS\*.log" >nul 2>&1
 del /s /q /f "%SystemRoot%\Logs\DISM\*.log" >nul 2>&1
 
 :: ETAPE 9
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Cache de polices"
 net stop FontCache >nul 2>&1
 timeout /t 1 /nobreak >nul
@@ -3418,22 +3389,22 @@ del /q /f "%SystemRoot%\System32\FNTCACHE.DAT" >nul 2>&1
 net start FontCache >nul 2>&1
 
 :: ETAPE 10
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Cache Windows Store"
 powershell -NoProfile -Command "Get-ChildItem -Path \"$env:LOCALAPPDATA\Packages\" -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch 'Edge|WebView|Microsoft\.Windows' } | ForEach-Object { Remove-Item -Path \"$($_.FullName)\AC\INetCache\*\" -Recurse -Force -ErrorAction SilentlyContinue; Remove-Item -Path \"$($_.FullName)\AC\Temp\*\" -Recurse -Force -ErrorAction SilentlyContinue }" >nul 2>&1
 
 :: ETAPE 11
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Cache DNS"
 ipconfig /flushdns >nul 2>&1
 
 :: ETAPE 12
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Journaux Event Viewer"
 for /f "tokens=*" %%G in ('wevtutil el 2^>nul') do wevtutil cl "%%G" >nul 2>&1
 
 :: ETAPE 13
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Dossier Windows.old"
 if exist "%SystemDrive%\Windows.old" (
     takeown /f "%SystemDrive%\Windows.old" /r /d y >nul 2>&1
@@ -3442,12 +3413,12 @@ if exist "%SystemDrive%\Windows.old" (
 )
 
 :: ETAPE 14
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Optimisation disque (TRIM/Defrag)"
 defrag %SystemDrive% /O /H >nul 2>&1
 
 :: ETAPE 15
-set /a CLEAN_STEP+=1
+set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Nettoyage Windows Cleanmgr"
 set "SAGEID=100"
 for %%K in ("Active Setup Temp Folders" "BranchCache" "Content Indexer Cleaner" "Delivery Optimization Files" "Device Driver Packages" "Diagnostic Data Viewer database files" "Downloaded Program Files" "GameNewsFiles" "GameStatisticsFiles" "GameUpdateFiles" "Language Pack" "Memory Dump Files" "Offline Pages Files" "Old ChkDsk Files" "Previous Installations" "Recycle Bin" "RetailDemo Offline Content" "Service Pack Cleanup" "Setup Log Files" "System error memory dump files" "System error minidump files" "Temporary Files" "Temporary Setup Files" "Temporary Sync Files" "Thumbnail Cache" "Update Cleanup" "Upgrade Discarded Files" "User file versions" "Windows Defender" "Windows Error Reporting Archive Files" "Windows Error Reporting Files" "Windows Error Reporting Queue Files" "Windows Error Reporting System Archive Files" "Windows Error Reporting System Queue Files" "Windows Error Reporting Temp Files" "Windows ESD installation files" "Windows Upgrade Log Files") do (
@@ -3475,7 +3446,7 @@ echo.
 echo %COLOR_YELLOW%[^!]%COLOR_RESET% Un redemarrage est recommande pour finaliser.
 echo.
 choice /C ON /N /M "%COLOR_YELLOW%Redemarrer maintenant ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 goto :MENU_PRINCIPAL
+if %errorlevel% EQU 2 goto :MENU_PRINCIPAL
 shutdown /r /t 10 /c "Redemarrage pour finaliser le nettoyage"
 goto :MENU_PRINCIPAL
 
@@ -3506,7 +3477,7 @@ if %VC2015X64%==0 type "%REG_DUMP%" | findstr /I /C:"Visual C++" | findstr /I /C
 if %VC2015X86%==0 type "%REG_DUMP%" | findstr /I /C:"Visual C++" | findstr /I /C:"2015" /C:"2017" /C:"2019" /C:"2022" | findstr /I /C:"x86" /C:"X86" >nul 2>&1 && set VC2015X86=1
 
 :: Compter combien sont deja installes
-set /a VCINSTALLED_COUNT=%VC2015X86%+%VC2015X64%
+set /a "VCINSTALLED_COUNT=%VC2015X86%+%VC2015X64%"
 
 echo.
 echo %COLOR_WHITE%Versions detectees (V14):%COLOR_RESET% %COLOR_GREEN%%VCINSTALLED_COUNT%/2%COLOR_RESET%
@@ -3516,7 +3487,7 @@ if %VCINSTALLED_COUNT%==2 (
     echo.
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Toutes les versions V14 sont deja installees.
     if exist "%REG_DUMP%" del /f /q "%REG_DUMP%" >nul 2>&1
-    if "%~1"=="call" exit /b
+    if /i "%~1"=="call" exit /b
     echo.
     pause
     goto :MENU_PRINCIPAL
@@ -3525,21 +3496,21 @@ if %VCINSTALLED_COUNT%==2 (
 :: Suite : installation des paquets VC++ manquants (flux sequentiel, pas de goto vers ce point)
 echo.
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Installation des versions manquantes...
-set /a VC_TO_INSTALL=2-VCINSTALLED_COUNT
+set /a "VC_TO_INSTALL=2-VCINSTALLED_COUNT"
 echo %COLOR_WHITE%Packages a installer:%COLOR_RESET% %COLOR_YELLOW%%VC_TO_INSTALL%%COLOR_RESET%
 echo.
 
 :: Initialiser la barre de progression (2 packages au total)
-set /a VC_TOTAL=2
-set /a VC_STEP=0
-set /a VCINSTALL=0
+set /a "VC_TOTAL=2"
+set /a "VC_STEP=0"
+set /a "VCINSTALL=0"
 
 :: Creer un dossier temporaire pour les installations
 set "VCREDIST_DIR=%TEMP%\VCRedistInstall"
 if not exist "%VCREDIST_DIR%" mkdir "%VCREDIST_DIR%"
 
 :: VC++ 2015-2022 x86
-set /a VC_STEP+=1
+set /a "VC_STEP+=1"
 call :PROGRESS_BAR %VC_STEP% %VC_TOTAL% "VC++ 2015-2022 x86"
 if %VC2015X86%==0 (
     powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://aka.ms/vc14/vc_redist.x86.exe' -OutFile '%VCREDIST_DIR%\vc2015x86.exe' -UseBasicParsing -ErrorAction Stop } catch {}" >nul 2>&1
@@ -3547,7 +3518,7 @@ if %VC2015X86%==0 (
 )
 
 :: VC++ 2015-2022 x64
-set /a VC_STEP+=1
+set /a "VC_STEP+=1"
 call :PROGRESS_BAR %VC_STEP% %VC_TOTAL% "VC++ 2015-2022 x64"
 if %VC2015X64%==0 (
     powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://aka.ms/vc14/vc_redist.x64.exe' -OutFile '%VCREDIST_DIR%\vc2015x64.exe' -UseBasicParsing -ErrorAction Stop } catch {}" >nul 2>&1
@@ -3565,7 +3536,7 @@ if exist "%SystemRoot%\System32\vcruntime140.dll" set VC2015X64_NEW=1
 if exist "%SystemRoot%\SysWOW64\vcruntime140.dll" set VC2015X86_NEW=1
 
 :: Calculer les vrais comptes
-set /a VCINSTALL=%VC2015X86_NEW%+%VC2015X64_NEW%
+set /a "VCINSTALL=%VC2015X86_NEW%+%VC2015X64_NEW%"
 
 echo.
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Verification terminee - %COLOR_GREEN%%VCINSTALL%/2%COLOR_RESET% versions presentes
@@ -3583,7 +3554,7 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo.
 call :INSTALLER_DIRECTX call
 
-if "%~1"=="call" exit /b
+if /i "%~1"=="call" exit /b
 echo.
 pause
 goto :MENU_PRINCIPAL
@@ -3636,12 +3607,12 @@ set "PCURRENT=%~1"
 set "PTOTAL=%~2"
 set "PDESC=%~3"
 
-set /a PCALC=0
-set /a PFILL=0
+set /a "PCALC=0"
+set /a "PFILL=0"
 if not "%PTOTAL%"=="" if not "%PTOTAL%"=="0" (
-    set /a PCALC=%PCURRENT%*100/%PTOTAL% 2>nul
+    set /a "PCALC=%PCURRENT%*100/%PTOTAL%" 2>nul
 )
-set /a PFILL=PCALC*20/100 2>nul
+set /a "PFILL=PCALC*20/100" 2>nul
 
 set "PBAR="
 for /l %%i in (1,1,20) do (
