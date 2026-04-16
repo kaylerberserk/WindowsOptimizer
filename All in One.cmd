@@ -131,9 +131,6 @@ if exist "%TEMP%\hw_info.tmp" (
 echo "%HW_GPU%" | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1"
 if /i "%HW_OS%"=="Windows" for /f "tokens=2 delims=[]" %%i in ('ver') do set "HW_OS=%%i"
 exit /b
-echo "%HW_GPU%" | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1"
-if /i "%HW_OS%"=="Windows" for /f "tokens=2 delims=[]" %%i in ('ver') do set "HW_OS=%%i"
-exit /b
 
 :: ===========================================================================
 :: UTILS
