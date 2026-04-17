@@ -295,7 +295,7 @@ echo.
 set "DESACTIVER_SECURITE=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :DESKTOP_SECURITE_NON
-if errorlevel 1 set "DESACTIVER_SECURITE=1"
+if %errorlevel% EQU 1 set "DESACTIVER_SECURITE=1"
 :DESKTOP_SECURITE_NON
 
 cls
@@ -315,7 +315,7 @@ echo.
 set "DESACTIVER_DEFENDER=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :DESKTOP_DEFENDER_NON
-if errorlevel 1 set "DESACTIVER_DEFENDER=1"
+if %errorlevel% EQU 1 set "DESACTIVER_DEFENDER=1"
 :DESKTOP_DEFENDER_NON
 
 cls
@@ -335,7 +335,7 @@ echo.
 set "DESACTIVER_ANIMATIONS=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :DESKTOP_ANIMATIONS_NON
-if errorlevel 1 set "DESACTIVER_ANIMATIONS=1"
+if %errorlevel% EQU 1 set "DESACTIVER_ANIMATIONS=1"
 :DESKTOP_ANIMATIONS_NON
 
 cls
@@ -355,7 +355,7 @@ echo.
 set "DESACTIVER_IA=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces fonctionnalites IA ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :DESKTOP_IA_NON
-if errorlevel 1 set "DESACTIVER_IA=1"
+if %errorlevel% EQU 1 set "DESACTIVER_IA=1"
 :DESKTOP_IA_NON
 
 cls
@@ -375,7 +375,7 @@ echo.
 set "DESACTIVER_UAC=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :DESKTOP_UAC_NON
-if errorlevel 1 set "DESACTIVER_UAC=1"
+if %errorlevel% EQU 1 set "DESACTIVER_UAC=1"
 :DESKTOP_UAC_NON
 
 
@@ -427,7 +427,7 @@ echo.
 set "DESACTIVER_SECURITE=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :LAPTOP_SECURITE_NON
-if errorlevel 1 set "DESACTIVER_SECURITE=1"
+if %errorlevel% EQU 1 set "DESACTIVER_SECURITE=1"
 :LAPTOP_SECURITE_NON
 
 cls
@@ -447,7 +447,7 @@ echo.
 set "DESACTIVER_DEFENDER=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :LAPTOP_DEFENDER_NON
-if errorlevel 1 set "DESACTIVER_DEFENDER=1"
+if %errorlevel% EQU 1 set "DESACTIVER_DEFENDER=1"
 :LAPTOP_DEFENDER_NON
 
 cls
@@ -467,7 +467,7 @@ echo.
 set "DESACTIVER_ANIMATIONS=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :LAPTOP_ANIMATIONS_NON
-if errorlevel 1 set "DESACTIVER_ANIMATIONS=1"
+if %errorlevel% EQU 1 set "DESACTIVER_ANIMATIONS=1"
 :LAPTOP_ANIMATIONS_NON
 
 cls
@@ -487,7 +487,7 @@ echo.
 set "DESACTIVER_IA=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces fonctionnalites IA ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :LAPTOP_IA_NON
-if errorlevel 1 set "DESACTIVER_IA=1"
+if %errorlevel% EQU 1 set "DESACTIVER_IA=1"
 :LAPTOP_IA_NON
 
 cls
@@ -507,7 +507,7 @@ echo.
 set "DESACTIVER_UAC=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :LAPTOP_UAC_NON
-if errorlevel 1 set "DESACTIVER_UAC=1"
+if %errorlevel% EQU 1 set "DESACTIVER_UAC=1"
 :LAPTOP_UAC_NON
 
 
@@ -826,6 +826,7 @@ for %%L in (AppModel Cellcore DiagLog SQMLogger Diagtrack-Listener) do (
   reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\%%~L" /v Start /t REG_DWORD /d 0 /f >nul 2>&1
 )
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\ReadyBoot" /v Start /t REG_DWORD /d 1 /f >nul 2>&1
+
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Taches de telemetrie desactivees
 
 :: Blocage telemetrie via hosts
@@ -835,9 +836,22 @@ attrib -r "%HOSTS%" >nul 2>&1
 
 :: Supprimer TOUTES les anciennes entrees telemetrie (ancien format sans marqueurs + nouveau format avec marqueurs)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Nettoyage des anciennes entrees telemetrie dans hosts...
-findstr /i /v /c:"telemetry" /c:"watson" /c:"vortex" /c:"v10.events" /c:"metaservices" /c:"choice.microsoft" /c:"settings-sandbox" /c:"statsfe" /c:"corpext" /c:"compatexchange" /c:"feedback" /c:"settings-win" /c:"self.events" /c:"onecollector" /c:"diagnostics.support" "%HOSTS%" > "%HOSTS%.tmp"
-findstr /i /v /c:"storeedgefd" /c:"ds.microsoft.com" "%HOSTS%.tmp" > "%HOSTS%.clean"
-copy /y "%HOSTS%.clean" "%HOSTS%" >nul
+findstr /i /v /c:"telemetry" /c:"watson" /c:"vortex" /c:"v10.events" /c:"metaservices" /c:"choice.microsoft" /c:"settings-sandbox" /c:"statsfe" /c:"corpext" /c:"compatexchange" /c:"feedback" /c:"settings-win" /c:"self.events" /c:"onecollector" /c:"diagnostics.support" "%HOSTS%" > "%HOSTS%.tmp" 2>nul
+if not exist "%HOSTS%.tmp" (
+    echo %COLOR_YELLOW%[^!]%COLOR_RESET% Erreur lors du nettoyage du fichier hosts - fichier peut etre en lecture seule
+    copy /y "%HOSTS%" "%HOSTS%.tmp" >nul 2>&1
+)
+findstr /i /v /c:"storeedgefd" /c:"ds.microsoft.com" "%HOSTS%.tmp" > "%HOSTS%.clean" 2>nul
+if not exist "%HOSTS%.clean" (
+    echo %COLOR_YELLOW%[^!]%COLOR_RESET% Erreur lors du second nettoyage - conservation du fichier actuel
+    copy /y "%HOSTS%.tmp" "%HOSTS%.clean" >nul 2>&1
+)
+copy /y "%HOSTS%.clean" "%HOSTS%" >nul 2>&1
+if errorlevel 1 (
+    echo %COLOR_YELLOW%[^!]%COLOR_RESET% Erreur lors de la copie - verification des permissions
+    attrib -r "%HOSTS%" >nul 2>&1
+    copy /y "%HOSTS%.clean" "%HOSTS%" >nul 2>&1
+)
 del "%HOSTS%.tmp" "%HOSTS%.clean" >nul 2>&1
 
 :: Ajouter le nouveau bloc
@@ -3108,15 +3122,14 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% Raccourci Edge supprime (les autres icones s
 :: Desinstallation de Microsoft Edge
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Tentative de desinstallation de Microsoft Edge...
 if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application" (
-    set "EDGE_OLDDIR=%CD%"
-    cd /d "%ProgramFiles(x86)%\Microsoft\Edge\Application"
+    pushd "%ProgramFiles(x86)%\Microsoft\Edge\Application" >nul 2>&1
     for /d %%i in (*) do (
         if exist "%%i\Installer\setup.exe" (
             echo %COLOR_GREEN%[OK]%COLOR_RESET% Execution setup.exe...
             "%%i\Installer\setup.exe" --uninstall --system-level --verbose-logging --force-uninstall
         )
     )
-    cd /d "!EDGE_OLDDIR!"
+    popd >nul 2>&1
 )
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Nettoyage force des dossiers programme...
