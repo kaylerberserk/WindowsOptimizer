@@ -734,6 +734,14 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v DisableThum
 
 :: Desactiver la compression des papiers peints
 reg add "HKCU\Control Panel\Desktop" /v JPEGImportQuality /t REG_DWORD /d 100 /f >nul 2>&1
+
+:: Desactiver le suivi des fichiers et apps recents
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation du suivi des fichiers et apps recents...
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Start_TrackDocs /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Start_TrackProgs /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v NoRecentDocsHistory /t REG_DWORD /d 1 /f >nul 2>&1
+echo %COLOR_GREEN%[OK]%COLOR_RESET% Suivi des fichiers/apps recents desactive
+
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Interface et privacy de base optimisees
 
 :: 1.5 - Telemetrie systeme et vie privee approfondie
