@@ -1,4 +1,5 @@
 @echo off
+chcp 65001 >nul
 setlocal EnableDelayedExpansion
 
 :: Activer les sequences d'echappement ANSI pour les couleurs
@@ -65,7 +66,7 @@ set /a "LOAD_STEP=0"
 set /a "LOAD_STEP+=1"
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Verification des privileges administrateur"
 net session >nul 2>&1
-if errorlevel 1 (
+if %errorlevel% NEQ 0 (
     echo.
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% Ce script necessite des privileges administrateur.
     pause
@@ -129,7 +130,7 @@ if exist "%TEMP%\hw_info.tmp" (
     )
     del "%TEMP%\hw_info.tmp" >nul 2>&1
 )
-echo "%HW_GPU%" | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1"
+echo %HW_GPU% | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1"
 if /i "%HW_OS%"=="Windows" for /f "tokens=2 delims=[]" %%i in ('ver') do set "HW_OS=%%i"
 exit /b
 
@@ -141,13 +142,13 @@ exit /b
 :REFRESH_INTERNET_STATUS
 set "HAS_INTERNET=0"
 ping -n 1 -w 1500 1.1.1.1 >nul 2>&1
-if not errorlevel 1 (
+if %errorlevel% EQU 0 (
     set "HAS_INTERNET=1"
     exit /b
 )
 :: Repli si ICMP est bloque (entreprise, pare-feu) : test HTTP leger (service Microsoft)
 powershell -NoProfile -Command "try { $c=(Invoke-WebRequest -Uri \"https://www.msftconnecttest.com/connecttest.txt\" -UseBasicParsing -TimeoutSec 5).Content; if ($c -match \"Microsoft\") { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
-if not errorlevel 1 set "HAS_INTERNET=1"
+if %errorlevel% EQU 0 set "HAS_INTERNET=1"
 exit /b
 
 :MENU_PRINCIPAL
@@ -573,7 +574,7 @@ echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer votre PC maintenant ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 exit /b
-if errorlevel 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
+if %errorlevel% EQU 1 shutdown /r /t 5 /c "Redemarrage pour appliquer les optimisations"
 exit /b
 
 :CLEANUP_OLD_TWEAKS
@@ -847,7 +848,7 @@ if not exist "%HOSTS%.clean" (
     copy /y "%HOSTS%.tmp" "%HOSTS%.clean" >nul 2>&1
 )
 copy /y "%HOSTS%.clean" "%HOSTS%" >nul 2>&1
-if errorlevel 1 (
+if %errorlevel% NEQ 0 (
     echo %COLOR_YELLOW%[^!]%COLOR_RESET% Erreur lors de la copie - verification des permissions
     attrib -r "%HOSTS%" >nul 2>&1
     copy /y "%HOSTS%.clean" "%HOSTS%" >nul 2>&1
@@ -1244,12 +1245,12 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v "CursorCaptu
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v "HistoricalCaptureEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\GameBar" /v "AllowAutoGameMode" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\GameBar" /v "ShowStartupPanel" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\SYSTEM\GameConfigStore" /v GameDVR_DXGIHonorFSEWindowsCompatible /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\SYSTEM\GameConfigStore" /v GameDVR_EFSEFeatureFlags /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\SYSTEM\GameConfigStore" /v GameDVR_Enabled /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\SYSTEM\GameConfigStore" /v GameDVR_FSEBehavior /t REG_DWORD /d 2 /f >nul 2>&1
-reg add "HKCU\SYSTEM\GameConfigStore" /v GameDVR_FSEBehaviorMode /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\SYSTEM\GameConfigStore" /v GameDVR_HonorUserFSEBehaviorMode /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameConfigStore" /v GameDVR_DXGIHonorFSEWindowsCompatible /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameConfigStore" /v GameDVR_EFSEFeatureFlags /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameConfigStore" /v GameDVR_Enabled /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameConfigStore" /v GameDVR_FSEBehavior /t REG_DWORD /d 2 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameConfigStore" /v GameDVR_FSEBehaviorMode /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameConfigStore" /v GameDVR_HonorUserFSEBehaviorMode /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% GameDVR desactive - Game Mode conserve pour les performances
 
@@ -1390,8 +1391,6 @@ netsh int ip set global sourceroutingbehavior=drop >nul 2>&1
 netsh int ip set global icmpredirects=disabled >nul 2>&1
 netsh int ipv6 set global neighborcachelimit=4096 >nul 2>&1
 netsh int tcp set global fastopen=enabled fastopenfallback=enabled >nul 2>&1
-netsh int tcp set global chimney=disabled >nul 2>&1
-netsh int tcp set global netdma=disabled >nul 2>&1
 netsh int tcp set global dca=enabled >nul 2>&1
 netsh int tcp set global timestamps=disabled >nul 2>&1
 powershell -NoProfile -NoLogo -Command "try{Set-NetTCPSetting -SettingName Internet -InitialRtoMs 2000}catch{}" >nul 2>&1
@@ -1479,6 +1478,7 @@ for /f "tokens=*" %%i in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services\Net
 echo %COLOR_GREEN%[OK]%COLOR_RESET% NetBIOS desactive
 
 gpupdate /target:computer /force >nul 2>&1
+ipconfig /flushdns >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Pile reseau optimisee avec priorite gaming
 
 echo.
@@ -2265,7 +2265,7 @@ echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%C
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
 if %errorlevel% EQU 3 goto :MENU_GESTION_WINDOWS
-if errorlevel 2 (
+if %errorlevel% EQU 2 (
   call :DESACTIVER_DEFENDER_SECTION
 
   goto :TOGGLE_DEFENDER
@@ -2335,7 +2335,7 @@ if "%SKIP_PAUSE%"=="0" (
     echo.
     echo %COLOR_RED%[INFO]%COLOR_RESET% ATTENTION: Desactiver Windows Defender expose votre systeme a des risques.
     choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
-    if errorlevel 2 exit /b
+    if %errorlevel% EQU 2 exit /b
 )
 cls
 echo %COLOR_YELLOW%[*]%COLOR_RESET% %STYLE_BOLD%Desactivation de Windows Defender...%COLOR_RESET%
@@ -2396,7 +2396,7 @@ echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%C
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
 if %errorlevel% EQU 3 goto :MENU_GESTION_WINDOWS
-if errorlevel 2 (
+if %errorlevel% EQU 2 (
   call :DESACTIVER_UAC_SECTION
   goto :TOGGLE_UAC
 )
@@ -2437,7 +2437,7 @@ echo.
 echo %COLOR_YELLOW%[^!]%COLOR_RESET% LAB UNIQUEMENT : plus aucun avertissement au lancement de fichiers.
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC et les avertissements lies ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 exit /b
+if %errorlevel% EQU 2 exit /b
 )
 cls
 echo %COLOR_YELLOW%[*]%COLOR_RESET% %STYLE_BOLD%Desactivation complete de l'UAC et des avertissements...%COLOR_RESET%
@@ -2470,7 +2470,7 @@ echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%C
 echo.
 choice /C 12M /N /M "%COLOR_YELLOW%Choisissez une option [1, 2, M]: %COLOR_RESET%"
 if %errorlevel% EQU 3 goto :MENU_GESTION_WINDOWS
-if errorlevel 2 (
+if %errorlevel% EQU 2 (
   call :DESACTIVER_ANIMATIONS_SECTION
   goto :TOGGLE_ANIMATIONS
 )
@@ -2531,11 +2531,11 @@ echo.
 echo %COLOR_WHITE%Pourquoi une derniere confirmation :%COLOR_RESET%
 echo %COLOR_WHITE%- Les animations consomment un peu de GPU/CPU ; les couper peut fluidifier un PC faible.%COLOR_RESET%
 echo %COLOR_WHITE%- Cela modifie le registre utilisateur et bcdedit ^(animation du logo au demarrage^).%COLOR_RESET%
-echo %COLOR_WHITE%- L'interface parait plus ?? seche ?? ^(transparence, barres des taches, menus^).%COLOR_RESET%
+echo %COLOR_WHITE%- L'interface parait plus "seche" ^(transparence, barres des taches, menus^).%COLOR_RESET%
 echo %COLOR_WHITE%- Un redemarrage est necessaire pour tout voir ; reversible via le menu Activer.%COLOR_RESET%
 echo.
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 exit /b
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous vraiment desactiver les animations ? [O/N]: %COLOR_RESET%"
+if %errorlevel% EQU 2 exit /b
 )
 cls
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des animations Windows...
@@ -2607,27 +2607,27 @@ echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au Menu Gestion Windows%C
 echo.
 choice /C 123456DM /N /M "%STYLE_BOLD%%COLOR_YELLOW%Choisissez une option [1-6, D, M]: %COLOR_RESET%"
 if %errorlevel% EQU 8 goto :MENU_GESTION_WINDOWS
-if errorlevel 7 (
+if %errorlevel% EQU 7 (
   call :DESACTIVER_TOUT_COPILOT
   goto :TOGGLE_COPILOT
 )
-if errorlevel 6 (
+if %errorlevel% EQU 6 (
   call :DESACTIVER_RECALL
   goto :TOGGLE_COPILOT
 )
-if errorlevel 5 (
+if %errorlevel% EQU 5 (
   call :ACTIVER_RECALL
   goto :TOGGLE_COPILOT
 )
-if errorlevel 4 (
+if %errorlevel% EQU 4 (
   call :DESACTIVER_WIDGETS
   goto :TOGGLE_COPILOT
 )
-if errorlevel 3 (
+if %errorlevel% EQU 3 (
   call :ACTIVER_WIDGETS
   goto :TOGGLE_COPILOT
 )
-if errorlevel 2 (
+if %errorlevel% EQU 2 (
   call :DESACTIVER_COPILOT
   goto :TOGGLE_COPILOT
 )
@@ -2671,8 +2671,8 @@ echo %COLOR_WHITE%- Copilot s'appuie sur des services cloud ; ce script applique
 echo %COLOR_WHITE%  ajouter des lignes au fichier hosts pour bloquer des endpoints lies.%COLOR_RESET%
 echo %COLOR_WHITE%- Vous perdez l'assistant integre tant que les cles / hosts restent en place.%COLOR_RESET%
 echo.
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Copilot ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 exit /b
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous vraiment desactiver Copilot ? [O/N]: %COLOR_RESET%"
+if %errorlevel% EQU 2 exit /b
 )
 cls
 echo.
@@ -2695,7 +2695,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableAgentWork
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v DisableRemoteAgentConnectors /t REG_DWORD /d 1 /f >nul 2>&1
 set "HOSTS=%windir%\System32\drivers\etc\hosts"
 findstr /i "Copilot Block" "%HOSTS%" >nul 2>&1
-if errorlevel 1 (
+if %errorlevel% NEQ 0 (
     echo.>> "%HOSTS%"
     echo # --- Copilot Block --->> "%HOSTS%"
     echo 0.0.0.0 msedge.api.cdp.microsoft.com>> "%HOSTS%"
@@ -2729,8 +2729,8 @@ echo %COLOR_WHITE%Pourquoi une confirmation :%COLOR_RESET%
 echo %COLOR_WHITE%- Les widgets ^(meteo, actus^) utilisent le panneau lateral et du reseau en arriere-plan.%COLOR_RESET%
 echo %COLOR_WHITE%- La desactivation masque ce flux : utile pour perf / distraction, moins pour veille info.%COLOR_RESET%
 echo.
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les Widgets ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 exit /b
+choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous vraiment desactiver les Widgets ? [O/N]: %COLOR_RESET%"
+if %errorlevel% EQU 2 exit /b
 )
 cls
 echo.
@@ -2784,7 +2784,7 @@ echo %COLOR_WHITE%- Desactiver coupe ces fonctions et des politiques IA associee
 echo %COLOR_WHITE%- Indique si vous privilegiez la vie privee plutot que les outils de recherche integree.%COLOR_RESET%
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Recall et restrictions IA liees ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 exit /b
+if %errorlevel% EQU 2 exit /b
 )
 cls
 echo.
@@ -2827,7 +2827,7 @@ echo %COLOR_WHITE%- Effet combine : moins de taches et de trafic reseau lies a c
 echo %COLOR_WHITE%- Vous perdez l'assistant, le flux actus et les outils bases sur l'analyse locale/cloud.%COLOR_RESET%
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de tout desactiver ^(Copilot + Widgets + Recall/IA^) ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 exit /b
+if %errorlevel% EQU 2 exit /b
 )
 cls
 echo.
@@ -2881,11 +2881,11 @@ if "%SKIP_PAUSE%"=="1" (
   exit /b
 )
 choice /C ON /N /M "%COLOR_YELLOW%Redemarrer maintenant ? [O/N]:%COLOR_RESET%"
-if errorlevel 2 (
+if %errorlevel% EQU 2 (
   endlocal
   exit /b
 )
-if errorlevel 1 shutdown /r /t 5 /c "Redemarrage apres modification"
+if %errorlevel% EQU 1 shutdown /r /t 5 /c "Redemarrage apres modification"
 endlocal
 exit /b
 
@@ -2897,7 +2897,7 @@ echo %COLOR_CYAN%===============================================================
 echo.
 echo %COLOR_WHITE%Pourquoi demander confirmation :%COLOR_RESET%
 echo %COLOR_WHITE%- OneDrive synchronise Documents/Bureau/Images vers le cloud Microsoft.%COLOR_RESET%
-echo %COLOR_WHITE%- Le desinstaller coupe la sync et les liens ?? nuage ?? ; Office peut perdre l'auto-save cloud.%COLOR_RESET%
+echo %COLOR_WHITE%- Le desinstaller coupe la sync et les liens vers le nuage ; Office peut perdre l'auto-save cloud.%COLOR_RESET%
 echo %COLOR_WHITE%- Les chemins du dossier OneDrive ^(%USERPROFILE%\OneDrive^) seront supprimes si presents.%COLOR_RESET%
 echo %COLOR_WHITE%- Pratique pour liberer ressources et vie privee ; gardez une copie locale avant de valider.%COLOR_RESET%
 echo.
@@ -3033,7 +3033,7 @@ echo %COLOR_WHITE%- Extensions et themes%COLOR_RESET%
 echo %COLOR_WHITE%- Parametres et preferences%COLOR_RESET%
 echo.
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de supprimer les donnees utilisateur Edge ? [O/N]: %COLOR_RESET%"
-if errorlevel 2 (
+if %errorlevel% EQU 2 (
     set "SUPPR_DATA=NON"
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Les donnees utilisateur seront preservees.
 ) else (
@@ -3203,7 +3203,7 @@ echo.
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Verification et activation de la restauration systeme si necessaire...
 :: DisableSR + protection volume C: via WMI root\default SystemRestore.GetDiskList (paires: code lettre ASCII, 1=actif)
 powershell -NoProfile -Command "try { $p = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore' -ErrorAction SilentlyContinue; if ($null -ne $p -and $p.DisableSR -eq 1) { exit 1 }; $sr = Get-WmiObject -Class SystemRestore -Namespace root\default -ErrorAction SilentlyContinue; if ($null -eq $sr) { exit 1 }; $r = $sr.GetDiskList(); if ($null -eq $r) { exit 1 }; if ($null -ne $r.ReturnValue -and [int]$r.ReturnValue -ne 0) { exit 1 }; $a = @($r.DiskList); if ($a.Count -lt 2) { exit 1 }; for ($i = 0; $i -lt $a.Count; $i += 2) { $d = $a[$i]; $st = if ($i + 1 -lt $a.Count) { [int]$a[$i + 1] } else { 0 }; if ($st -ne 1) { continue }; if ($d -eq 67) { exit 0 }; if ($d -is [string] -and $d -match '^C') { exit 0 } }; exit 1 } catch { exit 1 }" >nul 2>&1
-if errorlevel 1 (
+if %errorlevel% NEQ 0 (
     echo %COLOR_YELLOW%[*]%COLOR_RESET% Activation de la restauration systeme...
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore" /v "RPSessionInterval" /t REG_DWORD /d 1 /f >nul 2>&1
     powershell -NoProfile -Command "try { Enable-ComputerRestore -Drive 'C:' -ErrorAction SilentlyContinue } catch {}" >nul 2>&1
@@ -3219,7 +3219,7 @@ echo.
 :: Ne pas entourer le format de quotes simples : le FOR / ('...') de CMD s'arrete a la premiere '
 for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "RP_TIMESTAMP=%%a"
 powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; try { $desc = 'Optimizations_%RP_TIMESTAMP%'; Checkpoint-Computer -Description $desc -RestorePointType 'MODIFY_SETTINGS'; exit 0 } catch { exit 1 }" >nul 2>&1
-if not errorlevel 1 (
+if %errorlevel% EQU 0 (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Point de restauration cree avec succes.
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Nom : Optimizations_%RP_TIMESTAMP%
 ) else (
@@ -3514,13 +3514,12 @@ if exist "%DX_TEMP%" rd /s /q "%DX_TEMP%" >nul 2>&1
 mkdir "%DX_TEMP%"
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Telechargement de DirectX Redist June 2010 (95 Mo)...
-powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe' -OutFile '%DX_TEMP%\directx_redist.exe' -UseBasicParsing -ErrorAction Stop } catch { exit 1 }" >nul 2>&1
-if errorlevel 1 (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% Echec du telechargement. Verifiez votre connexion.
+powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-407C-8860-0207A3D7AF32/directx_Jun2010_redist.exe' -OutFile '%DX_TEMP%\directx_redist.exe' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
+if %errorlevel% NEQ 0 (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% Echec du telechargement de DirectX.
     rd /s /q "%DX_TEMP%" >nul 2>&1
     exit /b
 )
-
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Extraction des fichiers...
 :: Utiliser l'extracteur integre de DirectX si possible, ou fallback
 "%DX_TEMP%\directx_redist.exe" /Q /T:"%DX_TEMP%" >nul 2>&1
