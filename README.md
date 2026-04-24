@@ -21,7 +21,8 @@
 
 **Windows Optimizer** est un script d'automatisation professionnel conçu pour transformer une installation Windows standard en une station de travail ou de jeu haute performance. 
 
-Contrairement à d'autres outils "boîte noire", ce script est entièrement auditable et privilégie la **stabilité** et la **sécurité**. Il est idéal pour les administrateurs système, les joueurs exigeants et toute personne souhaitant une expérience Windows plus fluide et respectueuse de la vie privée.
+### 🛡️ Stabilité & Polyvalence
+Ce framework est **universel** : il a été rigoureusement testé et prouvé sur tous les environnements, du **PC de Gaming** au poste de **Bureautique**, en passant par les **Machines Virtuelles (VM)**. Contrairement aux versions "Lite" ou modifiées de Windows, ce script **ne supprime aucune fonctionnalité** système. Vous gardez un Windows complet, mais parfaitement optimisé.
 
 ---
 
@@ -76,6 +77,7 @@ Contrairement à d'autres outils "boîte noire", ce script est entièrement audi
 ## 🛡️ Sécurité & Fiabilité (Compatible Anti-Cheat)
 
 - **Anti-Cheat OK** : Le script préserve les fonctions de sécurité vitales (**HVCI** et **CFG**). Il est 100% compatible avec **Vanguard (Valorant)**, **EAC (Fortnite)** et **BattlEye**.
+- **Zéro perte de fonctions** : Windows Update, le Microsoft Store et toutes les fonctionnalités de base restent 100% opérationnels.
 - **Réversibilité** : Chaque modification peut être annulée via le point de restauration (**Option R**).
 - **Zéro Malware** : Code 100% transparent et auditable.
 
@@ -101,9 +103,6 @@ Contrairement à d'autres outils "boîte noire", ce script est entièrement audi
 
 **Q : Est-ce que je risque un bannissement dans mes jeux ?**  
 **R :** Absolument pas. Le script n'injecte rien dans les fichiers de jeux. Il optimise simplement la manière dont Windows gère votre PC.
-
-**Q : Le "Mode Jeu" de Windows est-il conservé ?**  
-**R :** Oui, le script l'optimise pour qu'il soit réellement efficace.
 
 ### 🌐 Réseau & Internet
 
