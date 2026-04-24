@@ -7,7 +7,7 @@ setlocal EnableDelayedExpansion
 reg add HKCU\Console /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
 
 :: Definir le titre de la console
-title Script d'Optimisation Windows - All in One
+title Script d'Optimisation Windows v%VERSION% - All in One
 
 :: Verifier PowerShell
 where powershell >nul 2>&1 || (echo [ERREUR] PowerShell absent. && pause && exit /B 1)
@@ -23,6 +23,7 @@ set "COLOR_MAGENTA=!ESC![35m" & set "COLOR_RESET=!ESC![0m" & set "STYLE_BOLD=!ES
 :: ===========================================================================
 :: INITIALISATION DES VARIABLES GLOBALES
 :: ===========================================================================
+set "VERSION=2026.04"
 set "HAS_INTERNET=0"
 set "IS_LAPTOP=0"
 set "HAS_NVIDIA=0"
@@ -155,7 +156,7 @@ exit /b
 :MENU_PRINCIPAL
 cls
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
-echo %STYLE_BOLD%%COLOR_WHITE%Script d'Optimisation Windows - All in One%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE%Script d'Optimisation Windows v%VERSION% - All in One%COLOR_RESET%
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
 
@@ -1282,7 +1283,7 @@ if "!HAS_NVIDIA!"=="1" (
     if not exist "!NPI_DIR!" mkdir "!NPI_DIR!"
     
     :: Telecharger NVIDIA Profile Inspector
-    powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://github.com/kaylerberserk/Optimizer/raw/main/Tools/NVIDIA%%20Inspector/nvidiaProfileInspector.exe' -OutFile '!NPI_DIR!\nvidiaProfileInspector.exe' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
+    powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://github.com/kaylerberserk/WindowsOptimizer/raw/main/Tools/NVIDIA%%20Inspector/nvidiaProfileInspector.exe' -OutFile '!NPI_DIR!\nvidiaProfileInspector.exe' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
     if exist "!NPI_DIR!\nvidiaProfileInspector.exe" (
         for %%A in ("!NPI_DIR!\nvidiaProfileInspector.exe") do if %%~zA LSS 10000 (
             echo %COLOR_RED%[-]%COLOR_RESET% Erreur : Fichier NVIDIA Profile Inspector corrompu ou incomplet
@@ -1296,7 +1297,7 @@ if "!HAS_NVIDIA!"=="1" (
     
     :: Telecharger le profil optimise
     echo %COLOR_YELLOW%[*]%COLOR_RESET% Telechargement du profil gaming optimise...
-    powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://github.com/kaylerberserk/Optimizer/raw/main/Tools/NVIDIA%%20Inspector/Kaylers_profile.nip' -OutFile '!NPI_DIR!\Kaylers_profile.nip' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
+    powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://github.com/kaylerberserk/WindowsOptimizer/raw/main/Tools/NVIDIA%%20Inspector/Kaylers_profile.nip' -OutFile '!NPI_DIR!\Kaylers_profile.nip' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
     if exist "!NPI_DIR!\Kaylers_profile.nip" (
         for %%A in ("!NPI_DIR!\Kaylers_profile.nip") do if %%~zA LSS 100 (
             echo %COLOR_RED%[-]%COLOR_RESET% Erreur : Profil NVIDIA corrompu ou incomplet
@@ -1780,7 +1781,7 @@ set "STR_STARTUP=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\SetTime
 if exist "%STR_EXE%" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% SetTimerResolution deja installe dans %SystemRoot%
 ) else (
-    powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://github.com/kaylerberserk/Optimizer/raw/main/Tools/Timer%%20%%26%%20Interrupt/SetTimerResolution.exe' -OutFile '%STR_EXE%' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
+    powershell -NoProfile -Command "try { Invoke-WebRequest -Uri 'https://github.com/kaylerberserk/WindowsOptimizer/raw/main/Tools/Timer%%20%%26%%20Interrupt/SetTimerResolution.exe' -OutFile '%STR_EXE%' -UseBasicParsing } catch { exit 1 }" >nul 2>&1
     if exist "%STR_EXE%" (
         echo %COLOR_GREEN%[OK]%COLOR_RESET% SetTimerResolution installe dans %SystemRoot%
     ) else (
@@ -1789,7 +1790,7 @@ if exist "%STR_EXE%" (
 )
 if exist "%STR_EXE%" (
     if not exist "%STR_STARTUP%" (
-        powershell -NoProfile -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%STR_STARTUP%'); $Shortcut.TargetPath = '%SystemRoot%\SetTimerResolution.exe'; $Shortcut.Arguments = '--no-console'; $Shortcut.WorkingDirectory = '%SystemRoot%'; $Shortcut.Description = 'SetTimerResolution - Optimizer'; $Shortcut.Save()" >nul 2>&1
+        powershell -NoProfile -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%STR_STARTUP%'); $Shortcut.TargetPath = '%SystemRoot%\SetTimerResolution.exe'; $Shortcut.Arguments = '--no-console'; $Shortcut.WorkingDirectory = '%SystemRoot%'; $Shortcut.Description = 'SetTimerResolution - WindowsOptimizer'; $Shortcut.Save()" >nul 2>&1
         echo %COLOR_GREEN%[OK]%COLOR_RESET% Raccourci ajoute au demarrage automatique
     )
 )
