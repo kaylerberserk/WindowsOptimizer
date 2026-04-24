@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ WINDOWS OPTIMIZER (VERSION 2026)
+# ⚡ WINDOWS OPTIMIZER
 
 ### 🚀 Le framework ultime d'optimisation pour Windows 10 & 11
 *Maximisez vos performances, réduisez votre latence et reprenez le contrôle sur votre système.*
