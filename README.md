@@ -123,20 +123,24 @@ R : Absolument pas. Il cible uniquement les fichiers temporaires, caches de mise
 R : Oui, ils peuvent être réinstallés via le site officiel de Microsoft à tout moment.
 
 **Q : Quels "Bloatwares" sont supprimés ?**  
-R : Le script effectue un nettoyage ciblé pour supprimer uniquement les éléments publicitaires ou non-essentiels, tout en garantissant la stabilité du système :
+R : Le script effectue un nettoyage ciblé pour supprimer les éléments publicitaires ou non-essentiels, tout en garantissant la stabilité du système.
 
+### 🗑️ Ce qui est rigoureusement SUPPRIMÉ :
 | Catégorie | Applications Supprimées (Bloatwares) |
 | :--- | :--- |
 | **Jeux & Pubs** | Candy Crush (Saga & Soda), Solitaire Collection. |
-| **Social / Liens** | Skype, People (Contacts), Microsoft Family, Your Phone (Lien avec le téléphone). |
-| **Utilitaires** | Cartes (Maps), Feedback Hub, Get Help, Get Started (Astuces), Mixed Reality Portal. |
+| **Social / Liens** | Skype, People, Microsoft Family, Your Phone (Lien avec le téléphone). |
+| **Utilitaires** | Cartes (Maps), Feedback Hub, Get Help, Get Started, Mixed Reality Portal, Assistance rapide. |
 | **Services** | Office Hub (Web stub), OneConnect (Forfaits mobiles), Bing News (Actualités). |
 
-**Ce qui est rigoureusement CONSERVÉ :**
-- **Quotidien :** Météo, Sports, Finances, Alarmes et Horloge, Caméra.
-- **Multimédia :** Musique (Groove), Films et TV, Photos, Paint.
-- **Productivité :** Calculatrice, Bloc-notes, Courrier et Calendrier, Sticky Notes.
-- **Système :** Microsoft Store, Edge, OneDrive, Capture d'écran.
+### ✅ Ce qui est rigoureusement CONSERVÉ :
+| Catégorie | Applications Maintenues (Sécurisées) |
+| :--- | :--- |
+| **Gaming** | Toute la suite **Xbox** (Game Bar, App), DirectX, Game Mode. |
+| **Quotidien** | Météo, Sports, Finances, Alarmes, Caméra, Enregistreur vocal. |
+| **Multimédia** | Musique (Groove), Films et TV, Photos, Paint. |
+| **Productivité** | Calculatrice, Bloc-notes, Courrier & Calendrier, Sticky Notes. |
+| **Système** | Store, Edge, OneDrive, Sécurité Windows, Terminal, Capture. |
 
 **Q : Combien de temps dure l'optimisation ?**  
 R : Moins de 5 minutes selon les options choisies et la vitesse de votre matériel.
