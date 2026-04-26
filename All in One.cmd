@@ -3638,8 +3638,8 @@ echo.
 echo %COLOR_WHITE%  Cette section supprime les applications preinstallees inutiles%COLOR_RESET%
 echo %COLOR_WHITE%  tout en preservant les outils essentiels (Calculatrice, Store, Photos, Notes).%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Sont supprimes : News, Solitaire, Skype, People, Family, Candy Crush, Your Phone, Assistance...
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Sont gardes   : Courrier, Météo, Musique, Vidéo, Calculatrice, Store, etc.
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Sont supprimes : News, Solitaire, Skype, People, Family, Candy Crush, Your Phone, Assistance, Maps, Office, Feedback...
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% Sont gardes   : Courrier, Météo, Musique, Vidéo, Calculatrice, Store, Photos, Notes, etc.
 echo.
 choice /C ON /N /M "%COLOR_YELLOW%Voulez-vous supprimer les bloatwares ? [O/N]: %COLOR_RESET%"
 if %errorlevel% EQU 2 goto :MENU_GESTION_WINDOWS

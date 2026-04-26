@@ -73,7 +73,7 @@ Ce script se distingue par sa **stabilité** et sa **polyvalence** : il est univ
 - **Animations** : Choix entre une interface visuelle riche ou ultra-réactive.
 - **IA & Widgets** : Suppression de Copilot, Recall et des widgets Windows 11.
 - **Applications** : Désinstallation propre de OneDrive et Microsoft Edge.
-- **Bloatwares** : Suppression en un clic des applications Windows inutiles (News, Météo, etc.).
+- **Bloatwares** : Suppression en un clic des applications Windows inutiles (News, Solitaire, Skype, etc.).
 - **Runtimes** : Installation des bibliothèques essentielles (Visual C++ 2005-2022, DirectX).
 - **[N] Nettoyage Avancé** : Grand ménage en 15 étapes des fichiers temporaires, caches et logs.
 - **[W] MAS** : Lien vers l'outil d'activation communautaire pour Windows et Office.
