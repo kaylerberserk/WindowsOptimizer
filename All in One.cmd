@@ -611,7 +611,6 @@ reg add "HKU\.DEFAULT\Control Panel\Keyboard" /v "InitialKeyboardIndicators" /t 
 reg add "HKCU\Control Panel\Keyboard" /v "InitialKeyboardIndicators" /t REG_SZ /d "2" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings" /v TaskbarEndTask /t REG_DWORD /d 1 /f >nul 2>&1
 
-
 :: 1.4 - Telemetrie et vie privee
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation de la telemetrie et des publicites...
 reg add "HKCU\Software\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f >nul 2>&1
@@ -890,14 +889,7 @@ reg add "HKCR\Directory\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f 
 reg add "HKCR\Directory\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1
 reg add "HKCR\Directory\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d y && icacls \"%%1\" /grant administrators:F /t" /f >nul 2>&1
 reg add "HKCR\Directory\shell\runas" /v "IsolatedCommand" /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d y && icacls \"%%1\" /grant administrators:F /t" /f >nul 2>&1
-
 echo %COLOR_GREEN%[OK]%COLOR_RESET% "Devenir Proprietaire" ajoute au menu contextuel.
-
-echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% Optimisations du systeme appliquees avec succes.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo.
 
 :: Desactivation des Co-installateurs tiers (Razer/Logitech Popup)
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des Co-installateurs et recherche pilotes auto...
@@ -2722,7 +2714,6 @@ reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManag
 reg delete "HKCU\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps" /v "AgentActivationEnabled" /f >nul 2>&1
 reg delete "HKCU\Software\Microsoft\Windows\Shell\ClickToDo" /v "DisableClickToDo" /f >nul 2>&1
 reg delete "HKCU\Software\Microsoft\input\Settings" /v "InsightsEnabled" /f >nul 2>&1
-dism /online /Enable-Feature /FeatureName:Recall /quiet /norestart >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Recall reactive
 call :FINISH_IA_ACTION "Recall" "active"
 exit /b
