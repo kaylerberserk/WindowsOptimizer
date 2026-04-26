@@ -1817,10 +1817,11 @@ if exist "%STR_EXE%" (
     )
 )
 if exist "%STR_EXE%" (
-    if not exist "%STR_STARTUP%" (
-        powershell -NoProfile -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%STR_STARTUP%'); $Shortcut.TargetPath = '%SystemRoot%\SetTimerResolution.exe'; $Shortcut.Arguments = '--no-console'; $Shortcut.WorkingDirectory = '%SystemRoot%'; $Shortcut.Description = 'SetTimerResolution - WindowsOptimizer'; $Shortcut.Save()" >nul 2>&1
-        echo %COLOR_GREEN%[OK]%COLOR_RESET% Raccourci ajoute au demarrage automatique
-    )
+    taskkill /F /IM SetTimerResolution.exe >nul 2>&1
+    powershell -NoProfile -Command "$WshShell = New-Object -ComObject WScript.Shell; $Shortcut = $WshShell.CreateShortcut('%STR_STARTUP%'); $Shortcut.TargetPath = '%SystemRoot%\SetTimerResolution.exe'; $Shortcut.Arguments = '--resolution 5070 --no-console'; $Shortcut.WorkingDirectory = '%SystemRoot%'; $Shortcut.Description = 'SetTimerResolution - WindowsOptimizer'; $Shortcut.Save()" >nul 2>&1
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% Raccourci SetTimerResolution configure (5070)
+    start "" "%STR_EXE%" --resolution 5070 --no-console
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% SetTimerResolution active immediatement
 )
 
 :: 7.12 - Desactivation WPBT
