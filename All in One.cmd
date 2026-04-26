@@ -108,10 +108,13 @@ if not "%PTOTAL%"=="" if not "%PTOTAL%"=="0" (
 )
 set /a "PFILL=PCALC*20/100" 2>nul
 
+if !PFILL! GTR 20 set PFILL=20
+if !PFILL! LSS 0 set PFILL=0
+
 set "PBAR="
 for /l %%i in (1,1,20) do (
-    if %%i LEQ %PFILL% set "PBAR=!PBAR!#"
-    if %%i GTR %PFILL% set "PBAR=!PBAR!."
+    if %%i LEQ !PFILL! set "PBAR=!PBAR!#"
+    if %%i GTR !PFILL! set "PBAR=!PBAR!."
 )
 
 <nul set /p ="!ESC![2K!ESC![1G!COLOR_CYAN![!PBAR!] !COLOR_YELLOW!!PCALC!%% !COLOR_CYAN!!PCURRENT!/!PTOTAL! !COLOR_WHITE!!PDESC!!COLOR_RESET!"
@@ -120,7 +123,7 @@ exit /b
 
 
 :DETECT_HARDWARE
-set "HW_OS=Windows" & set "HW_CPU=Inconnu" & set "HW_GPU=Inconnu" & set "HW_RAM=?" & set "IS_LAPTOP=0" & set "HAS_NVIDIA=0"
+set "HW_OS=Windows" & set "HW_CPU=Inconnu" & set "HW_GPU=Inconnu" & set "HW_RAM=?" & set "IS_LAPTOP=0" & set "HAS_NVIDIA=0" & set "HAS_INTEL_GPU=0"
 powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem; $c=Get-CimInstance Win32_Processor; $v=Get-CimInstance Win32_VideoController; $m=Get-CimInstance Win32_PhysicalMemory; if(-not $m){$m=Get-CimInstance Win32_ComputerSystem}; $b=0; if(Get-CimInstance Win32_Battery){$b=1}; $res=@(); $cap=$o.Caption; if(-not $cap){$pn=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName; if($pn){$cap=$pn}else{$cap='Windows'}}; $res+='OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Name.Trim()}; if($v){$g=($v|foreach{$_.Name}) -join ' / '; $res+='GPU:'+$g}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}else{if($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}}; $res+='BAT:'+$b; [System.IO.File]::WriteAllLines(\"$env:TEMP\hw_info.tmp\", $res)" >nul 2>&1
 if exist "%TEMP%\hw_info.tmp" (
     for /f "usebackq tokens=1* delims=:" %%a in ("%TEMP%\hw_info.tmp") do (
@@ -133,6 +136,7 @@ if exist "%TEMP%\hw_info.tmp" (
     del "%TEMP%\hw_info.tmp" >nul 2>&1
 )
 echo %HW_GPU% | findstr /i "NVIDIA" >nul && set "HAS_NVIDIA=1"
+echo %HW_GPU% | findstr /i "Intel" >nul && set "HAS_INTEL_GPU=1"
 if /i "%HW_OS%"=="Windows" for /f "tokens=2 delims=[]" %%i in ('ver') do set "HW_OS=%%i"
 exit /b
 
@@ -277,145 +281,22 @@ if %errorlevel% EQU 1  goto :TOGGLE_DEFENDER
 goto :MENU_GESTION_WINDOWS
 
 :TOUT_OPTIMISER_DESKTOP
-cls
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
-echo %COLOR_WHITE% Application de toutes les optimisations (Desktop)%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
-echo.
-
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Cette option va appliquer toutes les optimisations pour Desktop.
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Cela peut prendre plusieurs minutes.
-echo.
-
-cls
-echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo %COLOR_WHITE%Voulez-vous desactiver les protections de securite (Spectre/Meltdown) ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo.
-echo %COLOR_WHITE%Pourquoi cette question : mitigations CPU/noyau contre fuites laterales ; desactiver%COLOR_RESET%
-echo %COLOR_WHITE%peut reduire latence CPU mais augmente le risque sur machine multi-utilisateurs ou exposee.%COLOR_RESET%
-echo.
-echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Reduit la latence systeme et l'overhead CPU
-echo       %COLOR_YELLOW%Expose le systeme a des attaques par canal auxiliaire%COLOR_RESET%
-echo.
-echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les protections (recommande)
-echo.
-set "DESACTIVER_SECURITE=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :DESKTOP_SECURITE_NON
-if %errorlevel% EQU 1 set "DESACTIVER_SECURITE=1"
-:DESKTOP_SECURITE_NON
-
-cls
-echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo %COLOR_WHITE%Voulez-vous desactiver Windows Defender ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo.
-echo %COLOR_WHITE%Pourquoi cette question : sans antivirus integre, moins de charge disque/CPU mais%COLOR_RESET%
-echo %COLOR_WHITE%aucune analyse temps reel des telechargements ; a combiner avec un autre AV si besoin.%COLOR_RESET%
-echo.
-echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Ameliore les performances en desactivant l'antivirus
-echo       %COLOR_YELLOW%Expose le systeme aux virus et logiciels malveillants%COLOR_RESET%
-echo.
-echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver Windows Defender (recommande)
-echo.
-set "DESACTIVER_DEFENDER=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :DESKTOP_DEFENDER_NON
-if %errorlevel% EQU 1 set "DESACTIVER_DEFENDER=1"
-:DESKTOP_DEFENDER_NON
-
-cls
-echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo %COLOR_WHITE%Voulez-vous desactiver les animations Windows ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo.
-echo %COLOR_WHITE%Pourquoi cette question : effets DWM, menus et demarrage ; utile sur PC limite,%COLOR_RESET%
-echo %COLOR_WHITE%un peu plus brut visuellement ; reversible via le menu Activer les animations.%COLOR_RESET%
-echo.
-echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Ameliore les performances en supprimant les animations
-echo       %COLOR_YELLOW%L'interface sera moins fluide visuellement%COLOR_RESET%
-echo.
-echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les animations (recommande)
-echo.
-set "DESACTIVER_ANIMATIONS=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :DESKTOP_ANIMATIONS_NON
-if %errorlevel% EQU 1 set "DESACTIVER_ANIMATIONS=1"
-:DESKTOP_ANIMATIONS_NON
-
-cls
-echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo %COLOR_WHITE%Voulez-vous desactiver les fonctionnalites IA de Windows ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo.
-echo %COLOR_WHITE%Pourquoi cette question : Copilot, widgets, Recall consomment CPU/reseau et%COLOR_RESET%
-echo %COLOR_WHITE%envoient des donnees vers Microsoft ; couper tout ameliore confidentialite et perf.%COLOR_RESET%
-echo.
-echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Desactive Copilot, Recall, widgets et autres fonctionnalites IA
-echo       %COLOR_YELLOW%Ameliore les performances et la confidentialite%COLOR_RESET%
-echo.
-echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les fonctionnalites IA
-echo.
-set "DESACTIVER_IA=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces fonctionnalites IA ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :DESKTOP_IA_NON
-if %errorlevel% EQU 1 set "DESACTIVER_IA=1"
-:DESKTOP_IA_NON
-
-cls
-echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo %COLOR_WHITE%Voulez-vous desactiver le Controle de Compte Utilisateur (UAC) ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
-echo.
-echo %COLOR_WHITE%Pourquoi cette question : sans UAC, les programmes peuvent obtenir des droits admin%COLOR_RESET%
-echo %COLOR_WHITE%sans votre accord explicite ; ce script coupe aussi des avertissements lies.%COLOR_RESET%
-echo.
-echo %COLOR_GREEN%[O] OUI%COLOR_RESET% - Ne plus demander de confirmation (Oui/Non) pour les actions admin
-echo       %COLOR_YELLOW%Reduit la securite en permettant aux applis de s'executer sans alerte%COLOR_RESET%
-echo.
-echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver l'UAC (recommande)
-echo.
-set "DESACTIVER_UAC=0"
-choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :DESKTOP_UAC_NON
-if %errorlevel% EQU 1 set "DESACTIVER_UAC=1"
-:DESKTOP_UAC_NON
-
-
-cls
-set "SKIP_PAUSE=1"
-call :INSTALLER_VISUAL_REDIST
-call :OPTIMISATIONS_SYSTEME
-call :OPTIMISATIONS_MEMOIRE
-call :OPTIMISATIONS_DISQUES
-call :OPTIMISATIONS_GPU
-call :OPTIMISATIONS_RESEAU
-call :OPTIMISATIONS_PERIPHERIQUES
-call :DESACTIVER_ECONOMIES_ENERGIE
-if "%DESACTIVER_SECURITE%"=="1" call :DESACTIVER_PROTECTIONS_SECURITE
-if "%DESACTIVER_DEFENDER%"=="1" call :DESACTIVER_DEFENDER_SECTION
-if "%DESACTIVER_ANIMATIONS%"=="1" call :DESACTIVER_ANIMATIONS_SECTION
-if "%DESACTIVER_IA%"=="1" call :DESACTIVER_TOUT_COPILOT
-if "%DESACTIVER_UAC%"=="1" call :DESACTIVER_UAC_SECTION
-set "SKIP_PAUSE=0"
-call :AFFICHER_RESUME_OPTIMISATION DESKTOP
-goto :MENU_PRINCIPAL
+set "CURRENT_OPT_MODE=DESKTOP"
+goto :TOUT_OPTIMISER_COMMON
 
 :TOUT_OPTIMISER_LAPTOP
+set "CURRENT_OPT_MODE=LAPTOP"
+goto :TOUT_OPTIMISER_COMMON
+
+:TOUT_OPTIMISER_COMMON
 cls
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
-echo %COLOR_WHITE% Application de toutes les optimisations (Laptop)%COLOR_RESET%
+echo %COLOR_WHITE% Application de toutes les optimisations (%CURRENT_OPT_MODE%)%COLOR_RESET%
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
 echo.
 
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Cette option va appliquer toutes les optimisations pour Laptop.
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Certaines economies d'energie seront conservees pour la batterie.
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Cette option va appliquer toutes les optimisations pour %CURRENT_OPT_MODE%.
+if "%CURRENT_OPT_MODE%"=="LAPTOP" echo %COLOR_YELLOW%[*]%COLOR_RESET% Certaines economies d'energie seront conservees pour la batterie.
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Cela peut prendre plusieurs minutes.
 echo.
 
@@ -435,9 +316,9 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les protections (recommande)
 echo.
 set "DESACTIVER_SECURITE=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces protections ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :LAPTOP_SECURITE_NON
+if %errorlevel% EQU 2 goto :COMMON_SECURITE_NON
 if %errorlevel% EQU 1 set "DESACTIVER_SECURITE=1"
-:LAPTOP_SECURITE_NON
+:COMMON_SECURITE_NON
 
 cls
 echo.
@@ -455,9 +336,9 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver Windows Defender (recommande)
 echo.
 set "DESACTIVER_DEFENDER=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver Windows Defender ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :LAPTOP_DEFENDER_NON
+if %errorlevel% EQU 2 goto :COMMON_DEFENDER_NON
 if %errorlevel% EQU 1 set "DESACTIVER_DEFENDER=1"
-:LAPTOP_DEFENDER_NON
+:COMMON_DEFENDER_NON
 
 cls
 echo.
@@ -475,9 +356,9 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les animations (recommande)
 echo.
 set "DESACTIVER_ANIMATIONS=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver les animations Windows ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :LAPTOP_ANIMATIONS_NON
+if %errorlevel% EQU 2 goto :COMMON_ANIMATIONS_NON
 if %errorlevel% EQU 1 set "DESACTIVER_ANIMATIONS=1"
-:LAPTOP_ANIMATIONS_NON
+:COMMON_ANIMATIONS_NON
 
 cls
 echo.
@@ -495,9 +376,9 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver les fonctionnalites IA
 echo.
 set "DESACTIVER_IA=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver ces fonctionnalites IA ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :LAPTOP_IA_NON
+if %errorlevel% EQU 2 goto :COMMON_IA_NON
 if %errorlevel% EQU 1 set "DESACTIVER_IA=1"
-:LAPTOP_IA_NON
+:COMMON_IA_NON
 
 cls
 echo.
@@ -515,9 +396,9 @@ echo %COLOR_CYAN%[N] NON%COLOR_RESET% - Conserver l'UAC (recommande)
 echo.
 set "DESACTIVER_UAC=0"
 choice /C ON /N /M "%STYLE_BOLD%%COLOR_YELLOW%Etes-vous sur de desactiver l'UAC ? [O/N]: %COLOR_RESET%"
-if %errorlevel% EQU 2 goto :LAPTOP_UAC_NON
+if %errorlevel% EQU 2 goto :COMMON_UAC_NON
 if %errorlevel% EQU 1 set "DESACTIVER_UAC=1"
-:LAPTOP_UAC_NON
+:COMMON_UAC_NON
 
 
 cls
@@ -529,14 +410,14 @@ call :OPTIMISATIONS_DISQUES
 call :OPTIMISATIONS_GPU
 call :OPTIMISATIONS_RESEAU
 call :OPTIMISATIONS_PERIPHERIQUES
-:: Note: DESACTIVER_ECONOMIES_ENERGIE NON appele pour Laptop (preserve la batterie)
+if "%CURRENT_OPT_MODE%"=="DESKTOP" call :DESACTIVER_ECONOMIES_ENERGIE
 if "%DESACTIVER_SECURITE%"=="1" call :DESACTIVER_PROTECTIONS_SECURITE
 if "%DESACTIVER_DEFENDER%"=="1" call :DESACTIVER_DEFENDER_SECTION
 if "%DESACTIVER_ANIMATIONS%"=="1" call :DESACTIVER_ANIMATIONS_SECTION
 if "%DESACTIVER_IA%"=="1" call :DESACTIVER_TOUT_COPILOT
 if "%DESACTIVER_UAC%"=="1" call :DESACTIVER_UAC_SECTION
 set "SKIP_PAUSE=0"
-call :AFFICHER_RESUME_OPTIMISATION LAPTOP
+call :AFFICHER_RESUME_OPTIMISATION %CURRENT_OPT_MODE%
 goto :MENU_PRINCIPAL
 
 :AFFICHER_RESUME_OPTIMISATION
@@ -1648,8 +1529,7 @@ echo %COLOR_GREEN%[OK]%COLOR_RESET% GPU Power Management optimise
 
 :: 7.2 - NIC Energy Saving Ethernet et WiFi
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Desactivation des economies d'energie reseau (NIC - Ethernet et WiFi)...
-powershell -NoProfile -Command "Get-ChildItem -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}' | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p = $_.Name; reg add \"$p\" /v \"PnPCapabilities\" /t REG_DWORD /d 8 /f >$null; reg add \"$p\" /v \"AdvancedEEE\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"*EEE\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"EEELinkAdvertisement\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"SipsEnabled\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"ULPMode\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"GigaLite\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"EnableGreenEthernet\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"PowerSavingMode\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"S5WakeOnLan\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"*WakeOnMagicPacket\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"*WakeOnPattern\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"WakeOnLink\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"*ModernStandbyWoLMagicPacket\" /t REG_SZ /d \"0\" /f >$null }" >nul 2>&1
-powershell -NoProfile -Command "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $adapter=$_.Name; $energyProps = @('Energy-Efficient Ethernet','Green Ethernet','Power Saving Mode','Gigabit Lite','Ethernet a economie d''energie','Ethernet vert','802.11 Power Save','Power Management','Allow the computer to turn off this device','Gestion de l''alimentation 802.11','Mode d''economie d''energie','Power Save Mode'); foreach($propName in $energyProps) { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Disabled' -ErrorAction Stop } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Desactive' -ErrorAction Stop } catch {} } } }" >nul 2>&1
+powershell -NoProfile -Command "Get-ChildItem -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}' | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p = $_.Name; reg add \"$p\" /v \"PnPCapabilities\" /t REG_DWORD /d 8 /f >$null; reg add \"$p\" /v \"AdvancedEEE\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"*EEE\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"EEELinkAdvertisement\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"SipsEnabled\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"ULPMode\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"GigaLite\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"EnableGreenEthernet\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"PowerSavingMode\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"S5WakeOnLan\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"*WakeOnMagicPacket\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"*WakeOnPattern\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"WakeOnLink\" /t REG_SZ /d \"0\" /f >$null; reg add \"$p\" /v \"*ModernStandbyWoLMagicPacket\" /t REG_SZ /d \"0\" /f >$null }; Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | ForEach-Object { $adapter=$_.Name; $energyProps = @('Energy-Efficient Ethernet','Green Ethernet','Power Saving Mode','Gigabit Lite','Ethernet a economie d''energie','Ethernet vert','802.11 Power Save','Power Management','Allow the computer to turn off this device','Gestion de l''alimentation 802.11','Mode d''economie d''energie','Power Save Mode'); foreach($propName in $energyProps) { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Disabled' -ErrorAction Stop } catch { try { Set-NetAdapterAdvancedProperty -Name $adapter -DisplayName $propName -DisplayValue 'Desactive' -ErrorAction Stop } catch {} } } }" >nul 2>&1
 echo %COLOR_GREEN%[OK]%COLOR_RESET% Economies d'energie NIC desactivees (Registre + Pilotes)
 
 
@@ -3154,11 +3034,6 @@ reg delete "HKLM\Software\Microsoft\Edge" /f >nul 2>&1
 reg delete "HKLM\Software\Wow6432Node\Microsoft\Edge" /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft Edge" /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Microsoft Edge" /f >nul 2>&1
-reg delete "HKLM\SOFTWARE\Microsoft\EdgeUpdate" /f >nul 2>&1
-
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression des taches planifiees Edge...
-schtasks /delete /tn "MicrosoftEdgeUpdateTaskMachineCore" /f >nul 2>&1
-schtasks /delete /tn "MicrosoftEdgeUpdateTaskMachineUA" /f >nul 2>&1
 
 :: Gestion conditionnelle des donnees utilisateur
 if "%SUPPR_DATA%"=="OUI" (
@@ -3204,12 +3079,11 @@ del "%LOCALAPPDATA%\IconCache.db" /f /q >nul 2>&1
 del "%LOCALAPPDATA%\Microsoft\Windows\Explorer\iconcache*.db" /f /q >nul 2>&1
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Suppression des references Edge dans MUI Cache...
-reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache" /v "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe.FriendlyAppName" /f >nul 2>&1
-reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache" /v "C:\Program Files\Microsoft\Edge\Application\msedge.exe.FriendlyAppName" /f >nul 2>&1
+reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache" /v "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe.FriendlyAppName" /f >nul 2>&1
+reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache" /v "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe.FriendlyAppName" /f >nul 2>&1
 
-echo %COLOR_YELLOW%[*]%COLOR_RESET% Blocage des reinstallations automatiques...
+echo %COLOR_YELLOW%[*]%COLOR_RESET% Blocage des reinstallations automatiques (WebView2 preserve)...
 reg add "HKLM\SOFTWARE\Microsoft\EdgeUpdate" /v "DoNotUpdateToEdgeWithChromium" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKLM\SOFTWARE\Policies\Microsoft\EdgeUpdate" /v "InstallDefault" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\MicrosoftEdge\Main" /v "PreventFirstRunPage" /t REG_DWORD /d 1 /f >nul 2>&1
 
 echo %COLOR_YELLOW%[*]%COLOR_RESET% Verification finale...
