@@ -63,14 +63,17 @@ Ce script se distingue par sa **stabilité** et sa **polyvalence** : il est univ
 - **[6] Input** : Optimisation de la fréquence d'interrogation pour une souris et un clavier plus réactifs.
 - **[7] Énergie** : Gestion des plans d'alimentation et déblocage de l'Ultimate Performance.
 - **[8] Sécurité** : Gestion des mitigations processeur (Spectre/Meltdown) pour regagner des cycles CPU.
+- **[9] Bloatwares** : (Menu [G]) Suppression des applications préinstallées inutiles.
 
 ### 📂 Gestion Windows & Maintenance (Menu [G])
 
 - **Windows Defender** : Activation ou désactivation complète de l'antivirus intégré.
 - **UAC** : Gestion fine des notifications du Contrôle de Compte Utilisateur.
+- **VBS / HVCI** : Gestion de l'Isolation du noyau (Memory Integrity) pour les FPS ou la compatibilité Anti-Cheat.
 - **Animations** : Choix entre une interface visuelle riche ou ultra-réactive.
 - **IA & Widgets** : Suppression de Copilot, Recall et des widgets Windows 11.
 - **Applications** : Désinstallation propre de OneDrive et Microsoft Edge.
+- **Bloatwares** : Suppression en un clic des applications Windows inutiles (News, Météo, etc.).
 - **Runtimes** : Installation des bibliothèques essentielles (Visual C++ 2005-2022, DirectX).
 - **[N] Nettoyage Avancé** : Grand ménage en 15 étapes des fichiers temporaires, caches et logs.
 - **[W] MAS** : Lien vers l'outil d'activation communautaire pour Windows et Office.
@@ -80,10 +83,10 @@ Ce script se distingue par sa **stabilité** et sa **polyvalence** : il est univ
 
 ## 🛡️ Sécurité & Fiabilité
 
-- **Compatible Anti-Cheat** : Le script respecte l'intégrité du système (**HVCI** et **CFG**). Testé sur **Vanguard**, **EAC** et **BattlEye**.
-- **Réversibilité** : Chaque modification est traçable. L'option **[R]** permet de créer un point de restauration instantané.
+- **Compatible Anti-Cheat** : Le script propose une configuration optimisée qui maintient l'intégrité du système (**HVCI** et **CFG**) requise par les anti-cheats modernes tels que **Vanguard**, **FaceIT** et **Ricochet**.
+- **Réversibilité** : Chaque modification est traçable. L'option **[R]** permet de créer un point de restauration instantané et les paramètres système peuvent être restaurés via les menus dédiés.
 - **Transparence** : Code source 100% ouvert, auditable et sans binaire tiers ou script obfusqué.
-- **Zéro perte de fonctions** : Windows Update, le Microsoft Store et les fonctionnalités de base restent opérationnels.
+- **Zéro perte de fonctions** : Les fonctionnalités vitales (Windows Update, Microsoft Store) restent opérationnelles. Les "Bloatwares" supprimés sont uniquement les apps préinstallées non-essentielles.
 
 ---
 
@@ -109,7 +112,7 @@ R : Le gain varie selon votre matériel, mais vous constaterez surtout une meill
 R : Ces protections ajoutent une charge au processeur. En les désactivant, on regagne de la performance brute, mais c'est une option réservée aux utilisateurs qui acceptent le risque de sécurité associé.
 
 **Q : Est-ce sûr pour le jeu en ligne ?**  
-R : Absolument. Le script n'interfère jamais avec les fichiers de jeu et ne risque aucun bannissement.
+R : Absolument. Le script n'interfère jamais avec les fichiers de jeu. Pour les titres exigeants (Valorant/FaceIT), utilisez le profil de compatibilité dans le menu VBS/HVCI pour respecter les exigences de leurs anti-cheats.
 
 ### 🌐 Maintenance & Divers
 
@@ -119,9 +122,24 @@ R : Absolument pas. Il cible uniquement les fichiers temporaires, caches de mise
 **Q : Puis-je réinstaller OneDrive ou Edge plus tard ?**  
 R : Oui, ils peuvent être réinstallés via le site officiel de Microsoft à tout moment.
 
-**Q : Combien de temps dure l'optimisation ?**  
-R : Entre 2 et 5 minutes selon les options choisies et la vitesse de votre matériel.
+**Q : Quels "Bloatwares" sont supprimés ?**  
+R : Le script effectue un nettoyage ciblé pour supprimer uniquement les éléments publicitaires ou non-essentiels, tout en garantissant la stabilité du système :
 
+| Catégorie | Applications Supprimées (Bloatwares) |
+| :--- | :--- |
+| **Jeux & Pubs** | Candy Crush (Saga & Soda), Solitaire Collection. |
+| **Social / Liens** | Skype, People (Contacts), Microsoft Family, Your Phone (Lien avec le téléphone). |
+| **Utilitaires** | Cartes (Maps), Feedback Hub, Get Help, Get Started (Astuces), Mixed Reality Portal. |
+| **Services** | Office Hub (Web stub), OneConnect (Forfaits mobiles), Bing News (Actualités). |
+
+**Ce qui est rigoureusement CONSERVÉ :**
+- **Quotidien :** Météo, Sports, Finances, Alarmes et Horloge, Caméra.
+- **Multimédia :** Musique (Groove), Films et TV, Photos, Paint.
+- **Productivité :** Calculatrice, Bloc-notes, Courrier et Calendrier, Sticky Notes.
+- **Système :** Microsoft Store, Edge, OneDrive, Capture d'écran.
+
+**Q : Combien de temps dure l'optimisation ?**  
+R : Moins de 5 minutes selon les options choisies et la vitesse de votre matériel.
 ---
 
 <div align="center">
