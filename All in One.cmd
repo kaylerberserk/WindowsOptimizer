@@ -1282,7 +1282,6 @@ for %%S in (
     RemoteAccess
     RemoteRegistry
     RetailDemo
-    SEMgrSvc
     shpamsvc
     ssh-agent
     UevAgentService
@@ -1292,17 +1291,13 @@ for %%S in (
   call :SET_EXISTING_SERVICE_START "%%S" 4
 )
 
-REM  Windows 11 portable Normal+Eco : conserver les services capteurs au stock (Manual).
-REM  La page moderne Parametres > Systeme > Alimentation et batterie interroge ces services ;
-REM  les laisser Disabled peut faire echouer le chargement de la page.
+REM  SEMgrSvc est Manual sur Windows 11 stock. Sur un portable Normal+Eco, le conserver
+REM  en Manual : le forcer Disabled peut faire attendre/echouer la page moderne
+REM  Parametres > Systeme > Alimentation et batterie. Les autres profils gardent le tuning historique.
 if "!DETECTE_PORTABLE!"=="1" if "!PROFIL_USAGE!"=="1" if "!PROFIL_POWER!"=="1" (
-  for %%S in (
-      SensorService
-      SensrSvc
-      SEMgrSvc
-  ) do (
-    call :SET_EXISTING_SERVICE_START "%%S" 3
-  )
+  call :SET_EXISTING_SERVICE_START "SEMgrSvc" 3
+) else (
+  call :SET_EXISTING_SERVICE_START "SEMgrSvc" 4
 )
 
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Configuration demandee pour les services presents%COLOR_RESET%
