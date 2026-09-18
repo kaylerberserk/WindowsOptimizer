@@ -1291,6 +1291,20 @@ for %%S in (
 ) do (
   call :SET_EXISTING_SERVICE_START "%%S" 4
 )
+
+REM  Windows 11 portable Normal+Eco : conserver les services capteurs au stock (Manual).
+REM  La page moderne Parametres > Systeme > Alimentation et batterie interroge ces services ;
+REM  les laisser Disabled peut faire echouer le chargement de la page.
+if "!DETECTE_PORTABLE!"=="1" if "!PROFIL_USAGE!"=="1" if "!PROFIL_POWER!"=="1" (
+  for %%S in (
+      SensorService
+      SensrSvc
+      SEMgrSvc
+  ) do (
+    call :SET_EXISTING_SERVICE_START "%%S" 3
+  )
+)
+
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Configuration demandee pour les services presents%COLOR_RESET%
 if !SERVICE_CONFIG_SKIPPED! GTR 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%!SERVICE_CONFIG_SKIPPED! service ou services absents ignores. Aucune entree inutile creee%COLOR_RESET%
 set "SERVICE_CONFIG_SKIPPED="
