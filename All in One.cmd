@@ -1282,7 +1282,6 @@ for %%S in (
     RemoteAccess
     RemoteRegistry
     RetailDemo
-    SEMgrSvc
     shpamsvc
     ssh-agent
     UevAgentService
@@ -1291,6 +1290,16 @@ for %%S in (
 ) do (
   call :SET_EXISTING_SERVICE_START "%%S" 4
 )
+
+REM  SEMgrSvc est Manual sur Windows 11 stock. Sur un portable Normal+Eco, le conserver
+REM  en Manual : le forcer Disabled peut faire attendre/echouer la page moderne
+REM  Parametres > Systeme > Alimentation et batterie. Les autres profils gardent le tuning historique.
+if "!DETECTE_PORTABLE!"=="1" if "!PROFIL_USAGE!"=="1" if "!PROFIL_POWER!"=="1" (
+  call :SET_EXISTING_SERVICE_START "SEMgrSvc" 3
+) else (
+  call :SET_EXISTING_SERVICE_START "SEMgrSvc" 4
+)
+
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Configuration demandee pour les services presents%COLOR_RESET%
 if !SERVICE_CONFIG_SKIPPED! GTR 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%!SERVICE_CONFIG_SKIPPED! service ou services absents ignores. Aucune entree inutile creee%COLOR_RESET%
 set "SERVICE_CONFIG_SKIPPED="
