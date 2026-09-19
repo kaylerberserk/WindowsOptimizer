@@ -86,7 +86,7 @@ set "HAS_INTERNET=0"
 ::               1 = Eco       (plan Equilibre, autonomie/stabilite preservees)
 :: REGLE DE PROPRIETE : input/GPU -> USAGE ; energie/NIC/plan-alim -> POWER.
 :: Exceptions : Nagle/DelACK et RSC/LSO sont agressifs seulement en Gaming+MaxPerf.
-:: Flag composite (derive par :INIT_PROFILS) : IS_GAMING_ECO (Gaming + Eco = laptop gamer sur batterie).
+:: Flags composites (derives par :INIT_PROFILS) : IS_GAMING_ECO et IS_NORMAL_ECO_LAPTOP.
 :: DETECTE_PORTABLE garde le type materiel reel detecte au demarrage.
 set "PROFIL_USAGE=0"
 set "PROFIL_POWER=0"
