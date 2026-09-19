@@ -4385,15 +4385,22 @@ REM  Creer un dossier temporaire pour les installations
 set "VCREDIST_DIR=%TEMP%\VCRedistInstall_%RANDOM%_%RANDOM%"
 if not exist "%VCREDIST_DIR%" mkdir "%VCREDIST_DIR%" >nul 2>&1
 
+REM  Telecharger les packages manquants avant installation.
+REM  Si x86 et x64 manquent, curl les recupere en parallele pour exploiter une connexion rapide.
+call :DOWNLOAD_VC14_REDISTS
+if !errorlevel! NEQ 0 (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Un ou plusieurs packages Visual C++ n'ont pas pu etre telecharges.%COLOR_RESET%
+)
+
 REM  Visual C++ v14 actuel x86
 set /a "VC_STEP+=1"
 call :PROGRESS_BAR %VC_STEP% %VC_TOTAL% "Visual C++ v14 actuel x86"
-if "%VC2015X86%"=="0" call :INSTALL_VC14_REDIST x86 "https://aka.ms/vc14/vc_redist.x86.exe" "vc2015x86.exe"
+if "%VC2015X86%"=="0" if exist "%VCREDIST_DIR%\vc2015x86.exe" call :INSTALL_VC14_FILE x86 "vc2015x86.exe"
 
 REM  Visual C++ v14 actuel x64
 set /a "VC_STEP+=1"
 call :PROGRESS_BAR %VC_STEP% %VC_TOTAL% "Visual C++ v14 actuel x64"
-if "%VC2015X64%"=="0" call :INSTALL_VC14_REDIST x64 "https://aka.ms/vc14/vc_redist.x64.exe" "vc2015x64.exe"
+if "%VC2015X64%"=="0" if exist "%VCREDIST_DIR%\vc2015x64.exe" call :INSTALL_VC14_FILE x64 "vc2015x64.exe"
 echo.
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification des installations...%COLOR_RESET%
 
@@ -4441,8 +4448,7 @@ exit /b !DX_SECTION_RESULT!
 :INSTALLER_DIRECTX
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification de l'installation de DirectX...%COLOR_RESET%
 
-REM  Detection de DirectX June 2010 (XAudio2_7.dll est un bon indicateur).
-REM  Sur Windows 64 bits, les runtimes x64 ET x86 doivent etre presents.
+REM  Detection de DirectX June 2010.
 call :DETECT_DIRECTX_JUNE2010
 
 if "%DX_INSTALLED%"=="1" (
@@ -4452,22 +4458,26 @@ if "%DX_INSTALLED%"=="1" (
     exit /b 0
 )
 
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation de l'installation...%COLOR_RESET%
 set "DX_TEMP=%TEMP%\DirectXInstall_%RANDOM%_%RANDOM%"
 mkdir "%DX_TEMP%" >nul 2>&1
 
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Telechargement de DirectX Redist June 2010, environ 95 Mo...%COLOR_RESET%
-powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $f=Join-Path $env:DX_TEMP 'directx_redist.exe'; Invoke-WebRequest -Uri 'https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe' -OutFile $f -UseBasicParsing -ErrorAction Stop; if((Get-Item -LiteralPath $f).Length -lt 80000000){throw 'size'};$s=Get-AuthenticodeSignature -LiteralPath $f;if($s.Status -ne 'Valid' -or $s.SignerCertificate.Subject -notmatch 'Microsoft'){throw 'signature'};exit 0 } catch { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue; exit 1 }" >nul 2>&1
+REM  PC neuf + connexion rapide : utiliser le redist complet Microsoft en un seul flux.
+REM  curl est prioritaire pour saturer une bonne connexion ; BITS puis PowerShell servent de fallback.
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Telechargement DirectX June 2010 optimise (~95 Mo)...%COLOR_RESET%
+set "DX_OFFLINE=%DX_TEMP%\directx_redist.exe"
+call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe" "%DX_OFFLINE%" 80000000
 if !errorlevel! NEQ 0 (
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Echec du telechargement de DirectX.%COLOR_RESET%
     rd /s /q "%DX_TEMP%" >nul 2>&1
     set "DX_INSTALLED="
     set "DX_TEMP="
+    set "DX_OFFLINE="
+    set "DX_REBOOT="
     exit /b 1
 )
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Extraction des fichiers...%COLOR_RESET%
-REM  Utiliser l'extracteur integre de DirectX si possible, ou fallback
-"%DX_TEMP%\directx_redist.exe" /Q /T:"%DX_TEMP%" >nul 2>&1
+
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Extraction du package DirectX complet...%COLOR_RESET%
+"%DX_OFFLINE%" /Q /T:"%DX_TEMP%" >nul 2>&1
 set "DX_RESULT=!errorlevel!"
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Installation silencieuse en cours...%COLOR_RESET%
@@ -4494,7 +4504,6 @@ if "!DX_RESULT!"=="0" (
             )
         ) else (
             echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%DXSETUP a retourne le code !DX_RESULT!.%COLOR_RESET%
-            echo %COLOR_WHITE%L'installation est peut-etre incomplete.%COLOR_RESET%
         )
     ) else (
         set "DX_RESULT=1"
@@ -4502,15 +4511,15 @@ if "!DX_RESULT!"=="0" (
     )
 ) else (
     set "DX_RESULT=1"
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Une erreur est survenue lors de l'extraction.%COLOR_RESET%
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Une erreur est survenue lors de l'extraction DirectX.%COLOR_RESET%
 )
 
-REM  Nettoyage
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Nettoyage des fichiers temporaires...%COLOR_RESET%
 rd /s /q "%DX_TEMP%" >nul 2>&1
 
 set "DX_INSTALLED="
 set "DX_TEMP="
+set "DX_OFFLINE="
 set "DX_REBOOT="
 if "!DX_RESULT!"=="0" (
     set "DX_RESULT="
@@ -4518,7 +4527,6 @@ if "!DX_RESULT!"=="0" (
 )
 set "DX_RESULT="
 exit /b 1
-
 
 :SUPPRIMER_BLOATWARES
 call :SCREEN_HEADER " SUPPRESSION DES APPLICATIONS PREINSTALLEES"
@@ -4766,32 +4774,118 @@ if defined ProgramFiles(x86) (
 )
 exit /b 0
 
-:INSTALL_VC14_REDIST
-set "VC_ARCH=%~1"
-set "VC_URL=%~2"
-set "VC_FILE=%~3"
-powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $f=Join-Path $env:VCREDIST_DIR $env:VC_FILE; Invoke-WebRequest -Uri $env:VC_URL -OutFile $f -UseBasicParsing -ErrorAction Stop; if((Get-Item -LiteralPath $f).Length -lt 5000000){throw 'size'};$s=Get-AuthenticodeSignature -LiteralPath $f;if($s.Status -ne 'Valid' -or $s.SignerCertificate.Subject -notmatch 'Microsoft'){throw 'signature'};exit 0 } catch { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue; exit 1 }" >nul 2>&1
-if !errorlevel! NEQ 0 (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Echec du telechargement de Visual C++ v14 !VC_ARCH!.%COLOR_RESET%
-) else (
-    start /wait "" "!VCREDIST_DIR!\!VC_FILE!" /q /norestart >nul 2>&1
-    set "VC_EXIT=!errorlevel!"
-    if "!VC_EXIT!"=="0" (
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe.%COLOR_RESET%
-    ) else if "!VC_EXIT!"=="3010" (
-        echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe - redemarrage requis.%COLOR_RESET%
-    ) else if "!VC_EXIT!"=="1641" (
-        echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe - redemarrage initie/requis.%COLOR_RESET%
-    ) else if "!VC_EXIT!"=="1638" (
-        echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : une version compatible est deja presente.%COLOR_RESET%
-    ) else (
-        echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : code installateur !VC_EXIT!.%COLOR_RESET%
+:DOWNLOAD_VC14_REDISTS
+set "VC_DOWNLOAD_FAILED=0"
+set "VC_X86_FILE=%VCREDIST_DIR%\vc2015x86.exe"
+set "VC_X64_FILE=%VCREDIST_DIR%\vc2015x64.exe"
+
+REM  Cas courant d'un PC neuf : les deux packages manquent.
+REM  curl >= 7.66 sait les telecharger en parallele ; si l'option n'est pas disponible,
+REM  la verification ci-dessous declenche automatiquement le fallback individuel.
+if "%VC2015X86%"=="0" if "%VC2015X64%"=="0" (
+    where curl.exe >nul 2>&1
+    if !errorlevel! EQU 0 (
+        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Telechargement parallele Visual C++ x86 + x64...%COLOR_RESET%
+        curl.exe --fail --location --retry 3 --retry-delay 1 --connect-timeout 10 --max-time 180 --parallel --parallel-immediate --parallel-max 2 --silent --show-error ^
+          --output "%VC_X86_FILE%" "https://aka.ms/vc14/vc_redist.x86.exe" ^
+          --output "%VC_X64_FILE%" "https://aka.ms/vc14/vc_redist.x64.exe"
     )
 )
+
+if "%VC2015X86%"=="0" (
+    call :VALIDATE_MICROSOFT_SIGNED_EXE "%VC_X86_FILE%" 5000000
+    if !errorlevel! NEQ 0 call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://aka.ms/vc14/vc_redist.x86.exe" "%VC_X86_FILE%" 5000000
+    if !errorlevel! NEQ 0 set "VC_DOWNLOAD_FAILED=1"
+)
+if "%VC2015X64%"=="0" (
+    call :VALIDATE_MICROSOFT_SIGNED_EXE "%VC_X64_FILE%" 5000000
+    if !errorlevel! NEQ 0 call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://aka.ms/vc14/vc_redist.x64.exe" "%VC_X64_FILE%" 5000000
+    if !errorlevel! NEQ 0 set "VC_DOWNLOAD_FAILED=1"
+)
+
+set "VC_X86_FILE="
+set "VC_X64_FILE="
+if "!VC_DOWNLOAD_FAILED!"=="0" (
+    set "VC_DOWNLOAD_FAILED="
+    exit /b 0
+)
+set "VC_DOWNLOAD_FAILED="
+exit /b 1
+
+:INSTALL_VC14_FILE
+set "VC_ARCH=%~1"
+set "VC_FILE=%~2"
+start /wait "" "%VCREDIST_DIR%\%VC_FILE%" /q /norestart >nul 2>&1
+set "VC_EXIT=!errorlevel!"
+if "!VC_EXIT!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe.%COLOR_RESET%
+) else if "!VC_EXIT!"=="3010" (
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe - redemarrage requis.%COLOR_RESET%
+) else if "!VC_EXIT!"=="1641" (
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe - redemarrage initie/requis.%COLOR_RESET%
+) else if "!VC_EXIT!"=="1638" (
+    echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : une version compatible est deja presente.%COLOR_RESET%
+) else (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : code installateur !VC_EXIT!.%COLOR_RESET%
+)
 set "VC_ARCH="
-set "VC_URL="
 set "VC_FILE="
 exit /b 0
+
+:DOWNLOAD_MICROSOFT_SIGNED_EXE
+set "DL_URL=%~1"
+set "DL_FILE=%~2"
+set "DL_MIN_BYTES=%~3"
+if exist "%DL_FILE%" del /f /q "%DL_FILE%" >nul 2>&1
+
+REM  Fast path Windows 10/11 : curl natif, plus leger que Invoke-WebRequest.
+where curl.exe >nul 2>&1
+if !errorlevel! EQU 0 (
+    curl.exe --fail --location --retry 3 --retry-delay 1 --connect-timeout 10 --max-time 300 --silent --show-error --output "%DL_FILE%" "%DL_URL%"
+    if !errorlevel! EQU 0 (
+        call :VALIDATE_MICROSOFT_SIGNED_EXE "%DL_FILE%" "%DL_MIN_BYTES%"
+        if !errorlevel! EQU 0 goto :DOWNLOAD_MICROSOFT_SIGNED_EXE_OK
+    )
+    if exist "%DL_FILE%" del /f /q "%DL_FILE%" >nul 2>&1
+)
+
+REM  Fallback BITS : efficace sur Windows et tolerant aux reseaux filtres.
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{Import-Module BitsTransfer -ErrorAction Stop;Start-BitsTransfer -Source $env:DL_URL -Destination $env:DL_FILE -Priority Foreground -RetryInterval 10 -RetryTimeout 60 -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! EQU 0 (
+    call :VALIDATE_MICROSOFT_SIGNED_EXE "%DL_FILE%" "%DL_MIN_BYTES%"
+    if !errorlevel! EQU 0 goto :DOWNLOAD_MICROSOFT_SIGNED_EXE_OK
+)
+if exist "%DL_FILE%" del /f /q "%DL_FILE%" >nul 2>&1
+
+REM  Dernier recours compatible avec les environnements ou curl/BITS sont bloques.
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Invoke-WebRequest -Uri $env:DL_URL -OutFile $env:DL_FILE -UseBasicParsing -TimeoutSec 300 -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! EQU 0 (
+    call :VALIDATE_MICROSOFT_SIGNED_EXE "%DL_FILE%" "%DL_MIN_BYTES%"
+    if !errorlevel! EQU 0 goto :DOWNLOAD_MICROSOFT_SIGNED_EXE_OK
+)
+if exist "%DL_FILE%" del /f /q "%DL_FILE%" >nul 2>&1
+set "DL_URL="
+set "DL_FILE="
+set "DL_MIN_BYTES="
+exit /b 1
+
+:DOWNLOAD_MICROSOFT_SIGNED_EXE_OK
+set "DL_URL="
+set "DL_FILE="
+set "DL_MIN_BYTES="
+exit /b 0
+
+:VALIDATE_MICROSOFT_SIGNED_EXE
+if not exist "%~1" exit /b 1
+for %%A in ("%~1") do if %%~zA LSS %~2 exit /b 1
+set "VALIDATE_MS_FILE=%~1"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$s=Get-AuthenticodeSignature -LiteralPath $env:VALIDATE_MS_FILE;if($s.Status-ne'Valid'-or$s.SignerCertificate.Subject-notmatch'Microsoft'){exit 1};exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! EQU 0 (
+    set "VALIDATE_MS_FILE="
+    exit /b 0
+)
+set "VALIDATE_MS_FILE="
+exit /b 1
 
 :DETECT_DIRECTX_JUNE2010
 set "DX_INSTALLED=0"
