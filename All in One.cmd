@@ -877,6 +877,7 @@ if !errorlevel! NEQ 0 (
 )
 set "AIO_POWER_PRESELECTED=1"
 call :INSTALLER_VISUAL_REDIST
+set "AIO_RUNTIME_RC=!errorlevel!"
 call :OPTIMISATIONS_SYSTEME
 call :OPTIMISATIONS_MEMOIRE
 call :OPTIMISATIONS_DISQUES
@@ -912,6 +913,7 @@ set "DESACTIVER_DEFENDER="
 set "DESACTIVER_ANIMATIONS="
 set "DESACTIVER_IA="
 set "DESACTIVER_UAC="
+set "AIO_RUNTIME_RC="
 goto :MENU_PRINCIPAL
 
 :AFFICHER_RESUME_OPTIMISATION
@@ -934,7 +936,11 @@ echo.
 echo %STYLE_BOLD%%COLOR_BLUE%-- PARCOURS EFFECTUE ------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Systeme, Memoire, Disques et GPU executees.%COLOR_RESET%
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Reseau et Peripheriques executees.%COLOR_RESET%
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Runtimes Visual C++ et DirectX traites.%COLOR_RESET%
+if "!AIO_RUNTIME_RC!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Runtimes Visual C++ et DirectX verifies.%COLOR_RESET%
+) else (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Visual C++ ou DirectX n'a pas pu etre installe/verifie completement.%COLOR_RESET%
+)
 if "!PROFIL_POWER!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Energie Performance max demandee.%COLOR_RESET%
     echo %COLOR_WHITE%Performances et consommation augmentees.%COLOR_RESET%
@@ -4346,6 +4352,7 @@ goto :MENU_PRINCIPAL
 
 
 :INSTALLER_VISUAL_REDIST
+set "VC_SECTION_RESULT=0"
 call :SCREEN_HEADER " INSTALLATION DES RUNTIMES VISUAL C++ ET DIRECTX"
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Detection du runtime Visual C++ v14 actuel...%COLOR_RESET%
@@ -4412,6 +4419,7 @@ echo.
 if "%VCINSTALL%"=="2" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification reelle : %COLOR_GREEN%%VCINSTALL%/2%COLOR_RESET% %COLOR_WHITE%versions presentes.%COLOR_RESET%
 ) else (
+    set "VC_SECTION_RESULT=1"
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Verification reelle : %COLOR_RED%%VCINSTALL%/2%COLOR_RESET% %COLOR_WHITE%versions presentes.%COLOR_RESET%
 )
 if "!SKIP_PAUSE!"=="0" timeout /t 3 /nobreak >nul
@@ -4438,12 +4446,21 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo.
 call :INSTALLER_DIRECTX
 set "DX_SECTION_RESULT=!errorlevel!"
+set "RUNTIME_SECTION_RESULT=!DX_SECTION_RESULT!"
+if "!VC_SECTION_RESULT!"=="1" set "RUNTIME_SECTION_RESULT=1"
 
 if "!SKIP_PAUSE!"=="0" (
     echo.
     pause
 )
-exit /b !DX_SECTION_RESULT!
+set "VC_SECTION_RESULT="
+set "DX_SECTION_RESULT="
+if "!RUNTIME_SECTION_RESULT!"=="0" (
+    set "RUNTIME_SECTION_RESULT="
+    exit /b 0
+)
+set "RUNTIME_SECTION_RESULT="
+exit /b 1
 
 :INSTALLER_DIRECTX
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification de l'installation de DirectX...%COLOR_RESET%
@@ -4850,7 +4867,7 @@ if !errorlevel! EQU 0 (
 )
 
 REM  Fallback BITS : efficace sur Windows et tolerant aux reseaux filtres.
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{Import-Module BitsTransfer -ErrorAction Stop;Start-BitsTransfer -Source $env:DL_URL -Destination $env:DL_FILE -Priority Foreground -RetryInterval 10 -RetryTimeout 60 -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{Import-Module BitsTransfer -ErrorAction Stop;Start-BitsTransfer -Source $env:DL_URL -Destination $env:DL_FILE -Priority Foreground -RetryInterval 60 -RetryTimeout 60 -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
 if !errorlevel! EQU 0 (
     call :VALIDATE_MICROSOFT_SIGNED_EXE "%DL_FILE%" "%DL_MIN_BYTES%"
     if !errorlevel! EQU 0 goto :DOWNLOAD_MICROSOFT_SIGNED_EXE_OK
