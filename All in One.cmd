@@ -4437,6 +4437,15 @@ echo %STYLE_BOLD%%COLOR_WHITE% INSTALLATION DE DIRECTX RUNTIME JUNE 2010%COLOR_R
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :INSTALLER_DIRECTX
+set "DX_SECTION_RESULT=!errorlevel!"
+
+if "!SKIP_PAUSE!"=="0" (
+    echo.
+    pause
+)
+exit /b !DX_SECTION_RESULT!
+
+:INSTALLER_DIRECTX
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification de l'installation de DirectX...%COLOR_RESET%
 
 REM  Detection de DirectX June 2010.
@@ -4823,7 +4832,12 @@ if "%VC2015X64%"=="0" (
 
 set "VC_X86_FILE="
 set "VC_X64_FILE="
-exit /b !VC_DOWNLOAD_FAILED!
+if "!VC_DOWNLOAD_FAILED!"=="0" (
+    set "VC_DOWNLOAD_FAILED="
+    exit /b 0
+)
+set "VC_DOWNLOAD_FAILED="
+exit /b 1
 
 :INSTALL_VC14_FILE
 set "VC_ARCH=%~1"
@@ -4893,8 +4907,12 @@ if not exist "%~1" exit /b 1
 for %%A in ("%~1") do if %%~zA LSS %~2 exit /b 1
 set "VALIDATE_MS_FILE=%~1"
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$s=Get-AuthenticodeSignature -LiteralPath $env:VALIDATE_MS_FILE;if($s.Status-ne'Valid'-or$s.SignerCertificate.Subject-notmatch'Microsoft'){exit 1};exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! EQU 0 (
+    set "VALIDATE_MS_FILE="
+    exit /b 0
+)
 set "VALIDATE_MS_FILE="
-exit /b !errorlevel!
+exit /b 1
 
 :DETECT_DIRECTX_JUNE2010
 set "DX_INSTALLED=0"
