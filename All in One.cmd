@@ -4461,32 +4461,9 @@ if "%DX_INSTALLED%"=="1" (
 set "DX_TEMP=%TEMP%\DirectXInstall_%RANDOM%_%RANDOM%"
 mkdir "%DX_TEMP%" >nul 2>&1
 
-REM  Fast path : le Web Installer officiel Microsoft ne pese qu'environ 288 Ko
-REM  et ne recupere que les composants legacy manquants.
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Installation rapide des composants DirectX manquants...%COLOR_RESET%
-set "DX_WEB=%DX_TEMP%\dxwebsetup.exe"
-call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://download.microsoft.com/download/1/7/1/1718CCC4-6315-4D8E-9543-8E28A4E18C4C/dxwebsetup.exe" "%DX_WEB%" 200000
-if !errorlevel! EQU 0 (
-    start /wait "" "%DX_WEB%" /Q >nul 2>&1
-    set "DX_WEB_RC=!errorlevel!"
-    if "!DX_WEB_RC!"=="3010" set "DX_REBOOT=1"
-    if "!DX_WEB_RC!"=="1641" set "DX_REBOOT=1"
-    call :DETECT_DIRECTX_JUNE2010
-    if "!DX_INSTALLED!"=="1" (
-        echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%DirectX legacy installe via le Web Installer Microsoft.%COLOR_RESET%
-        if defined DX_REBOOT echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est requis par DirectX.%COLOR_RESET%
-        rd /s /q "%DX_TEMP%" >nul 2>&1
-        set "DX_INSTALLED="
-        set "DX_TEMP="
-        set "DX_WEB="
-        set "DX_WEB_RC="
-        set "DX_REBOOT="
-        exit /b 0
-    )
-)
-
-REM  Fallback robuste : redist June 2010 complet (~95 Mo) uniquement si le fast path echoue.
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Fast path DirectX incomplet, utilisation du package hors ligne complet...%COLOR_RESET%
+REM  PC neuf + connexion rapide : utiliser le redist complet Microsoft en un seul flux.
+REM  curl est prioritaire pour saturer une bonne connexion ; BITS puis PowerShell servent de fallback.
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Telechargement DirectX June 2010 optimise (~95 Mo)...%COLOR_RESET%
 set "DX_OFFLINE=%DX_TEMP%\directx_redist.exe"
 call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe" "%DX_OFFLINE%" 80000000
 if !errorlevel! NEQ 0 (
@@ -4494,8 +4471,6 @@ if !errorlevel! NEQ 0 (
     rd /s /q "%DX_TEMP%" >nul 2>&1
     set "DX_INSTALLED="
     set "DX_TEMP="
-    set "DX_WEB="
-    set "DX_WEB_RC="
     set "DX_OFFLINE="
     set "DX_REBOOT="
     exit /b 1
@@ -4544,8 +4519,6 @@ rd /s /q "%DX_TEMP%" >nul 2>&1
 
 set "DX_INSTALLED="
 set "DX_TEMP="
-set "DX_WEB="
-set "DX_WEB_RC="
 set "DX_OFFLINE="
 set "DX_REBOOT="
 if "!DX_RESULT!"=="0" (
