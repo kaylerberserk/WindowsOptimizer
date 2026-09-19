@@ -1176,10 +1176,20 @@ for %%T in (
     "Microsoft\Windows\Subscription\EnableLicenseAcquisition"
 ) do schtasks /Change /TN "%%~T" /Disable >nul 2>&1
 
-REM  Autologgers de diagnostic OFF
-for %%L in (AppModel Cellcore DiagLog SQMLogger Diagtrack-Listener) do (
+REM  Autologgers de diagnostic OFF.
+REM  DiagLog reste actif sur portable Normal+Eco : les donnees E3/SRUM de batterie
+REM  et certains diagnostics Windows reposent sur la collecte de diagnostic au demarrage.
+for %%L in (AppModel Cellcore SQMLogger Diagtrack-Listener) do (
   reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\%%~L" /v Start /t REG_DWORD /d 0 /f >nul 2>&1
 )
+set "KEEP_DIAGLOG=0"
+if "!DETECTE_PORTABLE!"=="1" if "!PROFIL_USAGE!"=="1" if "!PROFIL_POWER!"=="1" set "KEEP_DIAGLOG=1"
+if "!KEEP_DIAGLOG!"=="1" (
+  reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\DiagLog" /v Start /t REG_DWORD /d 1 /f >nul 2>&1
+) else (
+  reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\DiagLog" /v Start /t REG_DWORD /d 0 /f >nul 2>&1
+)
+set "KEEP_DIAGLOG="
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\ReadyBoot" /v Start /t REG_DWORD /d 1 /f >nul 2>&1
 
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Taches de telemetrie desactivees%COLOR_RESET%
@@ -1885,9 +1895,10 @@ if "!PROFIL_USAGE!"=="0" (
     netsh int tcp set heuristics forcews=enabled >nul 2>&1
     netsh int tcp set global rss=enabled initialrto=3000 nonsackrttresiliency=disabled maxsynretransmissions=2 >nul 2>&1
 ) else (
-    REM ForceWS=default restaure le defaut systeme (active). WSH n'a plus d'effet.
+    REM ForceWS=default restaure le defaut systeme. Microsoft documente Initial RTO=3000 ms
+    REM et Max SYN Retransmissions=2 comme valeurs globales par defaut.
     netsh int tcp set heuristics forcews=default >nul 2>&1
-    netsh int tcp set global rss=enabled initialrto=1000 nonsackrttresiliency=disabled maxsynretransmissions=4 >nul 2>&1
+    netsh int tcp set global rss=enabled initialrto=3000 nonsackrttresiliency=disabled maxsynretransmissions=2 >nul 2>&1
 )
 if "!PROFIL_POWER!"=="0" (
     if "!PROFIL_USAGE!"=="0" (
@@ -2135,32 +2146,22 @@ echo.
 
 REM  6.1 - Souris optimisee
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation de la reactivite souris...%COLOR_RESET%
-set "KEEP_MOUSE_ACCEL=0"
-if "!KEEP_MOUSE_ACCEL!"=="1" (
-    echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage du trackpad avec une acceleration legere...%COLOR_RESET%
-    reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "1" /f >nul 2>&1
-    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "4" /f >nul 2>&1
-    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "12" /f >nul 2>&1
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration legere conservee. Trackpad regle.%COLOR_RESET%
+if "!PROFIL_USAGE!"=="0" (
+    echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'acceleration de la souris...%COLOR_RESET%
+    reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris desactivee - Mouvement 1:1 actif%COLOR_RESET%
 ) else (
-    if "!PROFIL_USAGE!"=="0" (
-        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'acceleration de la souris...%COLOR_RESET%
-        reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
-        reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
-        reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris desactivee - Mouvement 1:1 actif%COLOR_RESET%
-    ) else (
-        REM Acceleration souris conservee desactivee : choix de l'utilisateur - accel OFF sur sa machine.
-        reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
-        reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
-        reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris conservee desactivee - choix utilisateur%COLOR_RESET%
-    )
+    REM Valeurs Windows par defaut : Enhance pointer precision actif (1 / 6 / 10).
+    reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "1" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "6" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "10" /f >nul 2>&1
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris rendue au comportement Windows pour Normal.%COLOR_RESET%
 )
 if "!PROFIL_USAGE!"=="0" reg add "HKCU\Control Panel\Mouse" /v "MouseDelay" /t REG_SZ /d "0" /f >nul 2>&1
 if "!PROFIL_USAGE!"=="1" reg delete "HKCU\Control Panel\Mouse" /v "MouseDelay" /f >nul 2>&1
 reg add "HKCU\Control Panel\Mouse" /v "SnapToDefaultButton" /t REG_SZ /d "0" /f >nul 2>&1
-set "KEEP_MOUSE_ACCEL="
 REM Nettoyage des anciens emplacements utilises par les profils d'entree precedents.
 for %%V in (MouseDataQueueSize ThreadPriority) do reg delete "HKLM\SYSTEM\CurrentControlSet\Services\mouhid\Parameters" /v "%%V" /f >nul 2>&1
 for %%V in (KeyboardDataQueueSize ThreadPriority) do reg delete "HKLM\SYSTEM\CurrentControlSet\Services\kbdhid\Parameters" /v "%%V" /f >nul 2>&1
