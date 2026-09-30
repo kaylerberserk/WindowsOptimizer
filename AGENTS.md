@@ -6,15 +6,17 @@ Optimiseur Windows 10/11 tenu en **trois fichiers** : `All in One.cmd` (un batch
 
 ## Verification
 
-Ce projet n'a pas de suite de tests : les deux controles ci-dessous en tiennent lieu. Les executer avant de conclure.
+Ce projet n'a pas de suite de tests : les controles ci-dessous en tiennent lieu. Les executer avant de conclure.
 
-**Contrat de format.** Le batch refuse de s'executer si le fichier contient un octet > 0x7F ou une ligne LF isolee, et se relance seul pour se corriger. Doit retourner `0` :
+**Contrat de format.** Sur la copie de travail, ASCII 7 bits et CRLF : la commande doit retourner `0`.
 
 ```powershell
 powershell -NoProfile -Command "try{$b=[IO.File]::ReadAllBytes('All in One.cmd');for($i=0;$i-lt$b.Length;$i++){if($b[$i]-eq0-or$b[$i]-gt127){exit 44};if(($b[$i]-eq10-and($i-eq0-or$b[$i-1]-ne13))-or($b[$i]-eq13-and($i+1-ge$b.Length-or$b[$i+1]-ne10))){exit 42}};exit 0}catch{exit 43}"
 ```
 
 `44` = octet non ASCII, `42` = ligne LF, `43` = fichier illisible. Ecrire les commentaires du batch en ASCII, sans accent ni guillemet typographique : l'echec n'apparait qu'a la lecture par le visiteur, une fois publie.
+
+**Le `42` sur la copie publiee est normal, ne pas le "corriger".** `.gitattributes` impose `*.cmd text eol=crlf`, donc git stocke le batch en LF et `raw.githubusercontent.com` sert ce LF. Le visiteur recoit donc un fichier LF, que le batch detecte, recopie en CRLF dans `%TEMP%`, puis relance. Les deux chemins sont testes : le fichier LF se repare et demarre, le fichier CRLF du checkout demarre directement. Modifier `.gitattributes` pour "forcer" du CRLF casserait la publication. Seul le `44` est un refus reel, sans reparation.
 
 Cette commande duplique celle du batch, qui se parametre par `%WINOPT_SELF%` et se tait avec `>nul 2>&1` pour rester copiable ici. Si l'une des deux evolue, mettre les deux a jour dans le meme commit.
 
