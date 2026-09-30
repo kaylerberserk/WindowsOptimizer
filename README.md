@@ -33,7 +33,7 @@ Ce script privilégie une configuration lisible et des profils explicites pour W
 
 | Besoin | Détail | Comportement si absent |
 |---|---|---|
-| **PowerShell** | Obligatoire, dans la version fournie avec Windows 10/11 | Le script s'arrête immédiatement avec un message explicite : 69 commandes PowerShell portent les opérations que cmd ne sait pas faire proprement (registre en masse, WMI, Storage, CIM). |
+| **PowerShell** | Obligatoire, dans la version fournie avec Windows 10/11 | Le script s'arrête immédiatement avec un message explicite : 76 commandes PowerShell portent les opérations que cmd ne sait pas faire proprement (registre en masse, WMI, Storage, CIM). |
 | **Jeton administrateur élevé** | Contrôle via le jeton UAC, pas via le service Serveur | Arrêt avec message. Appartenir au groupe Administrateurs ne suffit pas. |
 | **Connexion Internet** | Facultative | Le menu affiche « Hors ligne ou connexion filtrée » et les sections continuent. Seuls les téléchargements (runtimes, SetTimerResolution, MAS/WinUtil) sont ignorés. |
 | **Espace disque** | ~120 Mo pour les runtimes, plus l'espace disque léré par les planifications | L'installation des runtimes échoue proprement et le reste du parcours continue. |
@@ -47,7 +47,7 @@ C'est la distinction la plus importante avant de lancer le script.
 | Sécurité (VBS, HVCI, mitigations CPU) | ✅ | Snapshot `.reg` capturé avant le premier profil, réimporté par « Défaut Windows ». |
 | Énergie, réseau, GPU, périphériques | ✅ | Chaque valeur a son pendant de restauration dans le profil opposé. |
 | MSI, FTH, état des pilotes | ✅ | Sauvegarde par périphérique / par clé, restaurée à l'identique. |
-| **`Tout optimiser` : Confidentialité (section 1.4-1.5)** | ❌ **Volontairement définitif** | **69 valeurs de registre** (46 écritures directes + 23 dans la boucle Content Delivery Manager) couvrant télémétrie, contenu sponsorisé, Cortana/Bing, publicités et navigation sur le web, **26 tâches planifiées**, **6 autologgers WMI**, plus le stockage réservé, Delivery Optimization, la touche F1, l'atténuation audio, WPBT et le menu « Devenir Propriétaire ». **Aucun parcours du script ne les remet à l'état d'origine.** C'est cohérent avec le but, mais il faut le savoir : un point de restauration système est le seul retour arrière. |
+| **`Tout optimiser` : Confidentialité (section 1.4-1.5)** | ❌ **Volontairement définitif** | **66 écritures de registre** (43 directes + 23 dans la boucle Content Delivery Manager) couvrant télémétrie, contenu sponsorisé, Cortana/Bing, publicités et navigation sur le web, **26 tâches planifiées**, **6 autologgers WMI**, plus le stockage réservé, Delivery Optimization, la touche F1, l'atténuation audio, WPBT et le menu « Devenir Propriétaire ». **Aucun parcours du script ne les remet à l'état d'origine.** C'est cohérent avec le but, mais il faut le savoir : un point de restauration système est le seul retour arrière. |
 | Désinstallation de OneDrive / Edge | ❌ | Irréversible par nature ; les données sont supprimées après confirmation explicite. |
 | Stratégies anti-réinstallation Edge | ❌ | `InstallDefault=2` et `Install{56EB18F8-…}=0` restent en place. Retour manuel : `reg delete "HKLM\SOFTWARE\Policies\Microsoft\EdgeUpdate" /v InstallDefault /f` puis la même commande pour la valeur `Install{…}`. |
 
