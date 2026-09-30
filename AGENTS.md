@@ -16,7 +16,7 @@ powershell -NoProfile -Command "try{$b=[IO.File]::ReadAllBytes('All in One.cmd')
 
 `44` = octet non ASCII, `42` = ligne LF, `43` = fichier illisible. Ecrire les commentaires du batch en ASCII, sans accent ni guillemet typographique : l'echec n'apparait qu'a la lecture par le visiteur, une fois publie.
 
-**Le `42` sur la copie publiee est normal, ne pas le "corriger".** `.gitattributes` impose `*.cmd text eol=crlf`, donc git stocke le batch en LF et `raw.githubusercontent.com` sert ce LF. Le visiteur recoit donc un fichier LF, que le batch detecte, recopie en CRLF dans `%TEMP%`, puis relance. Les deux chemins sont testes : le fichier LF se repare et demarre, le fichier CRLF du checkout demarre directement. Modifier `.gitattributes` pour "forcer" du CRLF casserait la publication. Seul le `44` est un refus reel, sans reparation.
+**Le `42` sur la copie publiee est normal : ne pas le "corriger".** `.gitattributes` impose `*.cmd text eol=crlf`, donc git stocke le batch en LF et `raw.githubusercontent.com` sert ce LF. Le batch le detecte, le recopie en CRLF dans `%TEMP%` puis se relance ; les deux chemins sont testes. Forcer du CRLF dans `.gitattributes` casserait la publication. Seul le `44` est un refus reel, sans reparation.
 
 Cette commande duplique celle du batch, qui se parametre par `%WINOPT_SELF%` et se tait avec `>nul 2>&1` pour rester copiable ici. Si l'une des deux evolue, mettre les deux a jour dans le meme commit.
 
@@ -49,14 +49,11 @@ Apres une edition de structure (label, `goto`, bloc `if`), verifier que chaque `
 
 ## Methodes
 
-Verifiees sur ce depot. Une regle qui ne s'est pas reproduite deux fois est un candidat a la suppression.
+Verifiees sur ce depot. Revalider avant de les conserver : une regle qui ne s'est pas reproduite deux fois est un candidat a la suppression.
 
-- **Executer plutot que relire.** Syntaxe, parentheses et encodage se controlent par un programme. Trois bugs n'apparurent qu'a l'execution : `%*` est substitue une seule fois a l'analyse (un helper ne peut donc pas executer un corps de boucle), `set "X=Y"` sur une ligne `if ... else` casse l'analyse de cmd, et un `pushd` non depile sur un chemin de sortie. Un helper teste sur une cle scratch revele aussi des erreurs de logique qu'un test de syntaxe laisse passer.
-- **Un "defaut mesure" sur une machine que le script a deja modifiee est circulaire.** La valeur de reference de `Win32PrioritySeparation` a ete lue ainsi ; seul un croisement avec la documentation a tranche.
-- **Mesurer avant d'optimiser.** Un ralentissement suppose peut ne pas exister : `Invoke-WebRequest` s'est revele aussi rapide que `curl` sur 95 Mo, et le correctif aurait ete cosmetique.
+- **Executer plutot que relire.** Syntaxe, parentheses, encodage et logique se controlent par un programme, jamais a l'oeil. Un helper teste sur une cle scratch revele ce qu'un test de syntaxe laisse passer.
 - **Verifier un changement d'etat par relecture de la valeur stockee**, pas par le code de retour de l'ecriture : une ecriture refusee (UCPD, strategie de groupe) ne renvoie rien d'exploitable. Un helper qui calcule un code d'erreur sans appelant qui le lit laisse le succes annonce inconditionnellement.
-- **Regarder `git status` avant commit** : un artefact d'outillage a deja fini dans le depot via une redirection shell.
 
-Les pieges techniques (SID plutot que nom de groupe pour `icacls`, Latin-1 pour reecrire un fichier systeme, `NetCfgInstanceId` pour resoudre une sous-cle de classe) sont commentes sur place dans le batch. Ce sont des notes de code : les laisser la ou elles expliquent le pourquoi.
+Ne pas recopier ici les pieges techniques (SID pour `icacls`, Latin-1, `NetCfgInstanceId`) : le batch les commente deja sur place, la ou ils expliquent le pourquoi.
 
 Propose les ameliorations utiles en expliquant simplement leur interet, sans compliquer le projet.
