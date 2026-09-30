@@ -86,11 +86,12 @@ set "HAS_INTERNET=0"
 ::               1 = Eco       (plan Equilibre, autonomie/stabilite preservees)
 :: REGLE DE PROPRIETE : input/GPU -> USAGE ; energie/NIC/plan-alim -> POWER.
 :: Exceptions : Nagle/DelACK et RSC/LSO sont agressifs seulement en Gaming+MaxPerf.
-:: Flag composite (derive par :INIT_PROFILS) : IS_GAMING_ECO (Gaming + Eco = laptop gamer sur batterie).
+:: Flags composites (derives par :INIT_PROFILS) : IS_GAMING_ECO et IS_NORMAL_ECO_LAPTOP.
 :: DETECTE_PORTABLE garde le type materiel reel detecte au demarrage.
 set "PROFIL_USAGE=0"
 set "PROFIL_POWER=0"
 set "IS_GAMING_ECO=0"
+set "IS_NORMAL_ECO_LAPTOP=0"
 set "DETECTE_PORTABLE=0"
 set "HAS_NVIDIA=0"
 set "APPLIQUER_SECURITE=0"
@@ -333,6 +334,9 @@ set "IS_GAMING_ECO=0"
 if "!PROFIL_USAGE!"=="0" (
     if "!PROFIL_POWER!"=="1" set "IS_GAMING_ECO=1"
 )
+REM Cas cible conservateur : portable + Normal + Eco.
+set "IS_NORMAL_ECO_LAPTOP=0"
+if "!DETECTE_PORTABLE!"=="1" if "!PROFIL_USAGE!"=="1" if "!PROFIL_POWER!"=="1" set "IS_NORMAL_ECO_LAPTOP=1"
 exit /b 0
 
 :RESET_BCD_TIMER_OVERRIDES
@@ -884,6 +888,7 @@ if !errorlevel! NEQ 0 (
 )
 set "AIO_POWER_PRESELECTED=1"
 call :INSTALLER_VISUAL_REDIST
+set "AIO_RUNTIME_RC=!errorlevel!"
 call :OPTIMISATIONS_SYSTEME
 call :OPTIMISATIONS_MEMOIRE
 call :OPTIMISATIONS_DISQUES
@@ -919,6 +924,7 @@ set "DESACTIVER_DEFENDER="
 set "DESACTIVER_ANIMATIONS="
 set "DESACTIVER_IA="
 set "DESACTIVER_UAC="
+set "AIO_RUNTIME_RC="
 goto :MENU_PRINCIPAL
 
 :AFFICHER_RESUME_OPTIMISATION
@@ -941,7 +947,11 @@ echo.
 echo %STYLE_BOLD%%COLOR_BLUE%-- PARCOURS EFFECTUE ------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Systeme, Memoire, Disques et GPU executees.%COLOR_RESET%
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Reseau et Peripheriques executees.%COLOR_RESET%
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Runtimes Visual C++ et DirectX traites.%COLOR_RESET%
+if "!AIO_RUNTIME_RC!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Runtimes Visual C++ et DirectX verifies.%COLOR_RESET%
+) else (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Visual C++ ou DirectX n'a pas pu etre installe/verifie completement.%COLOR_RESET%
+)
 if "!PROFIL_POWER!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Energie Performance max demandee.%COLOR_RESET%
     echo %COLOR_WHITE%Performances et consommation augmentees.%COLOR_RESET%
@@ -1190,9 +1200,16 @@ for %%T in (
     "Microsoft\Windows\Subscription\EnableLicenseAcquisition"
 ) do schtasks /Change /TN "%%~T" /Disable >nul 2>&1
 
-REM  Autologgers de diagnostic OFF
-for %%L in (AppModel Cellcore DiagLog SQMLogger Diagtrack-Listener) do (
+REM  Autologgers de diagnostic OFF.
+REM  DiagLog reste actif sur portable Normal+Eco : les donnees E3/SRUM de batterie
+REM  et certains diagnostics Windows reposent sur la collecte de diagnostic au demarrage.
+for %%L in (AppModel Cellcore SQMLogger Diagtrack-Listener) do (
   reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\%%~L" /v Start /t REG_DWORD /d 0 /f >nul 2>&1
+)
+if "!IS_NORMAL_ECO_LAPTOP!"=="1" (
+  reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\DiagLog" /v Start /t REG_DWORD /d 1 /f >nul 2>&1
+) else (
+  reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\DiagLog" /v Start /t REG_DWORD /d 0 /f >nul 2>&1
 )
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\ReadyBoot" /v Start /t REG_DWORD /d 1 /f >nul 2>&1
 
@@ -1296,7 +1313,6 @@ for %%S in (
     RemoteAccess
     RemoteRegistry
     RetailDemo
-    SEMgrSvc
     shpamsvc
     ssh-agent
     UevAgentService
@@ -1305,6 +1321,16 @@ for %%S in (
 ) do (
   call :SET_EXISTING_SERVICE_START "%%S" 4
 )
+
+REM  SEMgrSvc est Manual sur Windows 11 stock. Sur un portable Normal+Eco, le conserver
+REM  en Manual : le forcer Disabled peut faire attendre/echouer la page moderne
+REM  Parametres > Systeme > Alimentation et batterie. Les autres profils gardent le tuning historique.
+if "!IS_NORMAL_ECO_LAPTOP!"=="1" (
+  call :SET_EXISTING_SERVICE_START "SEMgrSvc" 3
+) else (
+  call :SET_EXISTING_SERVICE_START "SEMgrSvc" 4
+)
+
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Configuration demandee pour les services presents%COLOR_RESET%
 if !SERVICE_CONFIG_SKIPPED! GTR 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%!SERVICE_CONFIG_SKIPPED! service ou services absents ignores. Aucune entree inutile creee%COLOR_RESET%
 set "SERVICE_CONFIG_SKIPPED="
@@ -1901,7 +1927,8 @@ if "!PROFIL_USAGE!"=="0" (
     netsh int tcp set heuristics forcews=enabled >nul 2>&1
     netsh int tcp set global rss=enabled initialrto=3000 nonsackrttresiliency=disabled maxsynretransmissions=2 >nul 2>&1
 ) else (
-    REM ForceWS=default restaure le defaut systeme (active). WSH n'a plus d'effet.
+    REM Stock Windows 11 25H2 mesure : Initial RTO=1000 ms et Max SYN Retransmissions=4.
+    REM La documentation netsh affiche encore 3000/2 ; Normal suit ici l'etat client reel mesure.
     netsh int tcp set heuristics forcews=default >nul 2>&1
     netsh int tcp set global rss=enabled initialrto=1000 nonsackrttresiliency=disabled maxsynretransmissions=4 >nul 2>&1
 )
@@ -2133,8 +2160,9 @@ echo %COLOR_WHITE%  Desactive aussi certains raccourcis d'accessibilite selon le
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 
-REM  Avertissement mode manuel sur PC portable : le profil Normal conserve l'acceleration souris desactivee.
-if "!SKIP_PAUSE!"=="0" if "!DETECTE_PORTABLE!"=="1" (
+REM  Sur portable Normal+Eco, conserver le comportement pointeur Windows.
+REM  Les autres profils gardent le tuning historique sans acceleration.
+if "!SKIP_PAUSE!"=="0" if "!DETECTE_PORTABLE!"=="1" if not "!IS_NORMAL_ECO_LAPTOP!"=="1" (
     echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%PC portable detecte.%COLOR_RESET%
     echo %COLOR_WHITE%Ces reglages peuvent modifier :%COLOR_RESET%
     echo %COLOR_WHITE%  %COLOR_YELLOW%Trackpad%COLOR_RESET% : sans acceleration, le mouvement peut sembler moins naturel.%COLOR_RESET%
@@ -2146,17 +2174,34 @@ REM  Les deux profils partagent volontairement le meme comportement de souris : 
 REM  mouvement 1:1 reste le choix de l'outil, y compris en mode Normal.
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%GAMING%COLOR_RESET%%COLOR_WHITE% : souris 1:1 sans acceleration.%COLOR_RESET%
+) else if "!IS_NORMAL_ECO_LAPTOP!"=="1" (
+    echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%NORMAL + ECO%COLOR_RESET%%COLOR_WHITE% : comportement pointeur Windows conserve.%COLOR_RESET%
 ) else (
-    echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%NORMAL%COLOR_RESET%%COLOR_WHITE% : souris 1:1 sans acceleration (choix de l'outil).%COLOR_RESET%
+    echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%NORMAL%COLOR_RESET%%COLOR_WHITE% : souris 1:1 sans acceleration.%COLOR_RESET%
 )
 echo.
 
 REM  6.1 - Souris optimisee
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation de la reactivite souris...%COLOR_RESET%
-reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
-reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
-reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris desactivee - Mouvement 1:1 actif%COLOR_RESET%
+if "!PROFIL_USAGE!"=="0" (
+    echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'acceleration de la souris...%COLOR_RESET%
+    reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris desactivee - Mouvement 1:1 actif%COLOR_RESET%
+) else if "!IS_NORMAL_ECO_LAPTOP!"=="1" (
+    REM Valeurs du pointeur Windows stock mesure : Enhance pointer precision actif (1 / 6 / 10).
+    reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "1" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "6" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "10" /f >nul 2>&1
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Comportement pointeur Windows conserve pour Normal + Eco sur portable.%COLOR_RESET%
+) else (
+    REM Comportement historique des autres profils Normal.
+    reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
+    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris conservee desactivee pour ce profil Normal.%COLOR_RESET%
+)
 if "!PROFIL_USAGE!"=="0" reg add "HKCU\Control Panel\Mouse" /v "MouseDelay" /t REG_SZ /d "0" /f >nul 2>&1
 if "!PROFIL_USAGE!"=="1" reg delete "HKCU\Control Panel\Mouse" /v "MouseDelay" /f >nul 2>&1
 reg add "HKCU\Control Panel\Mouse" /v "SnapToDefaultButton" /t REG_SZ /d "0" /f >nul 2>&1
@@ -4388,6 +4433,7 @@ goto :MENU_PRINCIPAL
 
 
 :INSTALLER_VISUAL_REDIST
+set "VC_SECTION_RESULT=0"
 call :SCREEN_HEADER " INSTALLATION DES RUNTIMES VISUAL C++ ET DIRECTX"
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Detection du runtime Visual C++ v14 actuel...%COLOR_RESET%
@@ -4427,15 +4473,22 @@ REM  Creer un dossier temporaire pour les installations
 set "VCREDIST_DIR=%TEMP%\VCRedistInstall_%RANDOM%_%RANDOM%"
 if not exist "%VCREDIST_DIR%" mkdir "%VCREDIST_DIR%" >nul 2>&1
 
+REM  Telecharger les packages manquants avant installation.
+REM  Si x86 et x64 manquent, curl les recupere en parallele pour exploiter une connexion rapide.
+call :DOWNLOAD_VC14_REDISTS
+if !errorlevel! NEQ 0 (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Un ou plusieurs packages Visual C++ n'ont pas pu etre telecharges.%COLOR_RESET%
+)
+
 REM  Visual C++ v14 actuel x86
 set /a "VC_STEP+=1"
 call :PROGRESS_BAR %VC_STEP% %VC_TOTAL% "Visual C++ v14 actuel x86"
-if "%VC2015X86%"=="0" call :INSTALL_VC14_REDIST x86 "https://aka.ms/vc14/vc_redist.x86.exe" "vc2015x86.exe"
+if "%VC2015X86%"=="0" if exist "%VCREDIST_DIR%\vc2015x86.exe" call :INSTALL_VC14_FILE x86 "vc2015x86.exe"
 
 REM  Visual C++ v14 actuel x64
 set /a "VC_STEP+=1"
 call :PROGRESS_BAR %VC_STEP% %VC_TOTAL% "Visual C++ v14 actuel x64"
-if "%VC2015X64%"=="0" call :INSTALL_VC14_REDIST x64 "https://aka.ms/vc14/vc_redist.x64.exe" "vc2015x64.exe"
+if "%VC2015X64%"=="0" if exist "%VCREDIST_DIR%\vc2015x64.exe" call :INSTALL_VC14_FILE x64 "vc2015x64.exe"
 echo.
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification des installations...%COLOR_RESET%
 
@@ -4447,6 +4500,7 @@ echo.
 if "%VCINSTALL%"=="2" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification reelle : %COLOR_GREEN%%VCINSTALL%/2%COLOR_RESET% %COLOR_WHITE%versions presentes.%COLOR_RESET%
 ) else (
+    set "VC_SECTION_RESULT=1"
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Verification reelle : %COLOR_RED%%VCINSTALL%/2%COLOR_RESET% %COLOR_WHITE%versions presentes.%COLOR_RESET%
 )
 if "!SKIP_PAUSE!"=="0" timeout /t 3 /nobreak >nul
@@ -4473,18 +4527,26 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo.
 call :INSTALLER_DIRECTX
 set "DX_SECTION_RESULT=!errorlevel!"
+set "RUNTIME_SECTION_RESULT=!DX_SECTION_RESULT!"
+if "!VC_SECTION_RESULT!"=="1" set "RUNTIME_SECTION_RESULT=1"
 
 if "!SKIP_PAUSE!"=="0" (
     echo.
     pause
 )
-exit /b !DX_SECTION_RESULT!
+set "VC_SECTION_RESULT="
+set "DX_SECTION_RESULT="
+if "!RUNTIME_SECTION_RESULT!"=="0" (
+    set "RUNTIME_SECTION_RESULT="
+    exit /b 0
+)
+set "RUNTIME_SECTION_RESULT="
+exit /b 1
 
 :INSTALLER_DIRECTX
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification de l'installation de DirectX...%COLOR_RESET%
 
-REM  Detection de DirectX June 2010 (XAudio2_7.dll est un bon indicateur).
-REM  Sur Windows 64 bits, les runtimes x64 ET x86 doivent etre presents.
+REM  Detection de DirectX June 2010.
 call :DETECT_DIRECTX_JUNE2010
 
 if "%DX_INSTALLED%"=="1" (
@@ -4494,22 +4556,26 @@ if "%DX_INSTALLED%"=="1" (
     exit /b 0
 )
 
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation de l'installation...%COLOR_RESET%
 set "DX_TEMP=%TEMP%\DirectXInstall_%RANDOM%_%RANDOM%"
 mkdir "%DX_TEMP%" >nul 2>&1
 
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Telechargement de DirectX Redist June 2010, environ 95 Mo...%COLOR_RESET%
-powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $f=Join-Path $env:DX_TEMP 'directx_redist.exe'; Invoke-WebRequest -Uri 'https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe' -OutFile $f -UseBasicParsing -ErrorAction Stop; if((Get-Item -LiteralPath $f).Length -lt 80000000){throw 'size'};$s=Get-AuthenticodeSignature -LiteralPath $f;if($s.Status -ne 'Valid' -or $s.SignerCertificate.Subject -notmatch 'Microsoft'){throw 'signature'};exit 0 } catch { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue; exit 1 }" >nul 2>&1
+REM  PC neuf + connexion rapide : utiliser le redist complet Microsoft en un seul flux.
+REM  curl est prioritaire pour saturer une bonne connexion ; BITS puis PowerShell servent de fallback.
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Telechargement DirectX June 2010 optimise (~95 Mo)...%COLOR_RESET%
+set "DX_OFFLINE=%DX_TEMP%\directx_redist.exe"
+call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://download.microsoft.com/download/8/4/A/84A35BF1-DAFE-4AE8-82AF-AD2AE20B6B14/directx_Jun2010_redist.exe" "%DX_OFFLINE%" 80000000
 if !errorlevel! NEQ 0 (
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Echec du telechargement de DirectX.%COLOR_RESET%
     rd /s /q "%DX_TEMP%" >nul 2>&1
     set "DX_INSTALLED="
     set "DX_TEMP="
+    set "DX_OFFLINE="
+    set "DX_REBOOT="
     exit /b 1
 )
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Extraction des fichiers...%COLOR_RESET%
-REM  Utiliser l'extracteur integre de DirectX si possible, ou fallback
-"%DX_TEMP%\directx_redist.exe" /Q /T:"%DX_TEMP%" >nul 2>&1
+
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Extraction du package DirectX complet...%COLOR_RESET%
+"%DX_OFFLINE%" /Q /T:"%DX_TEMP%" >nul 2>&1
 set "DX_RESULT=!errorlevel!"
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Installation silencieuse en cours...%COLOR_RESET%
@@ -4536,7 +4602,6 @@ if "!DX_RESULT!"=="0" (
             )
         ) else (
             echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%DXSETUP a retourne le code !DX_RESULT!.%COLOR_RESET%
-            echo %COLOR_WHITE%L'installation est peut-etre incomplete.%COLOR_RESET%
         )
     ) else (
         set "DX_RESULT=1"
@@ -4544,15 +4609,15 @@ if "!DX_RESULT!"=="0" (
     )
 ) else (
     set "DX_RESULT=1"
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Une erreur est survenue lors de l'extraction.%COLOR_RESET%
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Une erreur est survenue lors de l'extraction DirectX.%COLOR_RESET%
 )
 
-REM  Nettoyage
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Nettoyage des fichiers temporaires...%COLOR_RESET%
 rd /s /q "%DX_TEMP%" >nul 2>&1
 
 set "DX_INSTALLED="
 set "DX_TEMP="
+set "DX_OFFLINE="
 set "DX_REBOOT="
 if "!DX_RESULT!"=="0" (
     set "DX_RESULT="
@@ -4560,7 +4625,6 @@ if "!DX_RESULT!"=="0" (
 )
 set "DX_RESULT="
 exit /b 1
-
 
 :SUPPRIMER_BLOATWARES
 call :SCREEN_HEADER " SUPPRESSION DES APPLICATIONS PREINSTALLEES"
@@ -4871,32 +4935,118 @@ if defined ProgramFiles(x86) (
 )
 exit /b 0
 
-:INSTALL_VC14_REDIST
-set "VC_ARCH=%~1"
-set "VC_URL=%~2"
-set "VC_FILE=%~3"
-powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; try { $f=Join-Path $env:VCREDIST_DIR $env:VC_FILE; Invoke-WebRequest -Uri $env:VC_URL -OutFile $f -UseBasicParsing -ErrorAction Stop; if((Get-Item -LiteralPath $f).Length -lt 5000000){throw 'size'};$s=Get-AuthenticodeSignature -LiteralPath $f;if($s.Status -ne 'Valid' -or $s.SignerCertificate.Subject -notmatch 'Microsoft'){throw 'signature'};exit 0 } catch { Remove-Item -LiteralPath $f -Force -ErrorAction SilentlyContinue; exit 1 }" >nul 2>&1
-if !errorlevel! NEQ 0 (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Echec du telechargement de Visual C++ v14 !VC_ARCH!.%COLOR_RESET%
-) else (
-    start /wait "" "!VCREDIST_DIR!\!VC_FILE!" /q /norestart >nul 2>&1
-    set "VC_EXIT=!errorlevel!"
-    if "!VC_EXIT!"=="0" (
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe.%COLOR_RESET%
-    ) else if "!VC_EXIT!"=="3010" (
-        echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe - redemarrage requis.%COLOR_RESET%
-    ) else if "!VC_EXIT!"=="1641" (
-        echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe - redemarrage initie/requis.%COLOR_RESET%
-    ) else if "!VC_EXIT!"=="1638" (
-        echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : une version compatible est deja presente.%COLOR_RESET%
-    ) else (
-        echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : code installateur !VC_EXIT!.%COLOR_RESET%
+:DOWNLOAD_VC14_REDISTS
+set "VC_DOWNLOAD_FAILED=0"
+set "VC_X86_FILE=%VCREDIST_DIR%\vc2015x86.exe"
+set "VC_X64_FILE=%VCREDIST_DIR%\vc2015x64.exe"
+
+REM  Cas courant d'un PC neuf : les deux packages manquent.
+REM  curl >= 7.66 sait les telecharger en parallele ; si l'option n'est pas disponible,
+REM  la verification ci-dessous declenche automatiquement le fallback individuel.
+if "%VC2015X86%"=="0" if "%VC2015X64%"=="0" (
+    where curl.exe >nul 2>&1
+    if !errorlevel! EQU 0 (
+        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Telechargement parallele Visual C++ x86 + x64...%COLOR_RESET%
+        curl.exe --fail --location --retry 3 --retry-delay 1 --connect-timeout 10 --max-time 180 --parallel --parallel-immediate --parallel-max 2 --silent --show-error ^
+          --output "%VC_X86_FILE%" "https://aka.ms/vc14/vc_redist.x86.exe" ^
+          --output "%VC_X64_FILE%" "https://aka.ms/vc14/vc_redist.x64.exe"
     )
 )
+
+if "%VC2015X86%"=="0" (
+    call :VALIDATE_MICROSOFT_SIGNED_EXE "%VC_X86_FILE%" 5000000
+    if !errorlevel! NEQ 0 call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://aka.ms/vc14/vc_redist.x86.exe" "%VC_X86_FILE%" 5000000
+    if !errorlevel! NEQ 0 set "VC_DOWNLOAD_FAILED=1"
+)
+if "%VC2015X64%"=="0" (
+    call :VALIDATE_MICROSOFT_SIGNED_EXE "%VC_X64_FILE%" 5000000
+    if !errorlevel! NEQ 0 call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://aka.ms/vc14/vc_redist.x64.exe" "%VC_X64_FILE%" 5000000
+    if !errorlevel! NEQ 0 set "VC_DOWNLOAD_FAILED=1"
+)
+
+set "VC_X86_FILE="
+set "VC_X64_FILE="
+if "!VC_DOWNLOAD_FAILED!"=="0" (
+    set "VC_DOWNLOAD_FAILED="
+    exit /b 0
+)
+set "VC_DOWNLOAD_FAILED="
+exit /b 1
+
+:INSTALL_VC14_FILE
+set "VC_ARCH=%~1"
+set "VC_FILE=%~2"
+start /wait "" "%VCREDIST_DIR%\%VC_FILE%" /q /norestart >nul 2>&1
+set "VC_EXIT=!errorlevel!"
+if "!VC_EXIT!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe.%COLOR_RESET%
+) else if "!VC_EXIT!"=="3010" (
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe - redemarrage requis.%COLOR_RESET%
+) else if "!VC_EXIT!"=="1641" (
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe - redemarrage initie/requis.%COLOR_RESET%
+) else if "!VC_EXIT!"=="1638" (
+    echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : une version compatible est deja presente.%COLOR_RESET%
+) else (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : code installateur !VC_EXIT!.%COLOR_RESET%
+)
 set "VC_ARCH="
-set "VC_URL="
 set "VC_FILE="
 exit /b 0
+
+:DOWNLOAD_MICROSOFT_SIGNED_EXE
+set "DL_URL=%~1"
+set "DL_FILE=%~2"
+set "DL_MIN_BYTES=%~3"
+if exist "%DL_FILE%" del /f /q "%DL_FILE%" >nul 2>&1
+
+REM  Fast path Windows 10/11 : curl natif, plus leger que Invoke-WebRequest.
+where curl.exe >nul 2>&1
+if !errorlevel! EQU 0 (
+    curl.exe --fail --location --retry 3 --retry-delay 1 --connect-timeout 10 --max-time 300 --silent --show-error --output "%DL_FILE%" "%DL_URL%"
+    if !errorlevel! EQU 0 (
+        call :VALIDATE_MICROSOFT_SIGNED_EXE "%DL_FILE%" "%DL_MIN_BYTES%"
+        if !errorlevel! EQU 0 goto :DOWNLOAD_MICROSOFT_SIGNED_EXE_OK
+    )
+    if exist "%DL_FILE%" del /f /q "%DL_FILE%" >nul 2>&1
+)
+
+REM  Fallback BITS : efficace sur Windows et tolerant aux reseaux filtres.
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{Import-Module BitsTransfer -ErrorAction Stop;Start-BitsTransfer -Source $env:DL_URL -Destination $env:DL_FILE -Priority Foreground -RetryInterval 60 -RetryTimeout 60 -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! EQU 0 (
+    call :VALIDATE_MICROSOFT_SIGNED_EXE "%DL_FILE%" "%DL_MIN_BYTES%"
+    if !errorlevel! EQU 0 goto :DOWNLOAD_MICROSOFT_SIGNED_EXE_OK
+)
+if exist "%DL_FILE%" del /f /q "%DL_FILE%" >nul 2>&1
+
+REM  Dernier recours compatible avec les environnements ou curl/BITS sont bloques.
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12;Invoke-WebRequest -Uri $env:DL_URL -OutFile $env:DL_FILE -UseBasicParsing -TimeoutSec 300 -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! EQU 0 (
+    call :VALIDATE_MICROSOFT_SIGNED_EXE "%DL_FILE%" "%DL_MIN_BYTES%"
+    if !errorlevel! EQU 0 goto :DOWNLOAD_MICROSOFT_SIGNED_EXE_OK
+)
+if exist "%DL_FILE%" del /f /q "%DL_FILE%" >nul 2>&1
+set "DL_URL="
+set "DL_FILE="
+set "DL_MIN_BYTES="
+exit /b 1
+
+:DOWNLOAD_MICROSOFT_SIGNED_EXE_OK
+set "DL_URL="
+set "DL_FILE="
+set "DL_MIN_BYTES="
+exit /b 0
+
+:VALIDATE_MICROSOFT_SIGNED_EXE
+if not exist "%~1" exit /b 1
+for %%A in ("%~1") do if %%~zA LSS %~2 exit /b 1
+set "VALIDATE_MS_FILE=%~1"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$s=Get-AuthenticodeSignature -LiteralPath $env:VALIDATE_MS_FILE;if($s.Status-ne'Valid'-or$s.SignerCertificate.Subject-notmatch'Microsoft'){exit 1};exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! EQU 0 (
+    set "VALIDATE_MS_FILE="
+    exit /b 0
+)
+set "VALIDATE_MS_FILE="
+exit /b 1
 
 :DETECT_DIRECTX_JUNE2010
 set "DX_INSTALLED=0"
