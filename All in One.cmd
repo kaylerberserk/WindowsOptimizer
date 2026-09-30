@@ -100,6 +100,19 @@ set "DESACTIVER_IA=0"
 set "DESACTIVER_UAC=0"
 set "SKIP_PAUSE=0"
 set "AIO_MODE=0"
+:: Compteur d'erreurs commun aux helpers qui ne savent renvoyer qu'un code binaire
+:: (powercfg, WMI, registres en masse). Une section remet STEP_ERRORS a zero avant
+:: un groupe de reglage, puis appelle :STEP_RESULT pour son message de fin : le
+:: [FAIT] n'est affiche que si aucun helper du groupe n'a echoue.
+set "STEP_ERRORS=0"
+
+:: Commandes d'enumeration des sous-cles de classe, partagees par la section 4
+:: (GPU) et la section 7 (energie GPU / PCIe) et leurs restaurations. Le filtre
+:: ecarte les sous-cles "Configuration" et "Properties" pour ne garder que les
+::NNNN correspondant a un peripherique reel. Les echappements ^ sont consommes par
+:: l'affectation : la valeur stockee est directement exploitable dans un for /f.
+set "WINOPT_QUERY_GPU_CLASS=reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$""
+set "WINOPT_QUERY_PCIE_CLASS=reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$""
 :: SKIP_PAUSE=0 : menus normaux (confirmations + pause entre sections)
 :: SKIP_PAUSE=1 : mode Tout optimiser - enchaine sans re-demander (reponses deja prises)
 
@@ -447,18 +460,16 @@ echo.
 <nul set /p ="%STYLE_BOLD%%COLOR_YELLOW%Voulez-vous redemarrer maintenant ? [O/N] : %COLOR_RESET%"
 call :AZCHOICE ON
 if !errorlevel! NEQ 1 exit /b 0
-if !errorlevel! EQU 1 (
-    shutdown /r /t 10 /c "Redemarrage demande par WindowsOptimizer"
-    if !errorlevel! EQU 0 (
-        cls
-        echo.
-        echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Redemarrage programme dans 10 secondes...%COLOR_RESET%
-        timeout /t 5 /nobreak >nul
-        exit /b 0
-    )
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Impossible de programmer le redemarrage.%COLOR_RESET%
-    exit /b 1
+shutdown /r /t 10 /c "Redemarrage demande par WindowsOptimizer"
+if !errorlevel! EQU 0 (
+    cls
+    echo.
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Redemarrage programme dans 10 secondes...%COLOR_RESET%
+    timeout /t 5 /nobreak >nul
+    exit /b 0
 )
+echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Impossible de programmer le redemarrage.%COLOR_RESET%
+exit /b 1
 
 :FINISH_ACTION
 echo.
@@ -1023,11 +1034,15 @@ if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEngCP.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 1 /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 38 /f >nul 2>&1
 ) else (
-    REM Windows stock : Win32PrioritySeparation=2 et aucun override IFEO de l'outil.
+    REM Win32PrioritySeparation : 0x26 = 38 (quantums courts variables + separation
+    REM maximale) est la valeur des versions Windows clientes recentes ; 0x02 = 2 est
+    REM l'ancien libelle "defaut client", retrouve dans la documentation Windows
+    REFUSEE PAR CE SCRIPT. L'ecrire ici s'ecarterait de la valeur client actuelle.
+    REM Valeur conservee telle quelle : choix de l'outil, a valider si besoin.
+    reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 2 /f >nul 2>&1
     for %%V in (CpuPriorityClass IoPriority) do reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v "%%V" /f >nul 2>&1
     reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEng.exe\PerfOptions" /v CpuPriorityClass /f >nul 2>&1
     reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEngCP.exe\PerfOptions" /v CpuPriorityClass /f >nul 2>&1
-    reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 2 /f >nul 2>&1
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages de reactivite appliques%COLOR_RESET%
 
@@ -1067,7 +1082,6 @@ if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v NoStartMenuMorePrograms /t REG_DWORD /d 1 /f >nul 2>&1
 ) else (
     reg delete "HKCU\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v HideRecommendedSection /f >nul 2>&1
-    reg delete "HKCU\SOFTWARE\Policies\Microsoft\Windows\Explorer" /v HideCategoryView /f >nul 2>&1
     reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer" /v NoStartMenuMorePrograms /f >nul 2>&1
 )
 REM  ShowFrequent - Cache des fichiers recents (ne desactive PAS l'indexation Windows)
@@ -1317,14 +1331,17 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Optimisations demarrage et st
 
 REM  1.8 - Utilitaires et Bloatwares (Automatique)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Ajout de l'option Devenir Proprietaire au menu contextuel...%COLOR_RESET%
+REM  Localization : takeown et icacls n'acceptent pas les noms de groupe traduits.
+REM  /d y (Yes) puis /d o (Oui) car la lettre attendue depend de la locale ;
+REM  *S-1-5-32-544 = BUILTIN\Administrateurs, resolu par SID sur toute installation.
 reg add "HKCR\*\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1
 reg add "HKCR\*\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKCR\*\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" && icacls \"%%1\" /grant administrators:F" /f >nul 2>&1
-reg add "HKCR\*\shell\runas" /v "IsolatedCommand" /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" && icacls \"%%1\" /grant administrators:F" /f >nul 2>&1
+reg add "HKCR\*\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /d y || takeown /f \"%%1\" /d o && icacls \"%%1\" /grant *S-1-5-32-544:F" /f >nul 2>&1
+reg add "HKCR\*\shell\runas" /v "IsolatedCommand" /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /d y || takeown /f \"%%1\" /d o && icacls \"%%1\" /grant *S-1-5-32-544:F" /f >nul 2>&1
 reg add "HKCR\Directory\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1
 reg add "HKCR\Directory\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKCR\Directory\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d o || takeown /f \"%%1\" /r /d y && icacls \"%%1\" /grant administrators:F /t" /f >nul 2>&1
-reg add "HKCR\Directory\shell\runas" /v "IsolatedCommand" /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d o || takeown /f \"%%1\" /r /d y && icacls \"%%1\" /grant administrators:F /t" /f >nul 2>&1
+reg add "HKCR\Directory\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d y || takeown /f \"%%1\" /r /d o && icacls \"%%1\" /grant *S-1-5-32-544:F /t" /f >nul 2>&1
+reg add "HKCR\Directory\shell\runas" /v "IsolatedCommand" /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d y || takeown /f \"%%1\" /r /d o && icacls \"%%1\" /grant *S-1-5-32-544:F /t" /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Option Devenir Proprietaire ajoutee au menu contextuel.%COLOR_RESET%
 
 REM  Desactivation des Co-installateurs tiers (Razer/Logitech Popup)
@@ -1431,22 +1448,25 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration de la plan
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\93b8b6dc-0698-4d1c-9ee4-0644e900c85d" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318584" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
+set "STEP_ERRORS=0"
 if "!PROFIL_USAGE!"=="0" (
     powercfg /setacvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 93b8b6dc-0698-4d1c-9ee4-0644e900c85d 2 >nul 2>&1
+    if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
     if "!DETECTE_PORTABLE!"=="1" (
         powercfg /setdcvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 93b8b6dc-0698-4d1c-9ee4-0644e900c85d 5 >nul 2>&1
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage Gaming : performances favorisees sur secteur.%COLOR_RESET%
-        echo %COLOR_WHITE%La batterie reste equilibree.%COLOR_RESET%
+        if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
+        call :STEP_RESULT "Reglage Gaming : performances favorisees sur secteur" "" "Reglage Gaming sur secteur partiellement applique" "La batterie reste equilibree."
     ) else (
         powercfg /setdcvalueindex SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 93b8b6dc-0698-4d1c-9ee4-0644e900c85d 2 >nul 2>&1
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage Gaming : performances favorisees sur secteur et batterie.%COLOR_RESET%
+        if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
+        call :STEP_RESULT "Reglage Gaming : performances favorisees sur secteur et batterie" "" "Reglage Gaming sur secteur et batterie partiellement applique"
     )
 ) else (
     call :SET_POWERCFG_ACDC 54533251-82be-4824-96c1-47b60b740d00 93b8b6dc-0698-4d1c-9ee4-0644e900c85d 5
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Planification des coeurs reglee pour le profil Normal%COLOR_RESET%
+    call :STEP_RESULT "Planification des coeurs reglee pour le profil Normal" "" "Planification des coeurs partiellement reglee pour le profil Normal"
 )
 
-call :FINISH_ACTION "Reglages systeme" "traites"
+call :FINISH_ACTION "Reglages systeme"
 exit /b 0
 
 :OPTIMISATIONS_MEMOIRE
@@ -1498,7 +1518,7 @@ call :SET_MEMORY_POWER_PROFILE
 set "MEMORY_POWER_PROFILE_RC=!errorlevel!"
 if not "!MEMORY_POWER_PROFILE_RC!"=="0" echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Le profil memoire reste partiellement applique.%COLOR_RESET%
 
-call :FINISH_ACTION "Reglages memoire" "traites"
+call :FINISH_ACTION "Reglages memoire"
 exit /b !MEMORY_POWER_PROFILE_RC!
 
 :OPTIMISATIONS_DISQUES
@@ -1577,7 +1597,7 @@ REM  Il est important de NE PAS desactiver cette tache pour maintenir le TRIM au
 schtasks /Change /TN "Microsoft\Windows\Defrag\ScheduledDefrag" /Enable >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Activation demandee : maintenance automatique des disques.%COLOR_RESET%
 
-call :FINISH_ACTION "Reglages disques" "traites"
+call :FINISH_ACTION "Reglages disques"
 exit /b 0
 
 :OPTIMISATIONS_GPU
@@ -1632,8 +1652,9 @@ if "!PROFIL_USAGE!"=="0" (
 
 REM  4.3 - Mode MSI (GPU) et telemetrie NVIDIA
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage des interruptions GPU...%COLOR_RESET%
+set "STEP_ERRORS=0"
 call :SET_DEVICE_MSI_PROFILE Display !PROFIL_USAGE!
-if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Reglage MSI GPU applique partiellement.%COLOR_RESET%
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client" /v "OptInOrOutPreference" /t REG_DWORD /d 0 /f >nul 2>&1
     reg add "HKLM\SOFTWARE\NVIDIA Corporation\Global\NvSvc\Telemetry" /v "FeatureControl" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1645,7 +1666,7 @@ if "!PROFIL_USAGE!"=="0" (
     reg delete "HKLM\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client" /v "OptInOrOutPreference" /f >nul 2>&1
     for %%V in (FeatureControl NvTeleSvc DisplayWatchdog NvMessageBus) do reg delete "HKLM\SOFTWARE\NVIDIA Corporation\Global\NvSvc\Telemetry" /v "%%V" /f >nul 2>&1
 )
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Interruptions GPU reglees.%COLOR_RESET%
+call :STEP_RESULT "Interruptions GPU reglees" "" "Reglage MSI GPU applique partiellement"
 
 REM  4.4 - Desactivation AMD telemetry
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de la telemetrie AMD...%COLOR_RESET%) else (echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des overrides de telemetrie AMD...%COLOR_RESET%)
@@ -1662,7 +1683,7 @@ REM  4.5 - NVIDIA Low Latency
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Application des reglages NVIDIA pour reduire la latence...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     REM MaxFrameLatency est lu par le pilote depuis la cle de classe par carte, pas depuis GraphicsDrivers.
-    for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+    for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
         reg add "%%K" /v MaxFrameLatency /t REG_DWORD /d 1 /f >nul 2>&1
         reg add "%%K" /v LOWLATENCY /t REG_DWORD /d 1 /f >nul 2>&1
         reg add "%%K" /v Node3DLowLatency /t REG_DWORD /d 1 /f >nul 2>&1
@@ -1671,7 +1692,7 @@ if "!PROFIL_USAGE!"=="0" (
     )
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages NVIDIA de faible latence appliques en mode GAMING%COLOR_RESET%
 ) else (
-    for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+    for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
         reg delete "%%K" /v MaxFrameLatency /f >nul 2>&1
         reg delete "%%K" /v LOWLATENCY /f >nul 2>&1
         reg delete "%%K" /v Node3DLowLatency /f >nul 2>&1
@@ -1808,7 +1829,7 @@ if "!HAS_NVIDIA!"=="1" (
     echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%NVIDIA Profile Inspector ignore. Aucun GPU NVIDIA detecte.%COLOR_RESET%
 )
 
-call :FINISH_ACTION "Reglages GPU" "traites"
+call :FINISH_ACTION "Reglages GPU"
 exit /b 0
 
 :OPTIMISATIONS_RESEAU
@@ -1846,7 +1867,7 @@ if "!PROFIL_POWER!"=="0" (
 if "!IS_GAMING_ECO!"=="1" (
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Gaming et Eco combines : latence preservee.%COLOR_RESET%
     echo %COLOR_WHITE%La stabilite mobile et l'autonomie restent prioritaires.%COLOR_RESET%
-    echo %COLOR_WHITE%     Les delais TCP utilises restent ceux documentes par Windows.%COLOR_RESET%
+    echo %COLOR_WHITE%     RSC/LSO, Nagle et DelACK restent sur les valeurs Windows.%COLOR_RESET%
 )
 echo.
 
@@ -1869,8 +1890,12 @@ netsh int ipv4 set global loopbacklargemtu=disabled >nul 2>&1
 netsh int ipv6 set global loopbacklargemtu=disabled >nul 2>&1
 REM minRto se configure uniquement avec 'set supplemental' ; 'set global' ne prend pas ce parametre.
 
-REM initialRTO=3000ms et maxsynretransmissions=2 = valeurs Windows documentees pour l'etablissement TCP (SYN).
-REM initialRTO accepte 300-3000ms et ne regle pas le RTO des paquets une fois la connexion etablie.
+REM initialRTO (300-3000ms) ne regle que l'etablissement TCP (SYN) et pas le RTO
+REM d'une connexion deja etablie. Valeurs retenues par profil :
+REM   Gaming  -> 3000 / 2  (les valeurs Windows documentees)
+REM   Normal  -> 1000 / 4  (reprise plus rapide apres perte, choix de l'outil)
+REM Ne pas confondre ce choix de reglage avec une restauration : seul le mode
+REM Normal reapplique le couple du profil, pas celui du defaut systeme.
 if "!PROFIL_USAGE!"=="0" (
     REM Depuis Windows 11 24H2/25H2, WSH n'est plus utilise. ForceWS reste supporte.
     netsh int tcp set heuristics forcews=enabled >nul 2>&1
@@ -1970,7 +1995,7 @@ if "!PROFIL_POWER!"=="1" (
 ) else (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des parametres de connexion aux valeurs Windows...%COLOR_RESET%
     call :RESET_NAGLE_PROFILE
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Connexion rendue aux valeurs Windows pour le profil Normal.%COLOR_RESET%
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Connexion reglee sur les valeurs du profil Normal.%COLOR_RESET%
 )
 
 REM  5.7 - Optimisation cartes reseau
@@ -2015,11 +2040,13 @@ if "!USB_POWER_DEFERRED!"=="1" (
     ) else (
         echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reduction de la gestion d'energie USB pour limiter la latence...%COLOR_RESET%
     )
+    set "STEP_ERRORS=0"
     call :SET_USB_POWER !PROFIL_POWER!
+    if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
     if "!PROFIL_POWER!"=="1" (
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Economie d'energie USB conservee. Autonomie preservee.%COLOR_RESET%
+        call :STEP_RESULT "Economie d'energie USB conservee. Autonomie preservee" "" "Economie d'energie USB partiellement conservee"
     ) else (
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie USB reduite. Latence minimale demandee.%COLOR_RESET%
+        call :STEP_RESULT "Gestion d'energie USB reduite. Latence minimale demandee" "" "Gestion d'energie USB partiellement reduite"
     )
 )
 set "USB_POWER_DEFERRED="
@@ -2073,11 +2100,13 @@ for /f "tokens=*" %%i in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services\Net
 )
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%NetBIOS desactive%COLOR_RESET%) else (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%NetBIOS rendu au stock Windows%COLOR_RESET%)
 
-REM  5.12 - RssBaseCpu (Gaming : interrupts NIC decales du core 0)
-if "!PROFIL_USAGE!"=="0" (
+REM  5.12 - RssBaseCpu (interrupts NIC decales du core 0)
+REM  Reglage de carte reseau : suit donc PROFIL_POWER comme le reste de la section 5
+REM  (cf. regle de propriete ligne 87), et non PROFIL_USAGE.
+if "!PROFIL_POWER!"=="0" (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Repartition des interruptions de la carte reseau...%COLOR_RESET%
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Ndis\Parameters" /v RssBaseCpu /t REG_DWORD /d 1 /f >nul 2>&1
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Interruptions reseau reglees pour le profil Gaming.%COLOR_RESET%
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Interruptions reseau reglees pour Performance max.%COLOR_RESET%
 ) else (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de la repartition des interruptions reseau Windows...%COLOR_RESET%
     reg delete "HKLM\SYSTEM\CurrentControlSet\Services\Ndis\Parameters" /v RssBaseCpu /f >nul 2>&1
@@ -2089,7 +2118,7 @@ nbtstat -R >nul 2>&1
 nbtstat -RR >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Caches de connexion purges.%COLOR_RESET%
 
-call :FINISH_ACTION "Reglages reseau" "traites"
+call :FINISH_ACTION "Reglages reseau"
 exit /b !NETWORK_SECTION_ERROR!
 
 :OPTIMISATIONS_PERIPHERIQUES
@@ -2113,45 +2142,24 @@ if "!SKIP_PAUSE!"=="0" if "!DETECTE_PORTABLE!"=="1" (
     echo.
 )
 
+REM  Les deux profils partagent volontairement le meme comportement de souris : le
+REM  mouvement 1:1 reste le choix de l'outil, y compris en mode Normal.
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%GAMING%COLOR_RESET%%COLOR_WHITE% : souris 1:1 sans acceleration.%COLOR_RESET%
 ) else (
-    if "!DETECTE_PORTABLE!"=="1" (
-        echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%NORMAL%COLOR_RESET%%COLOR_WHITE% : souris 1:1 sans acceleration.%COLOR_RESET%
-    ) else (
-        echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%NORMAL%COLOR_RESET%%COLOR_WHITE% : souris 1:1 sans acceleration.%COLOR_RESET%
-    )
+    echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%NORMAL%COLOR_RESET%%COLOR_WHITE% : souris 1:1 sans acceleration (choix de l'outil).%COLOR_RESET%
 )
 echo.
 
 REM  6.1 - Souris optimisee
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation de la reactivite souris...%COLOR_RESET%
-set "KEEP_MOUSE_ACCEL=0"
-if "!KEEP_MOUSE_ACCEL!"=="1" (
-    echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage du trackpad avec une acceleration legere...%COLOR_RESET%
-    reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "1" /f >nul 2>&1
-    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "4" /f >nul 2>&1
-    reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "12" /f >nul 2>&1
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration legere conservee. Trackpad regle.%COLOR_RESET%
-) else (
-    if "!PROFIL_USAGE!"=="0" (
-        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'acceleration de la souris...%COLOR_RESET%
-        reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
-        reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
-        reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris desactivee - Mouvement 1:1 actif%COLOR_RESET%
-    ) else (
-        REM Acceleration souris conservee desactivee : choix de l'utilisateur - accel OFF sur sa machine.
-        reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
-        reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
-        reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris conservee desactivee - choix utilisateur%COLOR_RESET%
-    )
-)
+reg add "HKCU\Control Panel\Mouse" /v "MouseSpeed" /t REG_SZ /d "0" /f >nul 2>&1
+reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold1" /t REG_SZ /d "0" /f >nul 2>&1
+reg add "HKCU\Control Panel\Mouse" /v "MouseThreshold2" /t REG_SZ /d "0" /f >nul 2>&1
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Acceleration souris desactivee - Mouvement 1:1 actif%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" reg add "HKCU\Control Panel\Mouse" /v "MouseDelay" /t REG_SZ /d "0" /f >nul 2>&1
 if "!PROFIL_USAGE!"=="1" reg delete "HKCU\Control Panel\Mouse" /v "MouseDelay" /f >nul 2>&1
 reg add "HKCU\Control Panel\Mouse" /v "SnapToDefaultButton" /t REG_SZ /d "0" /f >nul 2>&1
-set "KEEP_MOUSE_ACCEL="
 REM Nettoyage des anciens emplacements utilises par les profils d'entree precedents.
 for %%V in (MouseDataQueueSize ThreadPriority) do reg delete "HKLM\SYSTEM\CurrentControlSet\Services\mouhid\Parameters" /v "%%V" /f >nul 2>&1
 for %%V in (KeyboardDataQueueSize ThreadPriority) do reg delete "HKLM\SYSTEM\CurrentControlSet\Services\kbdhid\Parameters" /v "%%V" /f >nul 2>&1
@@ -2202,9 +2210,10 @@ if "!PROFIL_USAGE!"=="0" (
 
 REM  6.4 - MSI Mode Universel (Latence Peripheriques)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage des interruptions USB...%COLOR_RESET%
+set "STEP_ERRORS=0"
 call :SET_DEVICE_MSI_PROFILE USB !PROFIL_USAGE!
-if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Reglage MSI USB applique partiellement.%COLOR_RESET%
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Interruptions USB reglees.%COLOR_RESET%
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
+call :STEP_RESULT "Interruptions USB reglees" "" "Reglage MSI USB applique partiellement"
 
 
 
@@ -2239,7 +2248,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Traitement des entrees HID et delai d'entree optimises.%COLOR_RESET%) else (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Overrides HID retires ; traitement rendu a Windows.%COLOR_RESET%)
 
-call :FINISH_ACTION "Reglages peripheriques" "traites"
+call :FINISH_ACTION "Reglages peripheriques"
 exit /b 0
 
 :TOGGLE_ECONOMIES_ENERGIE
@@ -2303,7 +2312,7 @@ set "POWER_PLAN_ALREADY_ACTIVE="
 REM  7.2 - GPU Power Management (ULPS & PowerMizer)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la gestion d'energie du GPU AMD et NVIDIA...%COLOR_RESET%
 REM  ULPS OFF - AMD et PowerMizer NVIDIA, en un seul parcours des instances GPU.
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg add "%%K" /v EnableUlps /t REG_DWORD /d 0 /f >nul 2>&1
   reg add "%%K" /v EnableUlps_NA /t REG_DWORD /d 0 /f >nul 2>&1
   reg add "%%K" /v PowerMizerEnable /t REG_DWORD /d 1 /f >nul 2>&1
@@ -2317,6 +2326,7 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie du GPU regl
 
 REM  7.3 - Parametres avances du plan d'alimentation (user standard)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration avancee du plan d'alimentation...%COLOR_RESET%
+set "STEP_ERRORS=0"
 
 call :SET_POWERCFG_ACDC 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4a42-b16a-e040e769756e 0
 call :SET_POWERCFG_ACDC 0d7dbae2-4294-402a-ba8e-26777e8488cd 309dce9b-bef4-4119-9921-a851fb12f0f4 1
@@ -2338,17 +2348,18 @@ call :SET_POWERCFG_ACDC c763b4ec-0e50-4b6b-9bed-2b92a6ee884e 7ec1751b-60ed-4588-
 call :SET_POWERCFG_ACDC f693fb01-e858-4f00-b20f-f30e12ac06d6 191f65b5-d45c-4a4f-8aae-1ab8bfd980e6 1
 call :SET_POWERCFG_ACDC e276e160-7cb0-43c6-b20b-73f5dce39954 a1662ab2-9d34-4e53-ba8b-2639b9e20857 3
 
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Parametres avances du plan d'alimentation appliques%COLOR_RESET%
+call :STEP_RESULT "Parametres avances du plan d'alimentation appliques" "" "Parametres avances du plan d'alimentation partiellement appliques" "Windows a refuse certains reglages de ce materiel ; les autres restent actifs."
 
 REM  7.4 - Optimisations CPU (Intel Hybrid + AMD Core Parking)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Le processeur reste pret a repondre rapidement...%COLOR_RESET%
+set "STEP_ERRORS=0"
 
 REM  Intel Hybrid CPUs (Alder Lake/Raptor Lake/Meteor Lake)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Les coeurs du processeur restent disponibles.%COLOR_RESET%
 REM  E-cores (0cc5b647...-583) : 100 = aucun E-core parque
 call :SET_POWERCFG_ACDC 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 100
 call :SET_POWERCFG_ACDC 54533251-82be-4824-96c1-47b60b740d00 4d2b0152-7d5c-498b-88e2-34345392a2c5 5000
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Coeurs de processeur maintenus disponibles.%COLOR_RESET%
+call :STEP_RESULT "Coeurs de processeur maintenus disponibles" "" "Reglages de repartition des coeurs partiellement appliques"
 
 REM  Desactivation Core Parking (Intel + AMD)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Le processeur evite la mise en veille automatique des coeurs.%COLOR_RESET%
@@ -2356,15 +2367,17 @@ REM  P-cores (0cc5b647...-584) : 100 = aucun P-core parque. Meme GUID pour Intel
 REM  (le parking core utilise le meme sous-groupe SUB_PROCESSOR 0cc5b647 sur les deux architectures)
 REM  GUID SUB_PROCESSOR en dur (alias SUB_PROCESSOR non fiable selon la locale Windows)
 call :SET_POWERCFG_ACDC 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318584 100
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage des coeurs demande.%COLOR_RESET%
+call :STEP_RESULT "Reglage des coeurs demande" "" "Reglage des coeurs partiellement applique"
 
 REM  7.5 - Desactivation economies d'energie USB et peripheriques HID/USB
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reduction de la mise en veille des peripheriques...%COLOR_RESET%
 REM Le second parametre differe l'activation du plan : elle est groupee en fin de section 7.
+set "STEP_ERRORS=0"
 call :SET_USB_POWER 0 1
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 REM Les valeurs Device Parameters/WDF appartiennent aux pilotes et varient selon chaque peripherique.
 REM La commande WMI ci-dessus suffit pour le profil ; aucun forcage registre destructif n'est applique.
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Mise en veille des peripheriques HID et USB reduite.%COLOR_RESET%
+call :STEP_RESULT "Mise en veille des peripheriques HID et USB reduite" "" "Mise en veille des peripheriques HID et USB partiellement reduite"
 
 REM  7.6 - Desactivation du demarrage rapide Fast Startup
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation du demarrage rapide Windows...%COLOR_RESET%
@@ -2485,32 +2498,34 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage PCI Express demande ;
 REM  7.13 - Optimisations stockage et disques
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la gestion d'energie du stockage...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /t REG_DWORD /d 0 /f >nul 2>&1
-powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path ('HKLM:\SYSTEM\CurrentControlSet\Control\Class\'+$c) -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; New-ItemProperty -Path $p -Name 'EnableHIPM' -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name 'EnableDIPM' -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name 'EnableHDDParking' -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null } }" >nul 2>&1
+call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -PropertyType DWord -Value 0 -Force | Out-Null
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie du stockage reglee pour les performances.%COLOR_RESET%
 
 REM  7.14 - Optimisations avancees des services
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des limites de latence du stockage...%COLOR_RESET%
-powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path ('HKLM:\SYSTEM\CurrentControlSet\Control\Class\'+$c) -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; New-ItemProperty -Path $p -Name 'IoLatencyCap' -PropertyType DWord -Value 0 -Force -ErrorAction SilentlyContinue | Out-Null } }" >nul 2>&1
+call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'IoLatencyCap' -PropertyType DWord -Value 0 -Force | Out-Null
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Limites de latence stockage supprimees%COLOR_RESET%
 
 REM  7.15 - GPU PreferMaxPerf
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration GPU en mode performances maximales...%COLOR_RESET%
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg add "%%K" /v PreferMaxPerf /t REG_DWORD /d 1 /f >nul 2>&1
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%GPU configure en mode performances maximales%COLOR_RESET%
 
 REM  7.16 - PCI & peripheriques reseau
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de la mise en veille des peripheriques PCI...%COLOR_RESET%
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('%WINOPT_QUERY_PCIE_CLASS%') do (
   reg add "%%K" /v D3ColdSupported /t REG_DWORD /d 0 /f >nul 2>&1
 )
 REM  7.17 - Energie PCIe
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation gestion d'energie PCIe...%COLOR_RESET%
+set "STEP_ERRORS=0"
 call :SET_POWERCFG_ACDC 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\501a4d13-42af-4429-9fd1-a8218c268e20\ee12f906-d277-404b-b6da-e5fa1a576df5" /v Attributes /t REG_DWORD /d 0 /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie PCIe desactivee%COLOR_RESET%
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
+call :STEP_RESULT "Gestion d'energie PCIe desactivee" "" "Gestion d'energie PCIe partiellement desactivee"
+for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg add "%%K" /v "DisableASPM" /t REG_DWORD /d 1 /f >nul 2>&1
   reg add "%%K" /v "RMForcedMaxPerf" /t REG_DWORD /d 1 /f >nul 2>&1
 )
@@ -2557,7 +2572,7 @@ if not "!AIO_MODE!"=="1" (
     call :SET_MEMORY_POWER_PROFILE
     if !errorlevel! NEQ 0 set "ENERGY_SECTION_RC=1"
 )
-call :FINISH_ACTION "Reglages d'energie Performance max" "traites"
+call :FINISH_ACTION "Reglages d'energie Performance max"
 exit /b !ENERGY_SECTION_RC!
 
 :RESTAURER_ECONOMIES_ENERGIE
@@ -2602,8 +2617,10 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Hibernation et veille hybride
 
 REM  7.3 - USB Selective Suspend
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reactivation de la mise en veille selective USB...%COLOR_RESET%
+set "STEP_ERRORS=0"
 call :SET_USB_POWER 1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restauration de la gestion d'energie USB demandee%COLOR_RESET%
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
+call :STEP_RESULT "Restauration de la gestion d'energie USB demandee" "" "Restauration de la gestion d'energie USB partiellement effectuee"
 
 REM  7.4 - Timer Coalescing
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des surcharges Timer Coalescing...%COLOR_RESET%
@@ -2664,7 +2681,7 @@ REM  7.9 - Seuils d'economie d'energie (20 %% dans le plan Equilibre, pas de res
 
 REM  7.10 - ULPS (AMD) et PowerMizer (Auto)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de la gestion d'energie des GPU AMD et NVIDIA...%COLOR_RESET%
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg delete "%%K" /v EnableUlps /f >nul 2>&1
   reg delete "%%K" /v EnableUlps_NA /f >nul 2>&1
   reg delete "%%K" /v PowerMizerEnable /f >nul 2>&1
@@ -2710,24 +2727,24 @@ REM  7.14 - Mise en veille des disques et stockage
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des parametres de stockage...%COLOR_RESET%
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /f >nul 2>&1
 REM  Supprimer HIPM/DIPM/HDDParking pour revenir aux valeurs par defaut systeme
-powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path ('HKLM:\SYSTEM\CurrentControlSet\Control\Class\'+$c) -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; Remove-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -ErrorAction SilentlyContinue } }" >nul 2>&1
+call :FOR_STORAGE_CLASS Remove-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -ErrorAction SilentlyContinue
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Parametres de stockage restaures%COLOR_RESET%
 
 REM  7.15 - Limites de latence I/O
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des limites de latence I/O...%COLOR_RESET%
-powershell -NoProfile -Command "$classes=@('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}'); foreach($c in $classes){ Get-ChildItem -Path ('HKLM:\SYSTEM\CurrentControlSet\Control\Class\'+$c) -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; Remove-ItemProperty -Path $p -Name 'IoLatencyCap' -ErrorAction SilentlyContinue } }" >nul 2>&1
+call :FOR_STORAGE_CLASS Remove-ItemProperty -Path $p -Name 'IoLatencyCap' -ErrorAction SilentlyContinue
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Limites de latence I/O restaurees%COLOR_RESET%
 
 REM  7.16 - Gestion d'energie GPU
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de la gestion d'energie GPU...%COLOR_RESET%
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg delete "%%K" /v PreferMaxPerf /f >nul 2>&1
 )
 REM Les preferences DirectX appartiennent au profil GPU choisi en section 4.
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie GPU restauree%COLOR_RESET%
 REM  7.17 - Gestion d'energie PCI
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des surcharges d'energie PCI...%COLOR_RESET%
-for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e97d-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+for /f "tokens=*" %%K in ('%WINOPT_QUERY_PCIE_CLASS%') do (
   reg delete "%%K" /v D3ColdSupported /f >nul 2>&1
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie PCI rendue aux pilotes.%COLOR_RESET%
@@ -2765,7 +2782,7 @@ if not "!AIO_MODE!"=="1" (
     call :SET_MEMORY_POWER_PROFILE
     if !errorlevel! NEQ 0 set "ENERGY_SECTION_RC=1"
 )
-call :FINISH_ACTION "Reglages d'energie Eco" "traites"
+call :FINISH_ACTION "Reglages d'energie Eco"
 exit /b !ENERGY_SECTION_RC!
 
 :APPLIQUER_PROFIL_SECURITE
@@ -2955,7 +2972,7 @@ call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Appliquer le mode Defaut Windows ? 
 if !errorlevel! NEQ 0 goto :TOGGLE_PROTECTIONS_NOYAU
 REM Applique integralement le profil Defaut Windows, quel que soit le profil precedent.
 call :RESTAURER_PROTECTIONS_SECURITE
-call :FINISH_ACTION "Mode Defaut Windows" "applique"
+call :FINISH_ACTION "Mode Defaut Windows"
 goto :TOGGLE_PROTECTIONS_NOYAU
 
 :PROTECTIONS_GAMING
@@ -2977,7 +2994,7 @@ set "PROFIL_USAGE=!PROFIL_USAGE_TMP!"
 set "PROFIL_USAGE_TMP="
 set "SKIP_PAUSE=!SKIP_PAUSE_TMP!"
 set "SKIP_PAUSE_TMP="
-call :FINISH_ACTION "Mode Gaming" "applique"
+call :FINISH_ACTION "Mode Gaming"
 goto :TOGGLE_PROTECTIONS_NOYAU
 
 :PROTECTIONS_PERF_MAX
@@ -3013,7 +3030,7 @@ set "SKIP_PAUSE=!SKIP_PAUSE_TMP!"
 set "SKIP_PAUSE_TMP="
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages Performance max demandes : protections reduites.%COLOR_RESET%
 
-call :FINISH_ACTION "Mode Performance max" "applique"
+call :FINISH_ACTION "Mode Performance max"
 goto :TOGGLE_PROTECTIONS_NOYAU
 
 :PROTECTIONS_RETURN
@@ -3089,6 +3106,11 @@ for %%S in (WdBoot WdFilter) do (
 )
 for %%S in (WinDefend WdNisSvc Sense SecurityHealthService WdNisDrv) do sc start %%S >nul 2>&1
 reg query "HKLM\SYSTEM\CurrentControlSet\Services\uhssvc" >nul 2>&1 && reg add "HKLM\SYSTEM\CurrentControlSet\Services\uhssvc" /v Start /t REG_DWORD /d 3 /f >nul 2>&1
+REM  Miroir registre de la desactivation (qui ecrit Start=4 hors du SCM) : sans ce
+REM  rattrapage, un 'sc config' refuse sur un pilote charge laisserait Defender
+REM  desactive sans chemin de retour. Meme valeurs de depart que ci-dessus.
+for %%S in (WinDefend WdNisSvc Sense SecurityHealthService WdNisDrv) do call :SET_EXISTING_SERVICE_START "%%S" 3
+for %%S in (WdBoot WdFilter) do call :SET_EXISTING_SERVICE_START "%%S" 0
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des politiques de desactivation ajoutees par l'outil...%COLOR_RESET%
 for %%V in (DisableRealtimeMonitoring DisableIOAVProtection DisableScriptScanning DisableBehaviorMonitoring DisableOnAccessProtection DisableArchiveScanning DisableEmailScanning DisableRemovableDriveScanning DisableScanningMappedNetworkDrivesForFullScan DisableScanningNetworkFiles) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v "%%V" /f >nul 2>&1
@@ -3110,7 +3132,7 @@ if "!DEFENDER_ACTION_ERROR!"=="0" (
 ) else (
     echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Defender reste partiel ou gere par une politique externe.%COLOR_RESET%
 )
-call :FINISH_ACTION "Reglages Windows Defender" "traites"
+call :FINISH_ACTION "Reglages Windows Defender"
 exit /b !DEFENDER_ACTION_ERROR!
 :DESACTIVER_DEFENDER_SECTION
 if not "!SKIP_PAUSE!"=="0" goto :DESACTIVER_DEFENDER_RUN
@@ -3187,10 +3209,20 @@ schtasks /Change /TN "Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Ref
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de SmartScreen...%COLOR_RESET%
 call :APPLY_SMARTSCREEN_DISABLE_EXTRA
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Preferences Defender et SmartScreen desactives.%COLOR_RESET%
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Desactivation de Defender demandee. Protection reduite selon Windows.%COLOR_RESET%
-call :FINISH_ACTION "Reglages Windows Defender" "traites"
-exit /b 0
+REM  Verification symetrique de la reactivation : si Defender reste actif, la desactivation
+REM  n'a pas abouti et le script doit le dire plutot que d'annoncer un succes.
+powershell -NoProfile -Command "try{$s=Get-MpComputerStatus -ErrorAction Stop;if($s.AntivirusEnabled-and$s.RealTimeProtectionEnabled){exit 1};exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! EQU 0 (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Preferences Defender et SmartScreen desactives.%COLOR_RESET%
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Desactivation de Defender demandee. Protection reduite selon Windows.%COLOR_RESET%
+    call :FINISH_ACTION "Reglages Windows Defender"
+    exit /b 0
+)
+echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Desactivation de Defender incomplete : Windows la maintient active.%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Une strategie de groupe, la protection contre les falsifications ou un%COLOR_RESET%
+echo %COLOR_WHITE%        autre antivirus peut la bloquer. Verifiez l'etat dans Securite Windows.%COLOR_RESET%
+call :FINISH_ACTION "Reglages Windows Defender"
+exit /b 1
 
 :DEFENDER_SECTION_END
 exit /b 1
@@ -3226,7 +3258,7 @@ echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les demandes de confirmation
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de l'UAC...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Activation de l'UAC demandee.%COLOR_RESET%
-call :FINISH_ACTION "Reglage UAC" "traite"
+call :FINISH_ACTION "Reglage UAC"
 exit /b 0
 
 :DESACTIVER_UAC_SECTION
@@ -3250,7 +3282,7 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'UAC...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'UAC demandee.%COLOR_RESET%
-call :FINISH_ACTION "Reglage UAC" "traite"
+call :FINISH_ACTION "Reglage UAC"
 exit /b 0
 
 :TOGGLE_ANIMATIONS
@@ -3304,7 +3336,7 @@ reg delete "HKCU\Control Panel\Desktop" /v CursorShadow /f >nul 2>&1
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ExtendedUIHoverTime /f >nul 2>&1
 
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Activation des animations demandee.%COLOR_RESET%
-call :FINISH_ACTION "Reglages animations" "traites"
+call :FINISH_ACTION "Reglages animations"
 exit /b 0
 
 :DESACTIVER_ANIMATIONS_SECTION
@@ -3349,7 +3381,7 @@ reg add "HKCU\Control Panel\Desktop" /v CursorShadow /t REG_SZ /d "0" /f >nul 2>
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ExtendedUIHoverTime /t REG_DWORD /d 0 /f >nul 2>&1
 
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Desactivation des animations demandee.%COLOR_RESET%
-call :FINISH_ACTION "Reglages animations" "traites"
+call :FINISH_ACTION "Reglages animations"
 exit /b 0
 
 :MENU_IA_WIDGETS_RECALL
@@ -3399,7 +3431,7 @@ if !errorlevel! NEQ 0 (
     call :PROMPT_MANUAL_REBOOT
     goto :MENU_IA_WIDGETS_RECALL
 )
-call :FINISH_ACTION "Toutes les fonctions IA/Widgets" "desactivees"
+call :FINISH_ACTION "Toutes les fonctions IA/Widgets"
 goto :MENU_IA_WIDGETS_RECALL
 
 :DESACTIVER_IA_SECTION
@@ -3407,11 +3439,15 @@ call :SCREEN_HEADER " DESACTIVATION DE COPILOT / WIDGETS / RECALL"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Application des restrictions Copilot, Widgets et Recall.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+set "STEP_ERRORS=0"
 call :CORE_DESACTIVER_COPILOT
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 call :CORE_DESACTIVER_WIDGETS
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 call :CORE_DESACTIVER_RECALL
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Copilot, Widgets et Recall appliquees.%COLOR_RESET%
-exit /b 0
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
+call :STEP_RESULT "Restrictions Copilot, Widgets et Recall appliquees" "" "Restrictions Copilot, Widgets et Recall partiellement appliquees" "Une stratigie ou un composant indisponible peut avoir refuse une partie des reglages."
+exit /b !STEP_ERRORS!
 
 :MENU_IA_OPTION_6_GATE
 if not "!SKIP_PAUSE!"=="0" goto :MENU_IA_OPTION_6
@@ -3435,7 +3471,7 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo.
 call :CORE_DESACTIVER_RECALL
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Recall appliquees.%COLOR_RESET%
-call :FINISH_ACTION "Reglages Recall" "traites"
+call :FINISH_ACTION "Reglages Recall"
 goto :MENU_IA_WIDGETS_RECALL
 
 :MENU_IA_OPTION_5
@@ -3461,7 +3497,7 @@ if not "!AI_ACTION_RC!"=="0" (
 )
 set "AI_ACTION_RC="
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Activation de Recall terminee.%COLOR_RESET%
-call :FINISH_ACTION "Reglages Recall" "traites"
+call :FINISH_ACTION "Reglages Recall"
 goto :MENU_IA_WIDGETS_RECALL
 
 :MENU_IA_OPTION_4_GATE
@@ -3484,7 +3520,7 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo.
 call :CORE_DESACTIVER_WIDGETS
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Widgets appliquees.%COLOR_RESET%
-call :FINISH_ACTION "Reglages Widgets" "traites"
+call :FINISH_ACTION "Reglages Widgets"
 goto :MENU_IA_WIDGETS_RECALL
 
 :MENU_IA_OPTION_3
@@ -3495,7 +3531,7 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo.
 call :CORE_ACTIVER_WIDGETS
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Widgets actives.%COLOR_RESET%
-call :FINISH_ACTION "Reglages Widgets" "traites"
+call :FINISH_ACTION "Reglages Widgets"
 goto :MENU_IA_WIDGETS_RECALL
 
 :MENU_IA_OPTION_2_GATE
@@ -3518,7 +3554,7 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo.
 call :CORE_DESACTIVER_COPILOT
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Copilot appliquees.%COLOR_RESET%
-call :FINISH_ACTION "Reglages Copilot" "traites"
+call :FINISH_ACTION "Reglages Copilot"
 goto :MENU_IA_WIDGETS_RECALL
 
 :MENU_IA_OPTION_1
@@ -3529,7 +3565,7 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo.
 call :CORE_ACTIVER_COPILOT
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Copilot active.%COLOR_RESET%
-call :FINISH_ACTION "Reglages Copilot" "traites"
+call :FINISH_ACTION "Reglages Copilot"
 goto :MENU_IA_WIDGETS_RECALL
 
 
@@ -3567,9 +3603,11 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "HubsSidebarEnabled" /t REG_D
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "CopilotPageContext" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "EdgeEntraCopilotPageContext" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "Microsoft365CopilotChatIconEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
-    REM Les strategies suffisent ; nettoyer l'ancien bloc hosts qui cassait aussi le site Copilot.
-    call :REMOVE_COPILOT_HOSTS_BLOCK
-    if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le bloc hosts Copilot n'est pas nettoye ; les strategies restent appliquees.%COLOR_RESET%
+REM  Verification par relecture : une ecriture HKLM refusee (UCPD, strategie) ne
+REM  renvoie aucun code exploitable, seule la valeur reellement stockee compte.
+REM  Motif ancre en fin de ligne : sans lui, findstr matcherait aussi 0x10 et 0x18.
+reg query "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v TurnOffWindowsCopilot 2>nul | findstr /R /C:"0x1[ ]*$" >nul
+if !errorlevel! NEQ 0 exit /b 1
 if not "!AIO_MODE!"=="1" ipconfig /flushdns >nul 2>&1
 exit /b 0
 
@@ -3593,9 +3631,14 @@ if !WIDGETS_BUILD! GEQ 22000 (
     REM TaskbarDa peut etre protege par Windows/UCPD. La strategie Dsh suffit a desactiver toute l'experience Widgets.
     reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 0 /f >nul 2>&1
     if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Bouton Widgets protege par Windows ; la strategie principale reste appliquee.%COLOR_RESET%
+    REM  Verification par relecture de la strategie principale (celle qui suffit).
+    reg query "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests 2>nul | findstr /R /C:"0x0[ ]*$" >nul
+    if !errorlevel! NEQ 0 exit /b 1
 ) else (
     REM Windows 10 : ancienne strategie Actualites et centres d'interet uniquement.
     reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v EnableFeeds /t REG_DWORD /d 0 /f >nul 2>&1
+    reg query "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v EnableFeeds 2>nul | findstr /R /C:"0x0[ ]*$" >nul
+    if !errorlevel! NEQ 0 exit /b 1
 )
 set "WIDGETS_BUILD="
 exit /b 0
@@ -3672,6 +3715,10 @@ REM La suppression du composant est un nettoyage facultatif : les strategies ci-
 REM DISM peut signaler un redemarrage requis comme un succes distinct ; cela ne doit pas invalider tout le bloc IA.
 powershell -NoProfile -Command "$ProgressPreference='SilentlyContinue'; try { $f=Get-WindowsOptionalFeature -Online -FeatureName 'Recall' -ErrorAction SilentlyContinue; if($null -ne $f -and $f.State -ne 'DisabledWithPayloadRemoved'){ Disable-WindowsOptionalFeature -Online -FeatureName 'Recall' -Remove -NoRestart -ErrorAction Stop *>$null }; exit 0 } catch { exit 1 }" >nul 2>&1
 if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Strategies actives ; composant Recall conserve.%COLOR_RESET%
+REM  Verification par relecture de la strategie HKLM principale. L'echec de DISM
+REM  ci-dessus reste non bloquant (le composant n'est qu'un nettoyage).
+reg query "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v "DisableAIDataAnalysis" 2>nul | findstr /R /C:"0x1[ ]*$" >nul
+if !errorlevel! NEQ 0 exit /b 1
 exit /b 0
 
 :DESINSTALLER_ONEDRIVE
@@ -3789,7 +3836,7 @@ if defined ProgramFiles(x86) if exist "%ProgramFiles(x86)%\Microsoft OneDrive\On
 if exist "%USERPROFILE%\OneDrive" set "ONEDRIVE_REMOVE_OK=0"
 if "!ONEDRIVE_REMOVE_OK!"=="1" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification : OneDrive et son dossier utilisateur ne sont plus presents.%COLOR_RESET%
-    call :FINISH_ACTION "OneDrive" "desinstalle"
+    call :FINISH_ACTION "OneDrive"
 ) else (
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Verification : OneDrive est encore partiellement present.%COLOR_RESET%
     if not "!SKIP_PAUSE!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage peut liberer les fichiers encore verrouilles.%COLOR_RESET%
@@ -3859,7 +3906,10 @@ set "EDGE_UNINSTALLER_FOUND=0"
 if exist "%ProgramFiles%\Microsoft\Edge\Application" call :RUN_EDGE_UNINSTALLER "%ProgramFiles%\Microsoft\Edge\Application"
 if defined ProgramFiles(x86) if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application" call :RUN_EDGE_UNINSTALLER "%ProgramFiles(x86)%\Microsoft\Edge\Application"
 if "!EDGE_UNINSTALLER_FOUND!"=="1" (
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Desinstalleur Edge execute.%COLOR_RESET%
+    REM Message volontairement forme : le desinstalleur a ete lance, mais son code
+    REM de retour ne dit rien (il se termine apres la suppression). Seul l'etat
+    REM reel, verifie a l'etape finale, conclut sur la reussite.
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Desinstalleur Edge officiel lance ; suppression en cours.%COLOR_RESET%
 ) else (
     echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Aucun desinstalleur Edge officiel trouve ; le nettoyage force continue.%COLOR_RESET%
 )
@@ -3917,11 +3967,17 @@ rd "%ProgramData%\Microsoft\Windows\Start Menu\Programs\Microsoft Edge" /s /q >n
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Index de recherche et menu demarrer nettoyes.%COLOR_RESET%
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Etape 11 sur 12 : nettoyage des caches Edge...%COLOR_RESET%
+REM Explorer tient le cache d'icones ouvert : le supprimer sans l'arreter echoue
+REM silencieusement sur les .db locks. Arret / suppression / redemarrage, comme
+REM au nettoyage avance (ce script utilise deja ce motif pour les polices).
+taskkill /f /im explorer.exe >nul 2>&1
+timeout /t 2 /nobreak >nul
 del "%LOCALAPPDATA%\IconCache.db" /f /q >nul 2>&1
 del "%LOCALAPPDATA%\Microsoft\Windows\Explorer\iconcache*.db" /f /q >nul 2>&1
 if defined ProgramFiles(x86) reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache" /v "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe.FriendlyAppName" /f >nul 2>&1
 reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache" /v "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe.FriendlyAppName" /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Caches d'icones nettoyes.%COLOR_RESET%
+start "" explorer.exe >nul 2>&1
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Caches d'icones nettoyes, Explorer relance.%COLOR_RESET%
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Etape 12 sur 12 : blocage des reinstallations automatiques...%COLOR_RESET%
 REM  Strategies Edge Update officielles. Elles sont surtout garanties sur les appareils joints a un domaine.
@@ -3949,7 +4005,7 @@ if "%SUPPR_DATA%"=="0" (
 echo  %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%L'icone Edge a ete retiree de la barre des taches.%COLOR_RESET%
 set "SUPPR_DATA="
 if "!EDGE_REMOVE_OK!"=="1" (
-    call :FINISH_ACTION "Microsoft Edge" "desinstalle"
+    call :FINISH_ACTION "Microsoft Edge"
 ) else (
     if not "!SKIP_PAUSE!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage peut liberer les fichiers encore verrouilles.%COLOR_RESET%
     call :PROMPT_MANUAL_REBOOT
@@ -4152,7 +4208,6 @@ if exist "%SystemDrive%\Windows.old" (
     call :ASK_IF_INTERACTIVE "[O] OUI : Supprimer Windows.old   [N] NON : Conserver Windows.old : "
     if !errorlevel! EQU 0 (
         call :TAKEOWN_RECURSIF "%SystemDrive%\Windows.old"
-        icacls "%SystemDrive%\Windows.old" /grant *S-1-5-32-544:F /t >nul 2>&1
         rd /s /q "%SystemDrive%\Windows.old" >nul 2>&1
     ) else (
         echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Windows.old est conserve et peut servir a la recuperation.%COLOR_RESET%
@@ -4168,7 +4223,9 @@ defrag %SystemDrive% /O /H >nul 2>&1
 REM  ETAPE 15 - Nettoyage Windows Cleanmgr (ameliore - plus de categories 2026)
 set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Nettoyage Windows"
+set "CLEANMGR_RC=0"
 call :SELECT_CLEANMGR_SAGEID
+if errorlevel 1 goto :CLEAN_STEP_SKIP_CLEANMGR
 REM Exclusions volontaires : Previous Installations (confirmation etape 13), Windows ESD
 REM (source de reinitialisation) et User file versions (donnees de recuperation utilisateur).
 for %%K in ("Active Setup Temp Folders" "BranchCache" "Content Indexer Cleaner" "Delivery Optimization Files" "Device Driver Packages" "Diagnostic Data Viewer database files" "Downloaded Program Files" "GameNewsFiles" "GameStatisticsFiles" "GameUpdateFiles" "Language Pack" "Memory Dump Files" "Offline Pages Files" "Old ChkDsk Files" "RetailDemo Offline Content" "Service Pack Cleanup" "Setup Log Files" "System error memory dump files" "System error minidump files" "Temporary Files" "Temporary Setup Files" "Temporary Sync Files" "Thumbnail Cache" "Update Cleanup" "Upgrade Discarded Files" "Windows Defender" "Windows Error Reporting Archive Files" "Windows Error Reporting Files" "Windows Error Reporting Queue Files" "Windows Error Reporting System Archive Files" "Windows Error Reporting System Queue Files" "Windows Error Reporting Temp Files" "Windows Upgrade Log Files") do (
@@ -4184,6 +4241,7 @@ if not "!CLEANMGR_RC!"=="0" (
     echo %COLOR_WHITE%Le reste du nettoyage continue.%COLOR_RESET%
 )
 powershell -NoProfile -Command "Get-ChildItem 'Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches' -ErrorAction SilentlyContinue|ForEach-Object{Remove-ItemProperty -LiteralPath $_.PSPath -Name 'StateFlags%SAGEID%' -ErrorAction SilentlyContinue}" >nul 2>&1
+:CLEAN_STEP_SKIP_CLEANMGR
 set "CLEANMGR_RC="
 
 REM  ETAPE 16 - Nettoyage composants systeme (via DISM)
@@ -4615,12 +4673,14 @@ exit /b 0
 :SET_MEMORY_POWER_PROFILE
 set "MEMORY_POWER_ERROR=0"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Synchronisation de la memoire avec le profil d'energie...%COLOR_RESET%
+set "STEP_ERRORS=0"
 if "!PROFIL_POWER!"=="0" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "DisablePagingExecutive" /t REG_DWORD /d 1 /f >nul 2>&1
 ) else (
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "DisablePagingExecutive" /t REG_DWORD /d 0 /f >nul 2>&1
 )
 if !errorlevel! NEQ 0 set "MEMORY_POWER_ERROR=1"
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 if "!PROFIL_POWER!"=="0" (
     call :FTH_DISABLE
 ) else (
@@ -4628,6 +4688,7 @@ if "!PROFIL_POWER!"=="0" (
 )
 set "MEMORY_FTH_RC=!errorlevel!"
 if not "!MEMORY_FTH_RC!"=="0" set "MEMORY_POWER_ERROR=1"
+if not "!MEMORY_FTH_RC!"=="0" set /a "STEP_ERRORS+=1"
 set "RAM_GB=0"
 for /f %%A in ('powershell -NoProfile -Command "[math]::Round(((Get-CimInstance Win32_PhysicalMemory -ErrorAction Stop|Measure-Object Capacity -Sum).Sum)/1GB,0)" 2^>nul') do if not "%%A"=="" set "RAM_GB=%%A"
 if "!RAM_GB!"=="0" set "MEMORY_POWER_ERROR=1"
@@ -4639,30 +4700,69 @@ if "!PROFIL_POWER!"=="1" (
     powershell -NoProfile -Command "$ErrorActionPreference='Stop';Enable-MMAgent -MemoryCompression -ErrorAction Stop" >nul 2>&1
 )
 if !errorlevel! NEQ 0 set "MEMORY_POWER_ERROR=1"
-if "!MEMORY_POWER_ERROR!"=="0" (
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Memoire, FTH et compression alignes avec le profil d'energie.%COLOR_RESET%
-) else (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%La convergence du profil memoire est incomplete.%COLOR_RESET%
-)
+if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
+call :STEP_RESULT "Memoire, FTH et compression alignes avec le profil d'energie" "ERREUR" "La convergence du profil memoire est incomplete"
 set "MEMORY_FTH_RC="
 exit /b !MEMORY_POWER_ERROR!
+
+:: %~1 = libelle de reussite, %~2 = indicateur du libelle d'echec (defaut AVERTISSEMENT),
+:: %~3 = libelle d'echec, %~4 = texte de precision. Consomme puis remet STEP_ERRORS a zero.
+:: Routage par goto : 'set "X=Y"' sur une ligne de if/else est ambigu pour cmd.exe.
+:STEP_RESULT
+if not "%~2"=="" goto :STEP_RESULT_TAG
+set "STEP_TAG=AVERTISSEMENT"
+goto :STEP_RESULT_TEST
+:STEP_RESULT_TAG
+set "STEP_TAG=%~2"
+:STEP_RESULT_TEST
+if "!STEP_ERRORS!"=="0" goto :STEP_RESULT_OK
+if "%~3"=="" goto :STEP_RESULT_WARN
+echo %COLOR_YELLOW%[!STEP_TAG!]%COLOR_RESET% %COLOR_WHITE%%~3.%COLOR_RESET%
+goto :STEP_RESULT_END
+:STEP_RESULT_WARN
+echo %COLOR_YELLOW%[!STEP_TAG!]%COLOR_RESET% %COLOR_WHITE%%~1%COLOR_RESET%
+goto :STEP_RESULT_END
+:STEP_RESULT_OK
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%%~1.%COLOR_RESET%
+if not "%~4"=="" echo %COLOR_WHITE%%~4%COLOR_RESET%
+:STEP_RESULT_END
+set "STEP_ERRORS=0"
+set "STEP_TAG="
+exit /b 0
 
 :FTH_DISABLE
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=$env:WINOPT_FTH_BACKUP;$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);if(-not$key){$key=$base.CreateSubKey('SOFTWARE\Microsoft\FTH')};if(Test-Path -LiteralPath $f){$present=$key.GetValueNames()-contains'Enabled';if($present-and$key.GetValueKind('Enabled')-eq[Microsoft.Win32.RegistryValueKind]::DWord-and[int]$key.GetValue('Enabled')-eq 0){exit 0};exit 2};$present=$key.GetValueNames()-contains'Enabled';$state=[ordered]@{Present=$present;Kind='None';Value=$null};if($present){$kind=$key.GetValueKind('Enabled');$state.Kind=[string]$kind;$value=$key.GetValue('Enabled',$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$state.Value=[Convert]::ToBase64String([byte[]]$value)}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::MultiString){$state.Value=@($value)}else{$state.Value=$value}};[IO.File]::WriteAllText($f,($state|ConvertTo-Json -Depth 5),[Text.Encoding]::UTF8);$key.SetValue('Enabled',0,[Microsoft.Win32.RegistryValueKind]::DWord);if($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne 0){exit 1};exit 0}catch{exit 1}" >nul 2>&1
 exit /b !errorlevel!
 
 :FTH_RESTORE
-if not exist "%WINOPT_FTH_BACKUP%" exit /b 0
+REM  Sans instantane, on ne peut pas restaurer la valeur d'origine : on applique
+REM  alors le fallback Windows documente (FTH active, Enabled=1). Ne pas renvoyer
+REM  0 sans rien faire, sinon la section annonce un succes alors que FTH reste
+REM  desactive par une version anterieure de l'outil.
+if not exist "%WINOPT_FTH_BACKUP%" (
+    powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);if(-not $key){exit 0};$present=$key.GetValueNames()-contains'Enabled';if($present-and$key.GetValueKind('Enabled')-eq[Microsoft.Win32.RegistryValueKind]::DWord-and[int]$key.GetValue('Enabled')-eq 1){exit 0};if($present){$key.SetValue('Enabled',1,[Microsoft.Win32.RegistryValueKind]::DWord)}else{$key.DeleteValue('Enabled',$false)};if(-not$key.GetValueNames()-contains'Enabled'){exit 0};if($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne 1){exit 1};exit 0}catch{exit 1}" >nul 2>&1
+    exit /b !errorlevel!
+)
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=$env:WINOPT_FTH_BACKUP;$state=Get-Content -LiteralPath $f -Raw|ConvertFrom-Json;$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);$present=$key-and($key.GetValueNames()-contains'Enabled');if($present-and($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne 0)){exit 2};if($state.Present){if(-not$key){$key=$base.CreateSubKey('SOFTWARE\Microsoft\FTH')};$kind=[Microsoft.Win32.RegistryValueKind]::Parse([Microsoft.Win32.RegistryValueKind],[string]$state.Kind);$value=$state.Value;if($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$value=[Convert]::FromBase64String([string]$state.Value)}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::DWord){$value=[uint32]$state.Value}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::QWord){$value=[uint64]$state.Value}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::MultiString){$value=@($state.Value)};$key.SetValue('Enabled',$value,$kind)}elseif($key-and$present){$key.DeleteValue('Enabled',$false)};Remove-Item -LiteralPath $f -Force -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
 exit /b !errorlevel!
 
 :REMOVE_COPILOT_HOSTS_BLOCK
+REM  Nettoyage du bloc "# Copilot Block" ecrit par d'anciennes versions de l'outil.
+REM  Lecture/ecriture en Latin-1 (28591) : la table est une bijection octet<->caractere,
+REM  donc chaque octet est reecrit a l'identique. ASCII remplacerait au contraire tout
+REM  octet > 0x7F par '?' et detruirait irreversiblement les commentaires accentues
+REM  ou CP1252 d'un fichier hosts reel.
+set "COPILOT_HOSTS_PRESENT=0"
+powershell -NoProfile -Command "$h=Join-Path $env:SystemRoot 'System32\drivers\etc\hosts';if(Test-Path -LiteralPath $h){$c=[IO.File]::ReadAllText($h,[Text.Encoding]::GetEncoding(28591));if($c -match '# Copilot Block Start'){exit 0}};exit 1" >nul 2>&1
+if !errorlevel! EQU 0 set "COPILOT_HOSTS_PRESENT=1"
+if "!COPILOT_HOSTS_PRESENT!"=="0" exit /b 0
 call :BACKUP_HOSTS_BEFORE_CHANGE "%SystemRoot%\System32\drivers\etc\hosts"
 if !errorlevel! NEQ 0 (
     echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Backup hosts impossible ; le fichier hosts reste inchange.%COLOR_RESET%
     exit /b 1
 )
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';$h=Join-Path $env:SystemRoot 'System32\drivers\etc\hosts';$item=$null;$attrs=$null;try{if(Test-Path -LiteralPath $h){$item=Get-Item -LiteralPath $h -Force -ErrorAction Stop;$attrs=$item.Attributes;$item.IsReadOnly=$false;$c=[IO.File]::ReadAllText($h);$s='# Copilot Block Start';$e='# Copilot Block End';$n=$c -replace ('(?s)\r?\n?'+[regex]::Escape($s)+'.*?'+[regex]::Escape($e)),'';if($n-ne$c){[IO.File]::WriteAllText($h,$n,[Text.Encoding]::ASCII)}};exit 0}catch{exit 1}finally{if($item-ne$null-and $attrs-ne$null){try{$item.Attributes=$attrs}catch{}}}" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';$h=Join-Path $env:SystemRoot 'System32\drivers\etc\hosts';$item=$null;$attrs=$null;$enc=[Text.Encoding]::GetEncoding(28591);try{if(Test-Path -LiteralPath $h){$item=Get-Item -LiteralPath $h -Force -ErrorAction Stop;$attrs=$item.Attributes;$item.IsReadOnly=$false;$c=[IO.File]::ReadAllText($h,$enc);$s='# Copilot Block Start';$e='# Copilot Block End';$n=$c -replace ('(?s)\r?\n?'+[regex]::Escape($s)+'.*?'+[regex]::Escape($e)),'';if($n-ne$c){[IO.File]::WriteAllText($h,$n,$enc)}};exit 0}catch{exit 1}finally{if($item-ne$null-and $attrs-ne$null){try{$item.Attributes=$attrs}catch{}}}" >nul 2>&1
+set "COPILOT_HOSTS_PRESENT="
 exit /b !errorlevel!
 
 :DELETE_REG_VALUE_IF_PRESENT
@@ -4671,24 +4771,37 @@ reg delete "%~1" /v "%~2" /f >nul 2>&1
 exit /b 0
 
 :TAKEOWN_RECURSIF
-REM Prise de possession recursive ; la lettre de /d depend de la locale du systeme
-REM (O = Oui sous Windows francais, Y = Yes sous Windows anglais). Les deux sont tentees.
+REM Prise de possession recursive ET octroi des droits : takeown seul change le
+REM proprietaire sans toucher au DACL, donc un 'rd /s' echoue encore sur les
+REM fichiers d'un autre SID. Les deux sont necessaires pour une suppression reelle.
+REM La lettre de /d depend de la locale (O = Oui en francais, Y = Yes en anglais) ;
+REM *S-1-5-32-544 = BUILTIN\Administrateurs, resolu par SID sur toute installation.
 takeown /f "%~1" /r /d o >nul 2>&1
 if errorlevel 1 takeown /f "%~1" /r /d y >nul 2>&1
+icacls "%~1" /grant *S-1-5-32-544:F /t >nul 2>&1
 exit /b 0
 
 :SELECT_CLEANMGR_SAGEID
-REM  Choisir un identifiant libre pour ne pas ecraser une configuration cleanmgr existante.
-for /l %%N in (1,1,20) do (
+REM  Choisir un identifiant libre pour ne pas ecraser une configuration cleanmgr
+REM  existante (StateFlags<id> dans ...\Explorer\VolumeCaches). Tout entier de 0 a
+REM  65535 est legal, donc aucun identifiant n'est reserve par Windows et un repli
+REM  sur une valeur fixe risquerait d'ecraser le profil d'un utilisateur. Si aucun
+REM  candidat n'est libre apres tous les essais, l'etape cleanmgr est abandonnee.
+for /l %%N in (1,1,50) do (
     set /a "SAGEID=1000 + ^(!RANDOM! %% 30000^)"
     reg query "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches" /s /f "StateFlags!SAGEID!" >nul 2>&1
     if !errorlevel! NEQ 0 exit /b 0
 )
-set "SAGEID=65535"
-exit /b 0
+set "SAGEID="
+echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Aucun identifiant cleanmgr libre ; cette etape est ignoree pour ne pas ecraser une configuration existante.%COLOR_RESET%
+exit /b 1
 
 :SET_NAGLE_PROFILE
-powershell -NoLogo -NoProfile -Command "$ack=[int]'%~1'; $noDelay=[int]'%~2'; $delAck=[int]'%~3'; Get-ChildItem 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces' | ForEach-Object { $p=$_.PSPath; $ip=(Get-ItemProperty $p -Name DhcpIPAddress -EA SilentlyContinue).DhcpIPAddress; if(-not $ip){ $ip=(Get-ItemProperty $p -Name IPAddress -EA SilentlyContinue).IPAddress }; if($ip){ New-ItemProperty -Path $p -Name TcpAckFrequency -PropertyType DWord -Value $ack -Force | Out-Null; New-ItemProperty -Path $p -Name TCPNoDelay -PropertyType DWord -Value $noDelay -Force | Out-Null; New-ItemProperty -Path $p -Name TcpDelAckTicks -PropertyType DWord -Value $delAck -Force | Out-Null } }" >nul 2>&1
+REM  Aucune condition d'adresse IP : le triplet est ecrit sur toutes les cles
+REM  d'interface. La restauration (:RESET_NAGLE_PROFILE) les supprime toutes sans
+REM  filtre, donc un filtre ici laisserait le profil Nagle incomplet et asymetrique
+REM  sur une carte deconnectee, dormante ou multivoie.
+powershell -NoLogo -NoProfile -Command "$ack=[int]'%~1'; $noDelay=[int]'%~2'; $delAck=[int]'%~3'; Get-ChildItem 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces' | ForEach-Object { $p=$_.PSPath; New-ItemProperty -Path $p -Name TcpAckFrequency -PropertyType DWord -Value $ack -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name TCPNoDelay -PropertyType DWord -Value $noDelay -Force -ErrorAction SilentlyContinue | Out-Null; New-ItemProperty -Path $p -Name TcpDelAckTicks -PropertyType DWord -Value $delAck -Force -ErrorAction SilentlyContinue | Out-Null }" >nul 2>&1
 exit /b
 
 :RESET_NAGLE_PROFILE
@@ -4696,12 +4809,20 @@ REM Les cles sont absentes par defaut : les supprimer restaure le comportement T
 powershell -NoLogo -NoProfile -Command "Get-ChildItem 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces' -ErrorAction SilentlyContinue | ForEach-Object { Remove-ItemProperty -LiteralPath $_.PSPath -Name TcpAckFrequency,TCPNoDelay,TcpDelAckTicks -ErrorAction SilentlyContinue }" >nul 2>&1
 exit /b
 
+:: Itere les sous-cles de classe stockage (GUID {4d36e96a...} et {4d36e97b...})
+:: et fournit $p = chemin de chaque carte. Source unique utilisee par les sections
+:: 7.13, 7.14 et leurs restaurations.
+:FOR_STORAGE_CLASS
+powershell -NoProfile -Command "foreach($c in @('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}')){ Get-ChildItem -Path ('HKLM:\SYSTEM\CurrentControlSet\Control\Class\'+$c) -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; %* } }" >nul 2>&1
+exit /b 0
+
 :SET_POWERCFG_ACDC
 set "POWERCFG_ACDC_FAILED=0"
 powercfg /setacvalueindex SCHEME_CURRENT %~1 %~2 %~3 >nul 2>&1
 if errorlevel 1 set "POWERCFG_ACDC_FAILED=1"
 powercfg /setdcvalueindex SCHEME_CURRENT %~1 %~2 %~3 >nul 2>&1
 if errorlevel 1 set "POWERCFG_ACDC_FAILED=1"
+if "!POWERCFG_ACDC_FAILED!"=="1" set /a "STEP_ERRORS+=1"
 exit /b !POWERCFG_ACDC_FAILED!
 
 :SELECT_TARGET_POWER_SCHEME
@@ -4849,8 +4970,15 @@ set "STR_TASK_NAME="
 exit /b 0
 
 :RUN_EDGE_UNINSTALLER
+REM  pushd modifie le repertoire courant pour toute la session cmd : chaque sortie
+REM  doit donc depiler, y compris le cas d'echec du pushd lui-meme. Ce helper est
+REM  appele via 'call' : un pushd non depile laisserait le script entier dans le
+REM  dossier de l'installeur Edge pour les sections suivantes.
 pushd "%~1" >nul 2>&1
-if !errorlevel! NEQ 0 exit /b 1
+if !errorlevel! NEQ 0 (
+    popd >nul 2>&1
+    exit /b 1
+)
 for /d %%i in (*) do (
     if exist "%%i\Installer\setup.exe" (
         set "EDGE_UNINSTALLER_FOUND=1"
@@ -4895,16 +5023,16 @@ REM  Source unique de verite pour la section 5.7 et la convergence reseau manuel
 REM Ne supprime pas de proprietes driver non gerees : elles peuvent etre stock OEM.
 REM  Realtek : conserver les overrides cibles InterruptModerationLevel=0 (Low)
 REM  et IntMitiInterval=0. Ne pas reutiliser l'ancien ITR=200 non declare par le pilote.
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';$gaming=('%~1'-eq'0'-and'%~2'-eq'0');$adapters=@(Get-NetAdapter -Physical|Where-Object{$_.AdminStatus-eq'Up'-and$_.PnPDeviceID-match'^PCI\\VEN_10EC&'});foreach($a in $adapters){$w=Get-CimInstance Win32_NetworkAdapter|Where-Object{$_.PNPDeviceID-eq$a.PnPDeviceID}|Select-Object -First 1;if(-not$w){continue};$k='{0:0000}'-f[int]$w.DeviceID;$r='HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}\'+$k;if($gaming){Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay' -ErrorAction SilentlyContinue;New-ItemProperty -LiteralPath $r -Name 'IntMitiInterval' -PropertyType DWord -Value 0 -Force|Out-Null;New-ItemProperty -LiteralPath $r -Name 'InterruptModerationLevel' -PropertyType String -Value '0' -Force|Out-Null}else{Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay','IntMitiInterval','InterruptModerationLevel' -ErrorAction SilentlyContinue}};exit 0" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';function NK($ad){$c='HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}';$id=('{0}'-f$ad.InterfaceGuid).ToUpper().Trim();if(-not$id-or$id-notmatch'^\{[0-9A-F\-]+\}$'){return $null};$k=(Get-ChildItem -Path $c -ErrorAction SilentlyContinue|Where-Object{$_.PSChildName-match'^\d{4}$'}|Where-Object{(Get-ItemPropertyValue -LiteralPath $_.PSPath -Name 'NetCfgInstanceId' -ErrorAction SilentlyContinue)-eq$id}|Select-Object -First 1).PSChildName;if(-not$k){return $null};return($c+'\'+$k)};$gaming=('%~1'-eq'0'-and'%~2'-eq'0');$adapters=@(Get-NetAdapter -Physical|Where-Object{$_.AdminStatus-eq'Up'-and$_.PnPDeviceID-match'^PCI\\VEN_10EC&'});foreach($a in $adapters){$r=NK $a;if(-not$r){continue};if($gaming){Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay' -ErrorAction SilentlyContinue;New-ItemProperty -LiteralPath $r -Name 'IntMitiInterval' -PropertyType DWord -Value 0 -Force|Out-Null;New-ItemProperty -LiteralPath $r -Name 'InterruptModerationLevel' -PropertyType String -Value '0' -Force|Out-Null}else{Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay','IntMitiInterval','InterruptModerationLevel' -ErrorAction SilentlyContinue}};exit 0" >nul 2>&1
 if !errorlevel! NEQ 0 exit /b 1
-powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue';$eco=('%~1'-eq'1');$gaming=('%~1'-eq'0'-and'%~2'-eq'0');$script:failed=$false;$managed=@('*FlowControl','*GreenGbe','*RscIPv6','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver','TxIntDelay','MIMOPowerSaveMode','uAPSDSupport','FatChannelIntolerant','*ReceiveBuffers','*TransmitBuffers','PendingReceives','PendingTransmits','ITR','*InterruptModeration');function SetP($a,$kw,$vals,$cache){if(-not $cache.ContainsKey($kw)){return};$p=$cache[$kw];$ok=$false;foreach($v in $vals){$valid=@($p.ValidRegistryValues);if($null-ne$p.ValidRegistryValues-and $valid.Count-gt 0-and $valid-notcontains[string]$v){continue};try{Set-NetAdapterAdvancedProperty -Name $a -RegistryKeyword $kw -RegistryValue $v -AllProperties -NoRestart -ErrorAction Stop;$script:changed=$true;$ok=$true;break}catch{}};if(-not $ok){$script:failed=$true}};function SetMinP($a,$kw,$cache){$p=$cache[$kw];if(-not $p){return};$nums=@();if($null-ne$p.NumericParameterMinValue-and $p.NumericParameterMaxValue-gt 0){$nums+=[int]$p.NumericParameterMinValue};$nums+=@($p.ValidRegistryValues|Where-Object{[string]$_-match'^\d+$'}|ForEach-Object{[int]$_});if($nums.Count){$v=(($nums|Measure-Object -Minimum).Minimum).ToString();SetP $a $kw @($v) $cache}};function ResetP($a,$kw,$cache){$p=$cache[$kw];if(-not $p){return};try{if($p.DisplayName){$p|Reset-NetAdapterAdvancedProperty -NoRestart -ErrorAction Stop}else{$d=@($p.DefaultRegistryValue);if($d.Count-eq 0-or $null-eq $d[0]){return};Set-NetAdapterAdvancedProperty -Name $a -RegistryKeyword $kw -RegistryValue $d -AllProperties -NoRestart -ErrorAction Stop};$script:changed=$true}catch{$script:failed=$true}};function SetF($get,$set,$n){$f=& $get -Name $n -ErrorAction SilentlyContinue;if($null-eq$f){return};try{& $set -Name $n -NoRestart -ErrorAction Stop;$script:changed=$true}catch{$script:failed=$true}};function SetPMFlags($n,$r,$cache,$ecoMode,$gamingMode){$pm=$null;try{$pm=Get-NetAdapterPowerManagement -Name $n -ErrorAction Stop}catch{};$map=[ordered]@{'ArpOffload'='*PMARPOffload';'NSOffload'='*PMNSOffload';'WakeOnPattern'='*WakeOnPattern';'SelectiveSuspend'='*SelectiveSuspend'};foreach($item in $map.GetEnumerator()){$param=$item.Key;$kw=$item.Value;$ndi=$null;if($r){$ndi=$r+'\Ndi\Params\'+$kw};$state=$null;if($pm){$state=$pm.PSObject.Properties[$param].Value};$supported=$cache.ContainsKey($kw)-or($ndi-and(Test-Path -LiteralPath $ndi))-or($state-and([string]$state-ne'Unsupported'));if(-not $supported){continue};$desired=if($gamingMode){'Disabled'}elseif($ecoMode-and $param-eq'WakeOnPattern'){'Disabled'}else{'Enabled'};$target=if($desired-eq'Enabled'){'1'}else{'0'};$ok=$false;$args=@{Name=$n;NoRestart=$true;ErrorAction='Stop'};$args[$param]=$desired;try{Set-NetAdapterPowerManagement @args;$ok=$true;$script:changed=$true}catch{};if($ndi-and(Test-Path -LiteralPath $ndi)){$v=$null;try{$v=Get-ItemPropertyValue -LiteralPath $r -Name $kw -ErrorAction Stop}catch{};if([string]$v-ne$target){try{New-ItemProperty -LiteralPath $r -Name $kw -PropertyType String -Value $target -Force -ErrorAction Stop|Out-Null;$v=Get-ItemPropertyValue -LiteralPath $r -Name $kw -ErrorAction Stop;$ok=([string]$v-eq$target);$script:changed=$true}catch{$ok=$false}}else{$ok=$true}};if(-not $ok){$script:failed=$true}}};try{$adapters=@(Get-NetAdapter -Physical -ErrorAction Stop|Where-Object{$_.AdminStatus-eq'Up'})}catch{exit 1};foreach($adapter in $adapters){$script:changed=$false;$n=$adapter.Name;$props=@{};try{Get-NetAdapterAdvancedProperty -Name $n -AllProperties -ErrorAction Stop|ForEach-Object{if($_.RegistryKeyword){$props[$_.RegistryKeyword]=$_}}}catch{$script:failed=$true};$w=Get-CimInstance Win32_NetworkAdapter -ErrorAction SilentlyContinue|Where-Object{$_.PNPDeviceID-eq$adapter.PnPDeviceID}|Select-Object -First 1;$r=$null;if($w){$k='{0:0000}'-f[int]$w.DeviceID;$r='HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}\'+$k};if($eco){foreach($kw in $managed){ResetP $n $kw $props}}elseif(-not $gaming){foreach($kw in @('*RscIPv6','ITR','TxIntDelay','*InterruptModeration')){ResetP $n $kw $props}};if(($eco-or(-not $gaming))-and $r){Remove-ItemProperty -Path $r -Name 'ITR','TxIntDelay' -ErrorAction SilentlyContinue;$script:changed=$true};SetF 'Get-NetAdapterRss' 'Enable-NetAdapterRss' $n;if($eco-or(-not $gaming)){SetF 'Get-NetAdapterRsc' 'Enable-NetAdapterRsc' $n;SetF 'Get-NetAdapterLso' 'Enable-NetAdapterLso' $n}else{SetF 'Get-NetAdapterRsc' 'Disable-NetAdapterRsc' $n;SetF 'Get-NetAdapterLso' 'Disable-NetAdapterLso' $n};foreach($kw in @('*IPChecksumOffloadIPv4','*TCPChecksumOffloadIPv4','*TCPChecksumOffloadIPv6','*UDPChecksumOffloadIPv4','*UDPChecksumOffloadIPv6')){SetP $n $kw @('3') $props};if($eco){SetF 'Get-NetAdapterPowerManagement' 'Enable-NetAdapterPowerManagement' $n}elseif($gaming){SetF 'Get-NetAdapterPowerManagement' 'Disable-NetAdapterPowerManagement' $n;foreach($kw in @('*FlowControl','*GreenGbe','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver')){SetP $n $kw @('0') $props};SetP $n '*RscIPv6' @('0') $props;SetP $n '*InterruptModeration' @('1') $props;if($r){foreach($kw in @('ITR','TxIntDelay')){if(-not(Test-Path -LiteralPath ($r+'\Ndi\Params\'+$kw))){Remove-ItemProperty -LiteralPath $r -Name $kw -ErrorAction SilentlyContinue;$props.Remove($kw)|Out-Null;$script:changed=$true}}};foreach($kw in @('ITR','*InterruptModerationRate','InterruptModerationRate','RxIntDelay','TxIntDelay')){SetMinP $n $kw $props};if($adapter.InterfaceDescription-match'Intel|Wireless|Wi-Fi|802\.11'){SetP $n 'MIMOPowerSaveMode' @('3') $props;SetP $n 'uAPSDSupport' @('0') $props;SetP $n 'FatChannelIntolerant' @('0') $props};foreach($kw in @('*ReceiveBuffers','*TransmitBuffers')){$p=$props[$kw];if($p-and $p.NumericParameterMaxValue-gt 0){$v=[math]::Min([int]$p.NumericParameterMaxValue,2048).ToString();SetP $n $kw @($v) $props}};foreach($kw in @('PendingReceives','PendingTransmits')){$p=$props[$kw];if($p-and $p.NumericParameterMaxValue-gt 0){$v=[math]::Min([int]$p.NumericParameterMaxValue,64).ToString();SetP $n $kw @($v) $props}}}else{foreach($kw in @('*FlowControl','*GreenGbe','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver')){ResetP $n $kw $props}};SetP $n '*InterruptModeration' @('1') $props;SetPMFlags $n $r $props $eco $gaming;if($script:changed){try{Restart-NetAdapter -Name $n -Confirm:$false -ErrorAction Stop}catch{$script:failed=$true}}};if($script:failed){exit 1};exit 0" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue';function NK($ad){$c='HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}';$id=('{0}'-f$ad.InterfaceGuid).ToUpper().Trim();if(-not$id-or$id-notmatch'^\{[0-9A-F\-]+\}$'){return $null};$k=(Get-ChildItem -Path $c -ErrorAction SilentlyContinue|Where-Object{$_.PSChildName-match'^\d{4}$'}|Where-Object{(Get-ItemPropertyValue -LiteralPath $_.PSPath -Name 'NetCfgInstanceId' -ErrorAction SilentlyContinue)-eq$id}|Select-Object -First 1).PSChildName;if(-not$k){return $null};return($c+'\'+$k)};$eco=('%~1'-eq'1');$gaming=('%~1'-eq'0'-and'%~2'-eq'0');$script:failed=$false;$managed=@('*FlowControl','*GreenGbe','*RscIPv6','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver','TxIntDelay','MIMOPowerSaveMode','uAPSDSupport','FatChannelIntolerant','*ReceiveBuffers','*TransmitBuffers','PendingReceives','PendingTransmits','ITR','*InterruptModeration');function SetP($a,$kw,$vals,$cache){if(-not $cache.ContainsKey($kw)){return};$p=$cache[$kw];$ok=$false;foreach($v in $vals){$valid=@($p.ValidRegistryValues);if($null-ne$p.ValidRegistryValues-and $valid.Count-gt 0-and $valid-notcontains[string]$v){continue};try{Set-NetAdapterAdvancedProperty -Name $a -RegistryKeyword $kw -RegistryValue $v -AllProperties -NoRestart -ErrorAction Stop;$script:changed=$true;$ok=$true;break}catch{}};if(-not $ok){$script:failed=$true}};function SetMinP($a,$kw,$cache){$p=$cache[$kw];if(-not $p){return};$nums=@();if($null-ne$p.NumericParameterMinValue-and $p.NumericParameterMaxValue-gt 0){$nums+=[int]$p.NumericParameterMinValue};$nums+=@($p.ValidRegistryValues|Where-Object{[string]$_-match'^\d+$'}|ForEach-Object{[int]$_});if($nums.Count){$v=(($nums|Measure-Object -Minimum).Minimum).ToString();SetP $a $kw @($v) $cache}};function ResetP($a,$kw,$cache){$p=$cache[$kw];if(-not $p){return};try{if($p.DisplayName){$p|Reset-NetAdapterAdvancedProperty -NoRestart -ErrorAction Stop}else{$d=@($p.DefaultRegistryValue);if($d.Count-eq 0-or $null-eq $d[0]){return};Set-NetAdapterAdvancedProperty -Name $a -RegistryKeyword $kw -RegistryValue $d -AllProperties -NoRestart -ErrorAction Stop};$script:changed=$true}catch{$script:failed=$true}};function SetF($get,$set,$n){$f=& $get -Name $n -ErrorAction SilentlyContinue;if($null-eq$f){return};try{& $set -Name $n -NoRestart -ErrorAction Stop;$script:changed=$true}catch{$script:failed=$true}};function SetPMFlags($n,$r,$cache,$ecoMode,$gamingMode){$pm=$null;try{$pm=Get-NetAdapterPowerManagement -Name $n -ErrorAction Stop}catch{};$map=[ordered]@{'ArpOffload'='*PMARPOffload';'NSOffload'='*PMNSOffload';'WakeOnPattern'='*WakeOnPattern';'SelectiveSuspend'='*SelectiveSuspend'};foreach($item in $map.GetEnumerator()){$param=$item.Key;$kw=$item.Value;$ndi=$null;if($r){$ndi=$r+'\Ndi\Params\'+$kw};$state=$null;if($pm){$state=$pm.PSObject.Properties[$param].Value};$supported=$cache.ContainsKey($kw)-or($ndi-and(Test-Path -LiteralPath $ndi))-or($state-and([string]$state-ne'Unsupported'));if(-not $supported){continue};$desired=if($gamingMode){'Disabled'}elseif($ecoMode-and $param-eq'WakeOnPattern'){'Disabled'}else{'Enabled'};$target=if($desired-eq'Enabled'){'1'}else{'0'};$ok=$false;$args=@{Name=$n;NoRestart=$true;ErrorAction='Stop'};$args[$param]=$desired;try{Set-NetAdapterPowerManagement @args;$ok=$true;$script:changed=$true}catch{};if($ndi-and(Test-Path -LiteralPath $ndi)){$v=$null;try{$v=Get-ItemPropertyValue -LiteralPath $r -Name $kw -ErrorAction Stop}catch{};if([string]$v-ne$target){try{New-ItemProperty -LiteralPath $r -Name $kw -PropertyType String -Value $target -Force -ErrorAction Stop|Out-Null;$v=Get-ItemPropertyValue -LiteralPath $r -Name $kw -ErrorAction Stop;$ok=([string]$v-eq$target);$script:changed=$true}catch{$ok=$false}}else{$ok=$true}};if(-not $ok){$script:failed=$true}}};try{$adapters=@(Get-NetAdapter -Physical -ErrorAction Stop|Where-Object{$_.AdminStatus-eq'Up'})}catch{exit 1};foreach($adapter in $adapters){$script:changed=$false;$n=$adapter.Name;$props=@{};try{Get-NetAdapterAdvancedProperty -Name $n -AllProperties -ErrorAction Stop|ForEach-Object{if($_.RegistryKeyword){$props[$_.RegistryKeyword]=$_}}}catch{$script:failed=$true};$r=NK $adapter;if($eco){foreach($kw in $managed){ResetP $n $kw $props}}elseif(-not $gaming){foreach($kw in @('*RscIPv6','ITR','TxIntDelay','*InterruptModeration')){ResetP $n $kw $props}};if(($eco-or(-not $gaming))-and $r){Remove-ItemProperty -Path $r -Name 'ITR','TxIntDelay' -ErrorAction SilentlyContinue;$script:changed=$true};SetF 'Get-NetAdapterRss' 'Enable-NetAdapterRss' $n;if($eco-or(-not $gaming)){SetF 'Get-NetAdapterRsc' 'Enable-NetAdapterRsc' $n;SetF 'Get-NetAdapterLso' 'Enable-NetAdapterLso' $n}else{SetF 'Get-NetAdapterRsc' 'Disable-NetAdapterRsc' $n;SetF 'Get-NetAdapterLso' 'Disable-NetAdapterLso' $n};foreach($kw in @('*IPChecksumOffloadIPv4','*TCPChecksumOffloadIPv4','*TCPChecksumOffloadIPv6','*UDPChecksumOffloadIPv4','*UDPChecksumOffloadIPv6')){SetP $n $kw @('3') $props};if($eco){SetF 'Get-NetAdapterPowerManagement' 'Enable-NetAdapterPowerManagement' $n}elseif($gaming){SetF 'Get-NetAdapterPowerManagement' 'Disable-NetAdapterPowerManagement' $n;foreach($kw in @('*FlowControl','*GreenGbe','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver')){SetP $n $kw @('0') $props};SetP $n '*RscIPv6' @('0') $props;SetP $n '*InterruptModeration' @('1') $props;if($r){foreach($kw in @('ITR','TxIntDelay')){if(-not(Test-Path -LiteralPath ($r+'\Ndi\Params\'+$kw))){Remove-ItemProperty -LiteralPath $r -Name $kw -ErrorAction SilentlyContinue;$props.Remove($kw)|Out-Null;$script:changed=$true}}};foreach($kw in @('ITR','*InterruptModerationRate','InterruptModerationRate','RxIntDelay','TxIntDelay')){SetMinP $n $kw $props};if($adapter.InterfaceDescription-match'Intel|Wireless|Wi-Fi|802\.11'){SetP $n 'MIMOPowerSaveMode' @('3') $props;SetP $n 'uAPSDSupport' @('0') $props;SetP $n 'FatChannelIntolerant' @('0') $props};foreach($kw in @('*ReceiveBuffers','*TransmitBuffers')){$p=$props[$kw];if($p-and $p.NumericParameterMaxValue-gt 0){$v=[math]::Min([int]$p.NumericParameterMaxValue,2048).ToString();SetP $n $kw @($v) $props}};foreach($kw in @('PendingReceives','PendingTransmits')){$p=$props[$kw];if($p-and $p.NumericParameterMaxValue-gt 0){$v=[math]::Min([int]$p.NumericParameterMaxValue,64).ToString();SetP $n $kw @($v) $props}}}else{foreach($kw in @('*FlowControl','*GreenGbe','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver')){ResetP $n $kw $props}};SetP $n '*InterruptModeration' @('1') $props;SetPMFlags $n $r $props $eco $gaming;if($script:changed){try{Restart-NetAdapter -Name $n -Confirm:$false -ErrorAction Stop}catch{$script:failed=$true}}};if($script:failed){exit 1};exit 0" >nul 2>&1
 exit /b !errorlevel!
 
 :SET_NIC_PROFILE_CONVERGENCE
 REM Passe de convergence : inclut les cartes physiques deconnectees/desactivees.
 REM Les commandes qui exigent une interface active sont sautees pour ne pas la reveiller ;
 REM les valeurs persistantes du pilote restent toutefois alignees avec le profil cible.
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';$eco=('%~1'-eq'1');$gaming=('%~1'-eq'0'-and'%~2'-eq'0');$script:failed=$false;try{$adapters=@(Get-NetAdapter -Physical -ErrorAction Stop)}catch{exit 1};foreach($a in $adapters){$up=($a.AdminStatus-eq'Up');$props=@{};try{Get-NetAdapterAdvancedProperty -Name $a.Name -AllProperties -ErrorAction Stop|ForEach-Object{if($_.RegistryKeyword){$props[$_.RegistryKeyword]=$_}}}catch{$script:failed=$true};function SetP($kw,$val){$p=$props[$kw];if(-not$p){return};$valid=@($p.ValidRegistryValues);if($null-ne$p.ValidRegistryValues-and$valid.Count-gt 0-and$valid-notcontains[string]$val){return};try{Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $kw -RegistryValue $val -AllProperties -NoRestart -ErrorAction Stop}catch{$script:failed=$true}};function ResetP($kw){$p=$props[$kw];if(-not$p){return};try{if($p.DisplayName){$p|Reset-NetAdapterAdvancedProperty -NoRestart -ErrorAction Stop}elseif($null-ne$p.DefaultRegistryValue){Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $kw -RegistryValue $p.DefaultRegistryValue -AllProperties -NoRestart -ErrorAction Stop}}catch{$script:failed=$true}};if($eco-or-not$gaming){foreach($kw in @('*RscIPv6','ITR','TxIntDelay','*InterruptModerationRate','InterruptModerationRate','RxIntDelay')){ResetP $kw}};if($eco-or-not$gaming){ResetP '*FlowControl'}else{SetP '*FlowControl' '0'};SetP '*InterruptModeration' '1';$w=Get-CimInstance Win32_NetworkAdapter -ErrorAction SilentlyContinue|Where-Object{$_.PNPDeviceID-eq$a.PnPDeviceID}|Select-Object -First 1;$r=$null;if($w){$k='{0:0000}'-f[int]$w.DeviceID;$r='HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}\'+$k};if($a.PnPDeviceID-match'^PCI\\VEN_10EC&'-and$r){if($gaming){Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay' -ErrorAction SilentlyContinue;New-ItemProperty -LiteralPath $r -Name 'IntMitiInterval' -PropertyType DWord -Value 0 -Force|Out-Null;New-ItemProperty -LiteralPath $r -Name 'InterruptModerationLevel' -PropertyType String -Value '0' -Force|Out-Null}else{Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay','IntMitiInterval','InterruptModerationLevel' -ErrorAction SilentlyContinue}};if($r){$arpNs=if($gaming){'0'}else{'1'};foreach($name in @('*PMARPOffload','*PMNSOffload','*WakeOnPattern')){$ndi=$r+'\Ndi\Params\'+$name;if(Test-Path -LiteralPath $ndi){$value=if($name-eq'*WakeOnPattern'){if($eco-or$gaming){'0'}else{'1'}}else{$arpNs};New-ItemProperty -LiteralPath $r -Name $name -PropertyType String -Value $value -Force|Out-Null}}};if($up){if($eco-or-not$gaming){Enable-NetAdapterRsc -Name $a.Name -NoRestart -ErrorAction SilentlyContinue;Enable-NetAdapterLso -Name $a.Name -NoRestart -ErrorAction SilentlyContinue}else{Disable-NetAdapterRsc -Name $a.Name -NoRestart -ErrorAction SilentlyContinue;Disable-NetAdapterLso -Name $a.Name -NoRestart -ErrorAction SilentlyContinue};$args=@{Name=$a.Name;NoRestart=$true;ErrorAction='SilentlyContinue'};if($eco){$args['ArpOffload']='Enabled';$args['NSOffload']='Enabled';$args['WakeOnPattern']='Disabled'}elseif($gaming){$args['ArpOffload']='Disabled';$args['NSOffload']='Disabled';$args['WakeOnPattern']='Disabled'}else{$args['ArpOffload']='Enabled';$args['NSOffload']='Enabled';$args['WakeOnPattern']='Enabled'};Set-NetAdapterPowerManagement @args}};if($script:failed){exit 1};exit 0" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';function NK($ad){$c='HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}';$id=('{0}'-f$ad.InterfaceGuid).ToUpper().Trim();if(-not$id-or$id-notmatch'^\{[0-9A-F\-]+\}$'){return $null};$k=(Get-ChildItem -Path $c -ErrorAction SilentlyContinue|Where-Object{$_.PSChildName-match'^\d{4}$'}|Where-Object{(Get-ItemPropertyValue -LiteralPath $_.PSPath -Name 'NetCfgInstanceId' -ErrorAction SilentlyContinue)-eq$id}|Select-Object -First 1).PSChildName;if(-not$k){return $null};return($c+'\'+$k)};$eco=('%~1'-eq'1');$gaming=('%~1'-eq'0'-and'%~2'-eq'0');$script:failed=$false;try{$adapters=@(Get-NetAdapter -Physical -ErrorAction Stop)}catch{exit 1};foreach($a in $adapters){$up=($a.AdminStatus-eq'Up');$props=@{};try{Get-NetAdapterAdvancedProperty -Name $a.Name -AllProperties -ErrorAction Stop|ForEach-Object{if($_.RegistryKeyword){$props[$_.RegistryKeyword]=$_}}}catch{$script:failed=$true};function SetP($kw,$val){$p=$props[$kw];if(-not$p){return};$valid=@($p.ValidRegistryValues);if($null-ne$p.ValidRegistryValues-and$valid.Count-gt 0-and$valid-notcontains[string]$val){return};try{Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $kw -RegistryValue $val -AllProperties -NoRestart -ErrorAction Stop}catch{$script:failed=$true}};function ResetP($kw){$p=$props[$kw];if(-not$p){return};try{if($p.DisplayName){$p|Reset-NetAdapterAdvancedProperty -NoRestart -ErrorAction Stop}elseif($null-ne$p.DefaultRegistryValue){Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $kw -RegistryValue $p.DefaultRegistryValue -AllProperties -NoRestart -ErrorAction Stop}}catch{$script:failed=$true}};if($eco-or-not$gaming){foreach($kw in @('*RscIPv6','ITR','TxIntDelay','*InterruptModerationRate','InterruptModerationRate','RxIntDelay')){ResetP $kw}};if($eco-or-not$gaming){ResetP '*FlowControl'}else{SetP '*FlowControl' '0'};SetP '*InterruptModeration' '1';$r=NK $a;if($a.PnPDeviceID-match'^PCI\\VEN_10EC&'-and$r){if($gaming){Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay' -ErrorAction SilentlyContinue;New-ItemProperty -LiteralPath $r -Name 'IntMitiInterval' -PropertyType DWord -Value 0 -Force|Out-Null;New-ItemProperty -LiteralPath $r -Name 'InterruptModerationLevel' -PropertyType String -Value '0' -Force|Out-Null}else{Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay','IntMitiInterval','InterruptModerationLevel' -ErrorAction SilentlyContinue}};if($r){$arpNs=if($gaming){'0'}else{'1'};foreach($name in @('*PMARPOffload','*PMNSOffload','*WakeOnPattern')){$ndi=$r+'\Ndi\Params\'+$name;if(Test-Path -LiteralPath $ndi){$value=if($name-eq'*WakeOnPattern'){if($eco-or$gaming){'0'}else{'1'}}else{$arpNs};New-ItemProperty -LiteralPath $r -Name $name -PropertyType String -Value $value -Force|Out-Null}}};if($up){if($eco-or-not$gaming){Enable-NetAdapterRsc -Name $a.Name -NoRestart -ErrorAction SilentlyContinue;Enable-NetAdapterLso -Name $a.Name -NoRestart -ErrorAction SilentlyContinue}else{Disable-NetAdapterRsc -Name $a.Name -NoRestart -ErrorAction SilentlyContinue;Disable-NetAdapterLso -Name $a.Name -NoRestart -ErrorAction SilentlyContinue};$args=@{Name=$a.Name;NoRestart=$true;ErrorAction='SilentlyContinue'};if($eco){$args['ArpOffload']='Enabled';$args['NSOffload']='Enabled';$args['WakeOnPattern']='Disabled'}elseif($gaming){$args['ArpOffload']='Disabled';$args['NSOffload']='Disabled';$args['WakeOnPattern']='Disabled'}else{$args['ArpOffload']='Enabled';$args['NSOffload']='Enabled';$args['WakeOnPattern']='Enabled'};Set-NetAdapterPowerManagement @args}};if($script:failed){exit 1};exit 0" >nul 2>&1
 exit /b !errorlevel!
 
 REM  Parametre : %~1 = PROFIL_POWER (0=MaxPerf, 1=Eco).
@@ -4914,23 +5042,29 @@ REM    USB Selective Suspend, USB 3 LPM, DisableSelectiveSuspend).
 REM  Eco (1) : restaure la gestion d'energie USB (annule les surcharges MaxPerf).
 REM  Source unique pour la section 5.8 et les branches USB MaxPerf/Eco de la section 7.
 :SET_USB_POWER
+set "USB_POWER_ERROR=0"
+set "USB_ERRORS_BEFORE=!STEP_ERRORS!"
 if "%~1"=="1" (
     REM Eco : restaurer la gestion d'energie USB - desactive les surcharges MaxPerf
     powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $usb=(Get-PNPDevice -Class USB -ErrorAction SilentlyContinue).InstanceId; Get-CimInstance -ClassName MSPower_DeviceEnable -Namespace root\wmi -Filter 'Enable=false' -ErrorAction SilentlyContinue | Where-Object { $_.InstanceName -replace '_0$' -in $usb } | Set-CimInstance -Property @{Enable = $true} -ErrorAction SilentlyContinue" >nul 2>&1
     call :SET_POWERCFG_ACDC 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 1
     call :SET_POWERCFG_ACDC 2a737441-1930-4402-8d77-b2bebba308a3 d4e98f31-5ffe-4ce1-be31-1b38b384c009 2
     reg delete "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v DisableSelectiveSuspend /f >nul 2>&1
-    if "%~2"=="1" exit /b 0
+    if not "!STEP_ERRORS!"=="!USB_ERRORS_BEFORE!" set "USB_POWER_ERROR=1"
+    if "%~2"=="1" goto :SET_USB_POWER_END
     powercfg /setactive SCHEME_CURRENT >nul 2>&1
-    exit /b 0
+    goto :SET_USB_POWER_END
 )
 powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $usb=(Get-PNPDevice -Class USB -ErrorAction SilentlyContinue).InstanceId; Get-CimInstance -ClassName MSPower_DeviceEnable -Namespace root\wmi -Filter 'Enable=true' -ErrorAction SilentlyContinue | Where-Object { $_.InstanceName -replace '_0$' -in $usb } | Set-CimInstance -Property @{Enable = $false} -ErrorAction SilentlyContinue" >nul 2>&1
 call :SET_POWERCFG_ACDC 2a737441-1930-4402-8d77-b2bebba308a3 48e6b7a6-50f5-4782-a5d4-53bb8f07e226 0
 call :SET_POWERCFG_ACDC 2a737441-1930-4402-8d77-b2bebba308a3 d4e98f31-5ffe-4ce1-be31-1b38b384c009 0
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\USB" /v DisableSelectiveSuspend /t REG_DWORD /d 1 /f >nul 2>&1
-if "%~2"=="1" exit /b 0
+if not "!STEP_ERRORS!"=="!USB_ERRORS_BEFORE!" set "USB_POWER_ERROR=1"
+if "%~2"=="1" goto :SET_USB_POWER_END
 powercfg /setactive SCHEME_CURRENT >nul 2>&1
-exit /b 0
+:SET_USB_POWER_END
+set "USB_ERRORS_BEFORE="
+exit /b !USB_POWER_ERROR!
 
 :RUN_REMOTE_PS
 set "REMOTE_PS_PROVIDER="
@@ -4941,17 +5075,33 @@ if not defined REMOTE_PS_PROVIDER (
     exit /b 1
 )
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Source distante autorisee : !REMOTE_PS_PROVIDER!.%COLOR_RESET%
-set "REMOTE_PS_FILE=%TEMP%\WindowsOptimizer_remote_%RANDOM%_%RANDOM%.ps1"
-powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%~1' -OutFile $env:REMOTE_PS_FILE -UseBasicParsing -ErrorAction Stop; if((Get-Item -LiteralPath $env:REMOTE_PS_FILE).Length -lt 500){exit 2}; $sig=Get-AuthenticodeSignature -LiteralPath $env:REMOTE_PS_FILE; if($sig.SignerCertificate -and $sig.Status.ToString() -ne 'Valid'){exit 4}; $fs=[IO.File]::OpenRead($env:REMOTE_PS_FILE); $b=New-Object byte[] 256; $n=$fs.Read($b,0,256); $fs.Close(); $head=([Text.Encoding]::ASCII.GetString($b,0,$n)).TrimStart(); if($head.StartsWith('<html') -or $head.StartsWith('<?xml') -or ($head.Length -gt 1 -and $head[0] -eq [char]60 -and $head[1] -eq [char]33)){exit 3}; exit 0 } catch { exit 1 }" >nul 2>&1
-if !errorlevel! NEQ 0 (
-    if exist "%REMOTE_PS_FILE%" del /f /q "%REMOTE_PS_FILE%" >nul 2>&1
-    set "REMOTE_PS_FILE="
+REM  Telechargement dans un sous-repertoire nominatif sous %ProgramData% (ecriture
+REM  admin uniquement) et non dans %TEMP% : un autre processus du meme utilisateur
+REM  ne peut ni pre-creer ni substituer le fichier entre la verification et l'execution.
+set "REMOTE_PS_DIR=%ProgramData%\WindowsOptimizer\Remote\%RANDOM%%RANDOM%"
+if not exist "%REMOTE_PS_DIR%" mkdir "%REMOTE_PS_DIR%" >nul 2>&1
+if not exist "%REMOTE_PS_DIR%" (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Reperoire temporaire de telechargement indisponible.%COLOR_RESET%
     exit /b 1
 )
+set "REMOTE_PS_FILE=%REMOTE_PS_DIR%\outil.ps1"
+REM  Confiance : la liste blanche ci-dessus est la seule barriere. Ni MAS ni WinUtil
+REM  ne sont signes Authenticode, donc le controle de signature ne rejetterait rien
+REM  d'utile ; il est conserve uniquement pour refuser un eventuel certificat invalide.
+powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%~1' -OutFile $env:REMOTE_PS_FILE -UseBasicParsing -ErrorAction Stop; if((Get-Item -LiteralPath $env:REMOTE_PS_FILE).Length -lt 500){exit 2}; $sig=Get-AuthenticodeSignature -LiteralPath $env:REMOTE_PS_FILE; if($sig.SignerCertificate -and $sig.Status.ToString() -ne 'Valid'){exit 4}; $fs=[IO.File]::OpenRead($env:REMOTE_PS_FILE); $b=New-Object byte[] 256; $n=$fs.Read($b,0,256); $fs.Close(); $head=([Text.Encoding]::ASCII.GetString($b,0,$n)).TrimStart(); if($head.StartsWith('<html') -or $head.StartsWith('<?xml') -or ($head.Length -gt 1 -and $head[0] -eq [char]60 -and $head[1] -eq [char]33)){exit 3}; exit 0 } catch { exit 1 }" >nul 2>&1
+if !errorlevel! NEQ 0 (
+    rd /s /q "%REMOTE_PS_DIR%" >nul 2>&1
+    set "REMOTE_PS_FILE="
+    set "REMOTE_PS_DIR="
+    exit /b 1
+)
+pushd "%REMOTE_PS_DIR%"
 powershell -NoProfile -ExecutionPolicy Bypass -File "%REMOTE_PS_FILE%"
 set "REMOTE_PS_RC=!errorlevel!"
-del /f /q "%REMOTE_PS_FILE%" >nul 2>&1
+popd >nul 2>&1
+rd /s /q "%REMOTE_PS_DIR%" >nul 2>&1
 set "REMOTE_PS_FILE="
+set "REMOTE_PS_DIR="
 if "!REMOTE_PS_RC!"=="0" (
     set "REMOTE_PS_RC="
     set "REMOTE_PS_PROVIDER="

@@ -29,6 +29,44 @@
 
 Ce script privilégie une configuration lisible et des profils explicites pour Windows 10 et 11. Le résultat dépend toutefois de la version de Windows, des pilotes, du matériel et des logiciels installés. Créez un point de restauration et lisez les avertissements avant les options sensibles (sécurité, Edge, OneDrive et nettoyage avancé).
 
+### Prérequis
+
+| Besoin | Détail | Comportement si absent |
+|---|---|---|
+| **PowerShell** | Obligatoire, dans la version fournie avec Windows 10/11 | Le script s'arrête immédiatement avec un message explicite : 69 commandes PowerShell portent les opérations que cmd ne sait pas faire proprement (registre en masse, WMI, Storage, CIM). |
+| **Jeton administrateur élevé** | Contrôle via le jeton UAC, pas via le service Serveur | Arrêt avec message. Appartenir au groupe Administrateurs ne suffit pas. |
+| **Connexion Internet** | Facultative | Le menu affiche « Hors ligne ou connexion filtrée » et les sections continuent. Seuls les téléchargements (runtimes, SetTimerResolution, MAS/WinUtil) sont ignorés. |
+| **Espace disque** | ~120 Mo pour les runtimes, plus l'espace disque léré par les planifications | L'installation des runtimes échoue proprement et le reste du parcours continue. |
+
+### Ce qui est réversible, et ce qui ne l'est pas
+
+C'est la distinction la plus importante avant de lancer le script.
+
+| Domaine | Réversible | Comment |
+|---|---|---|
+| Sécurité (VBS, HVCI, mitigations CPU) | ✅ | Snapshot `.reg` capturé avant le premier profil, réimporté par « Défaut Windows ». |
+| Énergie, réseau, GPU, périphériques | ✅ | Chaque valeur a son pendant de restauration dans le profil opposé. |
+| MSI, FTH, état des pilotes | ✅ | Sauvegarde par périphérique / par clé, restaurée à l'identique. |
+| **`Tout optimiser` : Confidentialité (section 1.4-1.5)** | ❌ **Volontairement définitif** | **69 valeurs de registre** (46 écritures directes + 23 dans la boucle Content Delivery Manager) couvrant télémétrie, contenu sponsorisé, Cortana/Bing, publicités et navigation sur le web, **26 tâches planifiées**, **6 autologgers WMI**, plus le stockage réservé, Delivery Optimization, la touche F1, l'atténuation audio, WPBT et le menu « Devenir Propriétaire ». **Aucun parcours du script ne les remet à l'état d'origine.** C'est cohérent avec le but, mais il faut le savoir : un point de restauration système est le seul retour arrière. |
+| Désinstallation de OneDrive / Edge | ❌ | Irréversible par nature ; les données sont supprimées après confirmation explicite. |
+| Stratégies anti-réinstallation Edge | ❌ | `InstallDefault=2` et `Install{56EB18F8-…}=0` restent en place. Retour manuel : `reg delete "HKLM\SOFTWARE\Policies\Microsoft\EdgeUpdate" /v InstallDefault /f` puis la même commande pour la valeur `Install{…}`. |
+
+> Le nettoyage du bloc `# Copilot Block` dans `hosts` ne réécrit le fichier qu'**en conservant chaque octet** (lecture/écriture Latin-1) et seulement si ce bloc existe encore, c'est-à-dire si une version antérieure du script l'avait écrit. Un backup est pris avant.
+
+### Où sont les sauvegardes
+
+Toutes dans `%ProgramData%\WindowsOptimizer\Backups` :
+
+| Fichier | Contenu | Cycle de vie |
+|---|---|---|
+| `All in One_<guid>.cmd` | Copie du batch au lancement | Conservée (une par exécution) |
+| `security-baseline.reg` + `security-hypervisorlaunchtype.txt` | Snapshot de la base de sécurité | **Supprimé après une restauration réussie** |
+| `fth-state.json` | État FTH avant désactivation | Supprimé après restauration |
+| `msi_<classe>_baseline.clixml` | Valeurs MSI par périphérique | Supprimé après restauration |
+| `Hosts\hosts_<guid>.bak` | Copie du fichier `hosts` | Conservée |
+
+> Conséquence importante : après un « Défaut Windows » réussi, le snapshot est effacé. Un **second** passage « Défaut Windows » n'a donc plus de snapshot et applique le fallback Windows documenté au lieu de l'état précédent. C'est voulu, mais il ne faut pas s'attendre à deux restaurations identiques.
+
 ---
 
 ## 🚀 Démarrage rapide
@@ -47,14 +85,29 @@ Depuis un clone local, cette commande vérifie le batch publié sans demander l'
 
 > Le launcher n'utilise pas un `All in One.cmd` placé à côté de lui : la commande `irm` et `.\launcher.ps1` utilisent le même batch publié. Pour tester la copie locale, ouvrez directement `All in One.cmd` en administrateur. Le mode `-VerifyOnly` affiche la source et le SHA-256 contrôlés.
 
+Le launcher accepte deux paramètres :
+
+| Paramètre | Défaut | Rôle |
+|---|---|---|
+| `-BaseUrl` | `https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/main` | Source du batch **et** de `Tools/Timer & Interrupt/SetTimerResolution.exe`. Accepte la branche `main` ou un commit SHA-1 complet (40 caractères hexadécimaux). La valeur est validée avant tout téléchargement : HTTPS obligatoire, port par défaut, hôte `raw.githubusercontent.com`, dépôt `kaylerberserk/WindowsOptimizer`, aucun `userinfo`, aucune requête, aucun fragment. Toute autre valeur est refusée. |
+| `-VerifyOnly` | absent | Télécharge et contrôle le batch, affiche la source et son SHA-256, puis sort **sans** demander l'UAC et **sans** exécuter l'optimiseur. Le dossier temporaire est supprimé dans tous les cas. |
+
+```powershell
+# vérifier un commit précis sans rien exécuter
+.\launcher.ps1 -VerifyOnly -BaseUrl https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/3d0db7f...
+```
+
+Le launcher **n'épingle aucun SHA** : `-VerifyOnly` affiche un SHA-256 purement informatif. La garantie repose sur le contrôle de format (ASCII strict, CRLF, deux labels obligatoires) et sur l'origine contrainte à `raw.githubusercontent.com`.
+
 ### Premier parcours
 
 1. Appuyez sur **[R]** pour créer un point de restauration.
 2. Appuyez sur **[O]** pour le parcours complet.
 3. Choisissez l'usage, l'énergie, puis les cinq choix complémentaires proposés : protections Windows, Defender, animations, fonctions IA et UAC.
 4. Les sections sont ensuite exécutées une fois, sans nouvelle question hors contrôles et confirmations dédiés.
-5. Un redémarrage est **recommandé** après un parcours complet et devient nécessaire lorsque Windows, un réglage de sécurité/pilote ou un installateur le signale.
-6. La durée dépend du PC, des options choisies et de la connexion.
+5. **Le parcours installe aussi les runtimes manquants** : DirectX de juin 2010 (95,6 Mo) puis Visual C++ v14 x86 (6,6 Mo) et x64 (17,9 Mo), soit **~120 Mo** téléchargés depuis Microsoft, sans question préalable. Chaque fichier est vérifié avant exécution (taille minimale, et signature Microsoft valide pour DirectX et VC). Ce n'est pas une option du parcours : c'est la première étape, parce que les jeux et les outils installent leurs runtimes à la demande.
+6. Un redémarrage est **recommandé** après un parcours complet et devient nécessaire lorsque Windows, un réglage de sécurité/pilote ou un installateur le signale.
+7. La durée dépend du PC, des options choisies et de la connexion.
 
 ---
 
@@ -91,7 +144,7 @@ Les sections granulaires reprennent la même logique : **Mémoire** et **Réseau
 | **[2]** | **MAX PERF** | Plan Ultimate Performance, économies d'énergie réseau/USB ciblées désactivées et compression mémoire coupée au-delà de 8 Go de RAM. En Gaming, le tuning réseau devient plus agressif. Le preset timer reste expérimental et réversible via Eco. |
 
 > **Sur PC fixe comme portable** : les deux questions sont posées, pour permettre un desktop silencieux/économe ou un laptop branché en **MAX PERF**.
-> **Sur PC portable** : la combinaison **GAMING + ECO** est autorisée avec un avertissement — Nagle/DelACK revient au comportement Windows natif (batterie avant tout), tandis qu'initialRTO=3000 et maxsynretransmissions=2 restent appliqués par l'axe Gaming ; les optimisations GPU/input/CPU restent agressives.
+> **Sur PC portable** : la combinaison **GAMING + ECO** est autorisée avec un avertissement — l'avertissement est en réalité posé sur **tout** PC, pas seulement les portables. Nagle/DelACK revient au comportement Windows natif (batterie avant tout), tandis qu'initialRTO=3000 et maxsynretransmissions=2 restent appliqués par l'axe Gaming ; les optimisations GPU/input/CPU restent agressives.
 >
 > Les quatre combinaisons sont convergentes : changer de profil annule explicitement les réglages exclusifs laissés par le profil précédent.
 > Le changement manuel Eco/Performance Max resynchronise aussi `DisablePagingExecutive`, FTH et la compression mémoire. La passe de convergence réseau renvoie désormais une erreur lorsqu'une carte ne peut pas appliquer ses propriétés.
@@ -119,7 +172,7 @@ Exceptions réseau :
 
 ### ⚙️ Optimisations Granulaires
 
-- **[1] Système** : Optimisation du noyau (Kernel), de la planification CPU et suppression de la télémétrie. Sous Windows 11, tous les profils désactivent les suggestions et les applications récemment ajoutées (`Start_IrisRecommendations=0`, `ShowRecentList=0`) ; Gaming masque aussi « Recommandations » et « Tout », tandis que Normal supprime uniquement ces politiques de masquage. La recherche, les fichiers récents de l’Explorateur et les Jump Lists restent disponibles. La section pose aussi des réglages navigateur communs aux profils : QUIC et accélération matérielle activés, DNS sur HTTPS Cloudflare en mode `allow` (chiffré quand disponible, repli DNS normal sur les réseaux filtrés), démarrage rapide et arrière-plan Edge conservés par choix, et un refus NTFS posé sur la base du Store (`store.db`, SID universel) pour couper ses suggestions dans la recherche — réversible en retirant ce refus.
+- **[1] Système** : Optimisation du noyau (Kernel), de la planification CPU et suppression de la télémétrie. Sous Windows 11, tous les profils désactivent les suggestions et les applications récemment ajoutées (`Start_IrisRecommendations=0`, `ShowRecentList=0`) ; Gaming masque aussi « Recommandations » et « Tout », tandis que Normal supprime uniquement ces politiques de masquage. **Ce que la section retire volontairement** : les suggestions dans la zone de recherche et dans le menu Démarrer (`DisableSearchBoxSuggestions=1`, `DisableSearchSuggestions=1`) ainsi que la liste des fichiers récents de l'Explorateur (`ShowFrequent=0`). Seuls les Jump Lists, l'indexation Windows et la recherche comme fonction de Windows restent disponibles. La section pose aussi des réglages navigateur communs aux profils : QUIC et accélération matérielle activés, DNS sur HTTPS Cloudflare en mode `allow` (chiffré quand disponible, repli DNS normal sur les réseaux filtrés), démarrage rapide et arrière-plan Edge conservés par choix, et un refus NTFS posé sur la base du Store (`store.db`, SID universel) pour couper ses suggestions dans la recherche — réversible en retirant ce refus.
 - **[2] Mémoire** : Ajustement de la gestion RAM et de la compression mémoire selon l'énergie, avec Prefetch piloté par l'usage.
 - **[3] Disques** : TRIM et maintenance Windows conservés ; chemins longs activés en Gaming et rendus à `LongPathsEnabled=0` en Normal, comme sur le stock mesuré.
 - **[4] GPU** : Configuration des priorités graphiques et des options de latence prises en charge par le pilote.
@@ -136,9 +189,9 @@ Exceptions réseau :
 
 > ### 💡 Vue d'ensemble des 3 modes
 >
-> * **Gaming (Recommandé ★)** : Conserve **VBS / HVCI** et **LSA Protection** (`RunAsPPL=2` sans verrou UEFI) pour limiter les conflits avec les anti-cheats modernes, laisse **CFG** à `NOTSET` (défaut Windows), désactive **SEHOP**, réduit les mitigations CPU et demande la désactivation de la blocklist.
+> * **Gaming (Recommandé ★)** : Conserve **VBS / HVCI** et **LSA Protection** (`RunAsPPL=1` sans verrou UEFI) pour limiter les conflits avec les anti-cheats modernes, laisse **CFG** à `NOTSET` (défaut Windows), désactive **SEHOP**, réduit les mitigations CPU et demande la désactivation de la blocklist.
 > * **Défaut Windows** : restaure le snapshot capturé avant un profil de sécurité. Sans snapshot, il applique la base stock mesurée (FeatureSettings=0, RunAsPPL/RunAsPPLBoot=2, blocklist de pilotes=1) et retire les overrides de l'outil.
-> * **Performance Max ⚠️ (Déconseillé)** : Désactive VBS, HVCI et SEHOP, conserve CFG et **LSA Protection** (`RunAsPPL=2` sans verrou UEFI), réduit les mitigations CPU et demande la désactivation de la blocklist.
+> * **Performance Max ⚠️ (Déconseillé)** : Désactive VBS, HVCI et SEHOP, conserve CFG et **LSA Protection** (`RunAsPPL=1` sans verrou UEFI), réduit les mitigations CPU et demande la désactivation de la blocklist.
 
 > ### 🔍 Notes & Précisions techniques
 >
@@ -199,10 +252,10 @@ R : Tous les profils suppriment les overrides BCD `useplatformclock`/`useplatfor
 R : Certaines protections ajoutent une charge selon le processeur et la charge de travail. Gaming conserve VBS/HVCI, laisse CFG au défaut Windows, désactive SEHOP, réduit les mitigations CPU et demande la désactivation de la blocklist. HVCI peut néanmoins maintenir cette blocklist active. Performance Max désactive VBS/HVCI/SEHOP, laisse CFG au défaut Windows, réduit les mitigations CPU et demande aussi la désactivation de la blocklist. Défaut Windows restaure le snapshot de sécurité ou applique la base stock 25H2 mesurée sans snapshot. Les trois modes suppriment la surcharge BCD `hypervisorlaunchtype` lorsqu'ils la gèrent ; les stratégies et verrous externes restent prioritaires.
 
 **Q : Changer plusieurs fois de mode de sécurité laisse-t-il les anciens réglages actifs ?**
-R : Le premier passage Gaming ou Performance Max capture les valeurs ciblées et la valeur BCD avant modification. Défaut Windows réimporte ensuite ce snapshot de façon ciblée ; sans snapshot, il retire les overrides connus puis applique les quelques valeurs stock mesurées et explicitement gérées (`FeatureSettings=0`, `RunAsPPL=2`, `RunAsPPLBoot=2`, blocklist=1). Une stratégie d'entreprise ou un verrou UEFI peut cependant réimposer une valeur extérieure au script.
+R : Le premier passage Gaming ou Performance Max capture les valeurs ciblées et la valeur BCD avant modification. Défaut Windows réimporte ensuite ce snapshot de façon ciblée ; sans snapshot, il retire les overrides connus puis applique les quelques valeurs stock mesurées et explicitement gérées (`FeatureSettings=0`, `RunAsPPL=1`, `RunAsPPLBoot=2`, blocklist=1). Une stratégie d'entreprise ou un verrou UEFI peut cependant réimposer une valeur extérieure au script.
 
 **Q : Performance Max désactive-t-il toutes les protections ?**
-R : Non. Performance Max désactive VBS, HVCI, SEHOP et Credential Guard local/policy, laisse CFG à `NOTSET` (dont le défaut Windows effectif est ON), demande la désactivation de la blocklist, réduit les mitigations CPU, mais conserve LSA Protection avec `RunAsPPL=2` sans verrou UEFI et laisse les Kernel Shadow Stacks inchangées. Smart App Control, le mode S ou une stratégie peuvent maintenir la blocklist active. La valeur BCD `hypervisorlaunchtype` est supprimée (`deletevalue`). Une ancienne configuration Credential Guard verrouillée en UEFI peut nécessiter une procédure avec confirmation physique pour retirer ce verrou.
+R : Non. Performance Max désactive VBS, HVCI, SEHOP et Credential Guard local/policy, laisse CFG à `NOTSET` (dont le défaut Windows effectif est ON), demande la désactivation de la blocklist, réduit les mitigations CPU, mais conserve LSA Protection avec `RunAsPPL=1` sans verrou UEFI et laisse les Kernel Shadow Stacks inchangées. Smart App Control, le mode S ou une stratégie peuvent maintenir la blocklist active. La valeur BCD `hypervisorlaunchtype` est supprimée (`deletevalue`). Une ancienne configuration Credential Guard verrouillée en UEFI peut nécessiter une procédure avec confirmation physique pour retirer ce verrou.
 
 **Q : Quelle différence entre Gaming et Performance Max pour les anti-cheats ?**
 R : Gaming conserve VBS/HVCI et laisse CFG au défaut Windows afin de limiter les incompatibilités. Performance Max désactive VBS/HVCI ; sa compatibilité dépend donc du jeu, de l'anti-cheat et de leur version. Certains exigent aussi TPM, Secure Boot, la virtualisation ou IOMMU.
