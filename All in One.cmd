@@ -1941,10 +1941,14 @@ REM selon le profil (desactive en Gaming, reactive en Normal). L'ecrire aussi
 REM dans 5.2 etait sans effet, la branche de 5.3 executant toujours apres.
 REM minRto se configure uniquement avec 'set supplemental' ; 'set global' ne prend pas ce parametre.
 
-REM Depuis Windows 11 24H2/25H2, WSH n'est plus utilise. ForceWS reste supporte,
-REM mais 'default' et 'enabled' aboutissent au meme etat (le forcage de la mise a
-REM l'echelle des fenetres actif) d'apres 'netsh int tcp set heuristics help' :
-REM une seule ecriture suffit, elle ne depend pas du profil.
+REM ATTENTION : sur Windows 11 24H2/25H2 cette ecriture ne produit aucun effet.
+REM 'netsh int tcp set heuristics help' annonce que la methode n'est plus prise en
+REM charge, pour wsh comme pour forcews. Mesure : la machine affiche
+REM 'netsh int tcp show heuristics' = disabled alors que ce script ecrit enabled
+REM depuis des dizaines d'executions - l'ecriture ne prend pas.
+REM Elle est conservee pour les versions ou le parametre existe encore. Elle
+REM remplace le forcews=default du profil Normal parce que l'aide indique que
+REM 'default' restaure la valeur systeme, c'est-a-dire activee : meme etat.
 netsh int tcp set heuristics forcews=enabled >nul 2>&1
 
 REM initialRTO (300-3000ms) ne regle que l'etablissement TCP (SYN) et pas le RTO
