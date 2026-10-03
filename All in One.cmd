@@ -1379,6 +1379,7 @@ REM  "runas" est le verbe d'elevation Windows ("Executer en tant qu'administrate
 REM  On capture son etat AVANT de le remplacer, sinon "Executer en tant
 REM  qu'administrateur" disparait du menu contextuel, sans retour possible.
 call :CAPTURE_RUNAS_VERB
+if !errorlevel! EQU 3 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le verbe runas est deja ecrase sur cette machine : rien a capturer.%COLOR_RESET%
 reg add "HKCR\*\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1
 reg add "HKCR\*\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1
 reg add "HKCR\*\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /d y || takeown /f \"%%1\" /d o && icacls \"%%1\" /grant *S-1-5-32-544:F" /f >nul 2>&1
@@ -4823,6 +4824,13 @@ exit /b !WINOPT_HOSTS_BACKUP_RC!
 :: la premiere capture - la seule qui decrive l'etat de Windows - compte.
 :CAPTURE_RUNAS_VERB
 if exist "%WINOPT_RUNAS_BACKUP%" exit /b 0
+REM  Ne jamais capturer un verbe deja ecrase. Sur une machine ou une
+REM  version anterieure a deja applique "Devenir Proprietaire", la capture
+REM  ne contiendrait que l'etat du script : la restauration afficherait
+REM  [FAIT] sans jamais ramener "Executer en tant qu'administrateur", et
+REM  les passages suivants ne re-captureraient plus rien. Rc = 3.
+reg query "HKCR\*\shell\runas" /v * 2>nul | findstr /I /C:"Devenir Proprietaire" >nul
+if !errorlevel! EQU 0 exit /b 3
 reg export "HKCR\*\shell\runas" "%WINOPT_RUNAS_BACKUP%" /y >nul 2>&1
 if !errorlevel! NEQ 0 exit /b 1
 if not exist "%WINOPT_RUNAS_BACKUP%" exit /b 1
