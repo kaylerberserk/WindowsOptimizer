@@ -634,6 +634,10 @@ if !errorlevel! EQU 4  goto :DO_GPU
 if !errorlevel! EQU 3  goto :DO_DISQUES
 if !errorlevel! EQU 2  goto :DO_MEMOIRE
 if !errorlevel! EQU 1  goto :DO_SYSTEME
+if !errorlevel! GEQ 250 (
+    REM choice.exe en echec (255) : aucune optimisation sans choix explicite.
+    goto :END_SCRIPT
+)
 goto :MENU_PRINCIPAL
 
 :DO_PERIPHERIQUES
@@ -706,6 +710,10 @@ if !errorlevel! EQU 4  goto :MENU_IA_WIDGETS_RECALL
 if !errorlevel! EQU 3  goto :TOGGLE_ANIMATIONS
 if !errorlevel! EQU 2  goto :TOGGLE_UAC
 if !errorlevel! EQU 1  goto :TOGGLE_DEFENDER
+if !errorlevel! GEQ 250 (
+    REM choice.exe en echec (255) : aucune optimisation sans choix explicite.
+    goto :END_SCRIPT
+)
 goto :MENU_GESTION_WINDOWS
 
 :DO_INSTALLER_VISUAL_REDIST
