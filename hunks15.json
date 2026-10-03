@@ -1,8 +1,0 @@
-[
- {
-  "id": "fix-typo-pretendant",
-  "old": "perdu, et la restauration pretending le contraire. Rc = 3, non bloquant.\n",
-  "new": "perdu, et la restauration pretoindrait le contraire. Rc = 3, non bloquant.\n",
-  "count": 1
- }
-]
