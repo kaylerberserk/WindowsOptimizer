@@ -164,8 +164,8 @@ Exceptions réseau :
 | **[1]** | **Windows Defender** | Activation ou désactivation étendue. La réactivation conserve les règles ASR et CFA existantes, réactive les protections principales et signale un état final partiel. |
 | **[2]** | **UAC**              | Gestion fine des notifications du Contrôle de Compte Utilisateur.                                                                                                      |
 | **[3]** | **Animations**       | Choix entre une interface visuelle riche ou ultra-réactive.                                                                                                            |
-| **[4]** | **IA & Widgets**     | Activation ou désactivation de Copilot et des Widgets sur Windows 11. Recall dépend de la version/édition de Windows et peut être absent ou non pris en charge.        |
-| **[5]** | **OneDrive**         | Désinstallation complète, arrêt de la synchronisation et suppression des dossiers OneDrive restants, dont `%USERPROFILE%\OneDrive`.                                    |
+| **[4]** | **IA & Widgets**     | Activation ou désactivation de Copilot et des Widgets sur Windows 11. Recall dépend de la version/édition de Windows ; le désactiver supprime les instantanés déjà enregistrés. |
+| **[5]** | **OneDrive**         | Désinstallation complète et arrêt de la synchronisation. `%USERPROFILE%\OneDrive` est supprimé, sauf si Bureau, Documents ou Images y sont rangés : le dossier est alors conservé. |
 | **[6]** | **Microsoft Edge**   | Désinstallation de Microsoft Edge avec WebView2 préservé. Recherche, Widgets, météo et certaines PWA peuvent être affectés.                                            |
 | **[7]** | **Runtimes**         | Installation du Visual C++ v14 actuel et de DirectX June 2010. Les téléchargements VC++ x86/x64 sont parallélisés quand les deux manquent ; DirectX utilise `curl` en priorité avec BITS/PowerShell en secours. |
 | **[8]** | **Bloatwares**       | Suppression des apps préinstallées inutiles (News, Solitaire, Skype, etc.).                                                                                            |
