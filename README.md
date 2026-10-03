@@ -33,7 +33,7 @@ Ce script privilégie une configuration lisible et des profils explicites pour W
 
 | Besoin | Détail | Comportement si absent |
 |---|---|---|
-| **PowerShell** | Obligatoire, dans la version fournie avec Windows 10/11 | Le script s'arrête immédiatement avec un message explicite : 76 commandes PowerShell portent les opérations que cmd ne sait pas faire proprement (registre en masse, WMI, Storage, CIM). |
+| **PowerShell** | Obligatoire, dans la version fournie avec Windows 10/11 | Le script s'arrête immédiatement avec un message explicite : 77 commandes PowerShell portent les opérations que cmd ne sait pas faire proprement (registre en masse, WMI, Storage, CIM). |
 | **Jeton administrateur élevé** | Contrôle via le jeton UAC, pas via le service Serveur | Arrêt avec message. Appartenir au groupe Administrateurs ne suffit pas. |
 | **Connexion Internet** | Facultative | Le menu affiche « Hors ligne ou connexion filtrée » et les sections continuent. Seuls les téléchargements (runtimes, SetTimerResolution, MAS/WinUtil) sont ignorés. |
 | **Espace disque** | ~120 Mo pour les runtimes, plus l'espace disque léré par les planifications | L'installation des runtimes échoue proprement et le reste du parcours continue. |

@@ -1056,17 +1056,17 @@ if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 3 /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v IoPriority /t REG_DWORD /d 3 /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEng.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 1 /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEngCP.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 1 /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 38 /f >nul 2>&1
 ) else (
     REM Win32PrioritySeparation : 0x26 = 38 (quantums courts variables + separation
     REM maximale) est la valeur des versions Windows clientes recentes ; 0x02 = 2 est
-    REM l'ancien libelle "defaut client", retrouve dans la documentation Windows
-    REFUSEE PAR CE SCRIPT. L'ecrire ici s'ecarterait de la valeur client actuelle.
+    REM l'ancien libelle "defaut client" de la documentation Windows.
     REM Valeur conservee telle quelle : choix de l'outil, a valider si besoin.
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 2 /f >nul 2>&1
     for %%V in (CpuPriorityClass IoPriority) do reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v "%%V" /f >nul 2>&1
     reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEng.exe\PerfOptions" /v CpuPriorityClass /f >nul 2>&1
+    REM MsMpEngCP.exe n'est plus ecrit en Gaming : Windows refuse la cle (acces refuse,
+    REM mesure 25H2 en session elevee). Suppression gardee pour les anciennes versions.
     reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEngCP.exe\PerfOptions" /v CpuPriorityClass /f >nul 2>&1
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages de reactivite appliques%COLOR_RESET%
@@ -1492,20 +1492,14 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager" /v DisableWpbtEx
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%WPBT desactive%COLOR_RESET%
 
 REM  1.17 - Intel Thread Director / Core Parking
-REM  Les trois Attributes ci-dessous sont ecrits SANS condition de profil :
-REM  cette section appartient a l'axe USAGE mais ce sont les memes GUID que la
-REM  section 7 ecrit en mode Eco (lignes 2756, 2763, 2811) avec la valeur 1,
-REM  et que le mode Performance max n'ecrit pas. Le proprietaire effectif de
-REM  cette cle est donc l'axe ENERGIE, alors que l'ecrivain est cette section.
-REM  Consequence mesurable : en mode Eco, passer par le menu SYSTEME - qui ne
-REM  demande que l'usage - et choisir Normal laisse Attributes a 2, valeur que
-REM  le mode Eco vient justement de retablir. Le script ne produit jamais cette
-REM  combinaison lui-meme et aucun affichage ne la signale. Rouvrir SYSTEME ou
-REM  ENERGIE la corrige.
+REM  Attributes ne regle que la visibilite du parametre dans les options
+REM  d'alimentation (2 = affiche, 1 = masque, valeur stock) : aucun effet sur
+REM  l'ordonnancement. Il est ecrit ici sans condition de profil, et le mode Eco
+REM  le remet a 1. Apres Eco, repasser par cette section laisse donc les
+REM  parametres affiches : etat cosmetique, sans consequence, laisse tel quel.
 REM  SCHEDPOLICY (0=Tous, 1=Performants, 2=Preferer performants, 3=Efficients,
-REM  4=Preferer efficients, 5=Auto) n'est PAS ecrit par ce script : il n'existe
-REM  ici que comme documentation du GUID. Rien ne faire sur CPU non-hybride
-REM  (AMD, Intel avant 12th generation).
+REM  4=Preferer efficients, 5=Auto). Sans effet sur CPU non-hybride (AMD,
+REM  Intel avant la 12e generation).
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration de la planification des coeurs du processeur...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\93b8b6dc-0698-4d1c-9ee4-0644e900c85d" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318584" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
@@ -2777,6 +2771,9 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Mise en veille des coeurs ren
 
 REM  7.8 - Power Throttling
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Windows peut de nouveau limiter le processeur si necessaire.%COLOR_RESET%
+REM  VetoPolicy : 0 est la valeur stock mesuree sur 25H2. L'ecrire restaure donc
+REM  Windows ; la supprimer retirerait une valeur que le stock porte. Seul
+REM  PowerThrottlingOff distingue reellement Eco de Performance max.
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PDC\Activators\Default\VetoPolicy" /v "EA:EnergySaverEngaged" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PDC\Activators\28\VetoPolicy" /v "EA:PowerStateDischarging" /t REG_DWORD /d 0 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v PowerThrottlingOff /f >nul 2>&1
@@ -3447,11 +3444,14 @@ REM  Le stock Windows 25H2 laisse VisualFXSetting absent : Windows choisit son c
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop\WindowMetrics" /v MinAnimate /t REG_SZ /d "1" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarAnimations /t REG_DWORD /d 1 /f >nul 2>&1
+REM  Nettoyage des valeurs ecrites par d'anciennes versions et que Windows ne lit pas.
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Accessibility\AnimationEffects" /v Enabled /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d "400" /f >nul 2>&1
 for %%V in (MenuAnimation TooltipAnimation SelectionFade MenuFade) do reg delete "HKCU\Control Panel\Desktop" /v "%%V" /f >nul 2>&1
 for %%V in (AnimateWindow ComboboxAnimation ListBoxSmoothScrolling) do reg delete "HKCU\Control Panel\Desktop" /v "%%V" /f >nul 2>&1
 reg delete "HKCU\Control Panel\Desktop" /v UserUIEffects /f >nul 2>&1
+call :SET_UI_ANIMATIONS 1
+set "UI_ANIMATIONS_RC=!errorlevel!"
 reg add "HKCU\Software\Microsoft\Windows\DWM" /v EnableAeroPeek /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 1 /f >nul 2>&1
 
@@ -3464,7 +3464,12 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Li
 reg delete "HKCU\Control Panel\Desktop" /v CursorShadow /f >nul 2>&1
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ExtendedUIHoverTime /f >nul 2>&1
 
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Activation des animations demandee.%COLOR_RESET%
+if "!UI_ANIMATIONS_RC!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Animations activees.%COLOR_RESET%
+) else (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Animations de l'interface non modifiees ; les autres reglages sont appliques.%COLOR_RESET%
+)
+set "UI_ANIMATIONS_RC="
 call :FINISH_ACTION "Reglages animations"
 exit /b 0
 
@@ -3492,11 +3497,9 @@ REM  individuelles ci-dessous sans recalculer tous les effets (ce qui reset le m
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 3 /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop\WindowMetrics" /v MinAnimate /t REG_SZ /d "0" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarAnimations /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Accessibility\AnimationEffects" /v Enabled /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d "0" /f >nul 2>&1
-for %%V in (MenuAnimation TooltipAnimation SelectionFade MenuFade) do reg add "HKCU\Control Panel\Desktop" /v "%%V" /t REG_SZ /d "0" /f >nul 2>&1
-for %%V in (AnimateWindow ComboboxAnimation ListBoxSmoothScrolling) do reg add "HKCU\Control Panel\Desktop" /v "%%V" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Control Panel\Desktop" /v UserUIEffects /t REG_DWORD /d 0 /f >nul 2>&1
+call :SET_UI_ANIMATIONS 0
+set "UI_ANIMATIONS_RC=!errorlevel!"
 reg add "HKCU\Software\Microsoft\Windows\DWM" /v EnableAeroPeek /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f >nul 2>&1
 
@@ -3509,7 +3512,12 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Li
 reg add "HKCU\Control Panel\Desktop" /v CursorShadow /t REG_SZ /d "0" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ExtendedUIHoverTime /t REG_DWORD /d 0 /f >nul 2>&1
 
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Desactivation des animations demandee.%COLOR_RESET%
+if "!UI_ANIMATIONS_RC!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Animations desactivees.%COLOR_RESET%
+) else (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Animations de l'interface non modifiees ; les autres reglages sont appliques.%COLOR_RESET%
+)
+set "UI_ANIMATIONS_RC="
 call :FINISH_ACTION "Reglages animations"
 exit /b 0
 
@@ -4972,6 +4980,14 @@ if not "%~4"=="" echo %COLOR_WHITE%%~4%COLOR_RESET%
 set "STEP_ERRORS=0"
 set "STEP_TAG="
 exit /b 0
+
+:SET_UI_ANIMATIONS
+REM  Argument 1 : 0 = desactiver, 1 = activer (stock). Les animations de menus, listes,
+REM  infobulles et de la zone cliente vivent dans UserPreferencesMask : seul
+REM  SystemParametersInfo l'ecrit correctement et l'applique sans reconnexion.
+REM  Exige une session interactive (erreur 1459 depuis une session de service).
+powershell -NoProfile -Command "$s=Add-Type -PassThru -Name U -Namespace W -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool SystemParametersInfo(uint a,uint b,IntPtr c,uint d);'; $f=0; foreach($a in 0x1003,0x1005,0x1007,0x1013,0x1015,0x1017,0x1043){ if(-not $s::SystemParametersInfo($a,0,[IntPtr]%~1,3)){$f=1} }; exit $f" >nul 2>&1
+exit /b !errorlevel!
 
 :FTH_DISABLE
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=$env:WINOPT_FTH_BACKUP;$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);if(-not$key){$key=$base.CreateSubKey('SOFTWARE\Microsoft\FTH')};if(Test-Path -LiteralPath $f){$present=$key.GetValueNames()-contains'Enabled';if($present-and$key.GetValueKind('Enabled')-eq[Microsoft.Win32.RegistryValueKind]::DWord-and[int]$key.GetValue('Enabled')-eq 0){exit 0};exit 2};$present=$key.GetValueNames()-contains'Enabled';$state=[ordered]@{Present=$present;Kind='None';Value=$null};if($present){$kind=$key.GetValueKind('Enabled');$state.Kind=[string]$kind;$value=$key.GetValue('Enabled',$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$state.Value=[Convert]::ToBase64String([byte[]]$value)}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::MultiString){$state.Value=@($value)}else{$state.Value=$value}};[IO.File]::WriteAllText($f,($state|ConvertTo-Json -Depth 5),[Text.Encoding]::UTF8);$key.SetValue('Enabled',0,[Microsoft.Win32.RegistryValueKind]::DWord);if($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne 0){exit 1};exit 0}catch{exit 1}" >nul 2>&1
