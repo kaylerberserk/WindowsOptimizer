@@ -181,7 +181,7 @@ set "WINOPT_SECURITY_BACKUP=%WINOPT_BACKUP_DIR%\security-baseline.reg"
 set "WINOPT_SECURITY_BCD_BACKUP=%WINOPT_BACKUP_DIR%\security-hypervisorlaunchtype.txt"
 set "WINOPT_FTH_BACKUP=%WINOPT_BACKUP_DIR%\fth-state.json"
 REM Le verbe runas du menu contextuel est REECRIT par l'option "Devenir Proprietaire".
-REM Sans cette capture, "Executer en tant qu'administrateur" disparait definitivement.
+REM Son etat d'origine est capture ici pour que "Defaut Windows" puisse le rendre.
 set "WINOPT_RUNAS_BACKUP=%WINOPT_BACKUP_DIR%\runas-file-verb.reg"
 set "WINOPT_DIR_RUNAS_BACKUP=%WINOPT_BACKUP_DIR%\runas-dir-verb.reg"
 call :BACKUP_SELF_BEFORE_EXECUTION
@@ -1375,9 +1375,9 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Ajout de l'option Deveni
 REM  Localization : takeown et icacls n'acceptent pas les noms de groupe traduits.
 REM  /d y (Yes) puis /d o (Oui) car la lettre attendue depend de la locale ;
 REM  *S-1-5-32-544 = BUILTIN\Administrateurs, resolu par SID sur toute installation.
-REM  "runas" est le verbe d'elevation Windows ("Executer en tant qu'administrateur").
-REM  On capture son etat AVANT de le remplacer, sinon "Executer en tant
-REM  qu'administrateur" disparait du menu contextuel, sans retour possible.
+REM  "runas" est ici le verbe du menu contextuel de tous les fichiers et des
+REM  dossiers. Son etat est capture AVANT d'etre remplace, pour que "Defaut
+REM  Windows" puisse le rendre, ou le supprimer s'il n'existait pas.
 call :CAPTURE_RUNAS_VERB
 if !errorlevel! EQU 3 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le verbe runas est deja ecrase sur cette machine : rien a capturer.%COLOR_RESET%
 reg add "HKCR\*\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1
@@ -4769,7 +4769,11 @@ set "APPX_REMOVED=0"
 set "APPX_MISSING=0"
 set "APPX_FAILED=0"
 set "APPX_RESULT_OK=0"
-powershell -NoProfile -Command "$apps=@('Microsoft.BingNews','Microsoft.MicrosoftOfficeHub','Microsoft.MicrosoftSolitaireCollection','Microsoft.SkypeApp','Microsoft.FeedbackHub','Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.OneConnect','Microsoft.WindowsMaps','Microsoft.MixedReality.Portal','Microsoft.People','Microsoft.Family','King.CandyCrushSaga','King.CandyCrushSodaSaga','Microsoft.QuickAssist');$removed=0;$missing=0;$failed=0;$prov=@(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue);foreach($app in $apps){$packages=@(Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue);$provisioned=@($prov|Where-Object{$_.DisplayName-eq$app-or$_.PackageName-like($app+'_*')});if($packages.Count-eq0-and$provisioned.Count-eq0){$missing++;Write-Host \"   [IGNORE] Non installe : $app\" -ForegroundColor DarkGray;continue};Write-Host \"   [INFO] Suppression de : $app ...\" -ForegroundColor Cyan;$appFailed=$false;foreach($package in $packages){try{$package|Remove-AppxPackage -AllUsers -ErrorAction Stop}catch{$appFailed=$true}};foreach($package in $provisioned){try{Remove-AppxProvisionedPackage -Online -PackageName $package.PackageName -ErrorAction Stop|Out-Null}catch{$appFailed=$true}};if($appFailed){$failed++;Write-Host \"   [AVERTISSEMENT] Suppression incomplete : $app\" -ForegroundColor Yellow}else{$removed++}};[IO.File]::WriteAllText($env:APPX_RESULT_FILE,($removed.ToString()+'|'+$missing.ToString()+'|'+$failed.ToString()),[Text.Encoding]::ASCII);if($failed-gt0){exit 1};exit 0"
+REM  Get-AppxPackage -Name est une correspondance exacte : un nom approximatif
+REM  ne supprime rien et compte comme "deja absente". Noms releves sur 25H2 :
+REM  Microsoft.WindowsFeedbackHub, MicrosoftCorporationII.QuickAssist et
+REM  MicrosoftCorporationII.MicrosoftFamily ; king.com.* est le nom du Store.
+powershell -NoProfile -Command "$apps=@('Microsoft.BingNews','Microsoft.MicrosoftOfficeHub','Microsoft.MicrosoftSolitaireCollection','Microsoft.SkypeApp','Microsoft.WindowsFeedbackHub','Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.OneConnect','Microsoft.WindowsMaps','Microsoft.MixedReality.Portal','Microsoft.People','MicrosoftCorporationII.MicrosoftFamily','king.com.CandyCrushSaga','king.com.CandyCrushSodaSaga','MicrosoftCorporationII.QuickAssist');$removed=0;$missing=0;$failed=0;$prov=@(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue);foreach($app in $apps){$packages=@(Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue);$provisioned=@($prov|Where-Object{$_.DisplayName-eq$app-or$_.PackageName-like($app+'_*')});if($packages.Count-eq0-and$provisioned.Count-eq0){$missing++;Write-Host \"   [IGNORE] Non installe : $app\" -ForegroundColor DarkGray;continue};Write-Host \"   [INFO] Suppression de : $app ...\" -ForegroundColor Cyan;$appFailed=$false;foreach($package in $packages){try{$package|Remove-AppxPackage -AllUsers -ErrorAction Stop}catch{$appFailed=$true}};foreach($package in $provisioned){try{Remove-AppxProvisionedPackage -Online -PackageName $package.PackageName -ErrorAction Stop|Out-Null}catch{$appFailed=$true}};if($appFailed){$failed++;Write-Host \"   [AVERTISSEMENT] Suppression incomplete : $app\" -ForegroundColor Yellow}else{$removed++}};[IO.File]::WriteAllText($env:APPX_RESULT_FILE,($removed.ToString()+'|'+$missing.ToString()+'|'+$failed.ToString()),[Text.Encoding]::ASCII);if($failed-gt0){exit 1};exit 0"
 set "APPX_RC=!errorlevel!"
 if exist "!APPX_RESULT_FILE!" for /f "usebackq tokens=1-3 delims=^|" %%A in ("!APPX_RESULT_FILE!") do (
     set "APPX_REMOVED=%%A"
@@ -4838,46 +4842,66 @@ exit /b !WINOPT_HOSTS_BACKUP_RC!
 :: Capture les deux cles du verbe "runas" du menu contextuel AVANT que la
 :: section 1.8 ne les ecrase. reg export est utilise plutot qu'un .reg ecrit a
 :: la main : il restitue fidelement tous les types de valeurs.
-:: Capture unique : si le fichier existe deja il n'est pas reecrit, donc seule
-:: la premiere capture - la seule qui decrive l'etat de Windows - compte.
+:: Une cle absente est notee par un fichier temoin ".absent" : la restauration
+:: la supprimera au lieu de laisser "Devenir Proprietaire" en place.
+:: Capture unique : un fichier existant n'est jamais reecrit, donc seule la
+:: premiere capture - la seule qui decrive l'etat de Windows - compte.
 :CAPTURE_RUNAS_VERB
 if exist "%WINOPT_RUNAS_BACKUP%" exit /b 0
+if exist "%WINOPT_RUNAS_BACKUP%.absent" exit /b 0
 REM  Ne jamais capturer un verbe deja ecrase. Sur une machine ou une
 REM  version anterieure a deja applique "Devenir Proprietaire", la capture
 REM  ne contiendrait que l'etat du script : la restauration afficherait
-REM  [FAIT] sans jamais ramener "Executer en tant qu'administrateur", et
-REM  les passages suivants ne re-captureraient plus rien. Rc = 3.
+REM  [FAIT] sans rien ramener. Rc = 3.
 reg query "HKCR\*\shell\runas" /v * 2>nul | findstr /I /C:"Devenir Proprietaire" >nul
 if !errorlevel! EQU 0 exit /b 3
-reg export "HKCR\*\shell\runas" "%WINOPT_RUNAS_BACKUP%" /y >nul 2>&1
-if !errorlevel! NEQ 0 exit /b 1
-if not exist "%WINOPT_RUNAS_BACKUP%" exit /b 1
-reg export "HKCR\Directory\shell\runas" "%WINOPT_DIR_RUNAS_BACKUP%" /y >nul 2>&1
+reg query "HKCR\*\shell\runas" >nul 2>&1
+if !errorlevel! NEQ 0 (
+    echo absent> "%WINOPT_RUNAS_BACKUP%.absent"
+) else (
+    reg export "HKCR\*\shell\runas" "%WINOPT_RUNAS_BACKUP%" /y >nul 2>&1
+    if !errorlevel! NEQ 0 exit /b 1
+)
+reg query "HKCR\Directory\shell\runas" >nul 2>&1
+if !errorlevel! NEQ 0 (
+    echo absent> "%WINOPT_DIR_RUNAS_BACKUP%.absent"
+) else (
+    reg export "HKCR\Directory\shell\runas" "%WINOPT_DIR_RUNAS_BACKUP%" /y >nul 2>&1
+    if !errorlevel! NEQ 0 exit /b 1
+)
 exit /b 0
 
-:: Restaure les deux cles capturees. "reg import" ajoute et remplace mais ne
-:: supprime rien : les valeurs ajoutees par le script sont retirees apres un
-:: premier import reussi, puis un second import remet celles que la capture
-:: contenait. En cas d'echec la capture est conservee pour un nouvel essai.
+:: Restaure les deux cles. "reg import" ajoute et remplace mais ne supprime
+:: rien : apres un premier import qui prouve que la capture est lisible, la
+:: cle est supprimee puis reimportee, ce qui retire aussi les valeurs et la
+:: sous-cle "command" ajoutees par le script. Une cle notee absente est
+:: supprimee. En cas d'echec les captures restent pour un nouvel essai.
 :RESTORE_RUNAS_VERB
-if not exist "%WINOPT_RUNAS_BACKUP%" if not exist "%WINOPT_DIR_RUNAS_BACKUP%" exit /b 2
-set "RUNAS_RESTORE_RC=0"
+set "RUNAS_RESTORE_RC=2"
+for %%F in ("%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%") do (
+    if exist "%%~F" set "RUNAS_RESTORE_RC=0"
+    if exist "%%~F.absent" set "RUNAS_RESTORE_RC=0"
+)
+if "!RUNAS_RESTORE_RC!"=="2" exit /b 2
+for %%F in ("%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%") do if exist "%%~F" (
+    reg import "%%~F" >nul 2>&1
+    if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
+)
+if "!RUNAS_RESTORE_RC!"=="1" exit /b 1
 if exist "%WINOPT_RUNAS_BACKUP%" (
+    reg delete "HKCR\*\shell\runas" /f >nul 2>&1
     reg import "%WINOPT_RUNAS_BACKUP%" >nul 2>&1
     if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
 )
 if exist "%WINOPT_DIR_RUNAS_BACKUP%" (
+    reg delete "HKCR\Directory\shell\runas" /f >nul 2>&1
     reg import "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
     if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
 )
 if "!RUNAS_RESTORE_RC!"=="1" exit /b 1
-for %%V in (NoWorkingDirectory IsolatedCommand) do (
-    reg delete "HKCR\*\shell\runas" /v "%%V" /f >nul 2>&1
-    reg delete "HKCR\Directory\shell\runas" /v "%%V" /f >nul 2>&1
-)
-if exist "%WINOPT_RUNAS_BACKUP%" reg import "%WINOPT_RUNAS_BACKUP%" >nul 2>&1
-if exist "%WINOPT_DIR_RUNAS_BACKUP%" reg import "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
-del /f /q "%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
+if exist "%WINOPT_RUNAS_BACKUP%.absent" reg delete "HKCR\*\shell\runas" /f >nul 2>&1
+if exist "%WINOPT_DIR_RUNAS_BACKUP%.absent" reg delete "HKCR\Directory\shell\runas" /f >nul 2>&1
+del /f /q "%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%" "%WINOPT_RUNAS_BACKUP%.absent" "%WINOPT_DIR_RUNAS_BACKUP%.absent" >nul 2>&1
 exit /b 0
 
 :CAPTURE_SECURITY_BASELINE
