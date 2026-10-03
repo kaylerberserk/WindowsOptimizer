@@ -52,12 +52,15 @@ reg add "HKCU\Console" /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
 title Script d'Optimisation Windows - All in One
 
 :: Definition du caractere ESC (ASCII 27)
-for /f "delims=" %%a in ('powershell -NoProfile -Command "$([char]27)"') do set "ESC=%%a"
+:: Mesure sur Windows 11 25H2 / PowerShell 5.1 : 'prompt $E' = 16 ms, un spawn
+:: PowerShell = 164 ms. L'astuce CMD est donc tentee en premier ; le spawn ne sert
+:: que de repli. 'prompt $E' ne modifie que le prompt du cmd.exe enfant : le
+:: PROMPT de la session appelante reste intact (verifie).
+for /f %%a in ('"prompt $E ^& echo on & for %%b in (1) do rem"') do set "ESC=%%a"
 
-:: Si PowerShell echoue, CMD fournit le caractere ESC en solution de secours
+:: Repli : PowerShell, si l'astuce CMD n'a rien renvoye
 if not defined ESC (
-    REM Methode alternative via CMD escape sequence
-    for /f %%a in ('"prompt $E ^& echo on & for %%b in (1) do rem"') do set "ESC=%%a"
+    for /f "delims=" %%a in ('powershell -NoProfile -Command "$([char]27)"') do set "ESC=%%a"
 )
 
 :: Fallback ultime : utiliser une variable vide si tout echoue (les couleurs ne s'afficheront pas mais le script fonctionnera)
@@ -177,6 +180,10 @@ set "WINOPT_BACKUP_DIR=%ProgramData%\WindowsOptimizer\Backups"
 set "WINOPT_SECURITY_BACKUP=%WINOPT_BACKUP_DIR%\security-baseline.reg"
 set "WINOPT_SECURITY_BCD_BACKUP=%WINOPT_BACKUP_DIR%\security-hypervisorlaunchtype.txt"
 set "WINOPT_FTH_BACKUP=%WINOPT_BACKUP_DIR%\fth-state.json"
+REM Le verbe runas du menu contextuel est REECRIT par l'option "Devenir Proprietaire".
+REM Sans cette capture, "Executer en tant qu'administrateur" disparait definitivement.
+set "WINOPT_RUNAS_BACKUP=%WINOPT_BACKUP_DIR%\runas-file-verb.reg"
+set "WINOPT_DIR_RUNAS_BACKUP=%WINOPT_BACKUP_DIR%\runas-dir-verb.reg"
 call :BACKUP_SELF_BEFORE_EXECUTION
 if !errorlevel! NEQ 0 (
     echo [ERREUR] Impossible de sauvegarder All in One.cmd avant execution.
@@ -631,6 +638,10 @@ if !errorlevel! EQU 4  goto :DO_GPU
 if !errorlevel! EQU 3  goto :DO_DISQUES
 if !errorlevel! EQU 2  goto :DO_MEMOIRE
 if !errorlevel! EQU 1  goto :DO_SYSTEME
+if !errorlevel! GEQ 250 (
+    REM choice.exe en echec (255) : aucune optimisation sans choix explicite.
+    goto :END_SCRIPT
+)
 goto :MENU_PRINCIPAL
 
 :DO_PERIPHERIQUES
@@ -703,6 +714,10 @@ if !errorlevel! EQU 4  goto :MENU_IA_WIDGETS_RECALL
 if !errorlevel! EQU 3  goto :TOGGLE_ANIMATIONS
 if !errorlevel! EQU 2  goto :TOGGLE_UAC
 if !errorlevel! EQU 1  goto :TOGGLE_DEFENDER
+if !errorlevel! GEQ 250 (
+    REM choice.exe en echec (255) : aucune optimisation sans choix explicite.
+    goto :END_SCRIPT
+)
 goto :MENU_GESTION_WINDOWS
 
 :DO_INSTALLER_VISUAL_REDIST
@@ -790,8 +805,8 @@ call :AIO_QUESTION_HEADER 4 "COPILOT, WIDGETS ET RECALL"
 echo %COLOR_WHITE% Cette option bloque Copilot, masque les Widgets et desactive Recall.%COLOR_RESET%
 echo %COLOR_WHITE% Elle utilise les reglages disponibles sur votre version de Windows.%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Recall ne creera plus de nouveaux instantanes.%COLOR_RESET%
-echo %COLOR_WHITE%        Les instantanes deja enregistres resteront sur le PC.%COLOR_RESET%
+echo %COLOR_RED% [AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres seront SUPPRIMES du PC.%COLOR_RESET%
+echo %COLOR_WHITE%        C'est le comportement documente de Windows, pas un choix de ce script.%COLOR_RESET%
 echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Chaque fonction disponible pourra etre reactivee depuis Gestion Windows.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
@@ -1041,17 +1056,17 @@ if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 3 /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v IoPriority /t REG_DWORD /d 3 /f >nul 2>&1
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEng.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 1 /f >nul 2>&1
-    reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEngCP.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 1 /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 38 /f >nul 2>&1
 ) else (
     REM Win32PrioritySeparation : 0x26 = 38 (quantums courts variables + separation
     REM maximale) est la valeur des versions Windows clientes recentes ; 0x02 = 2 est
-    REM l'ancien libelle "defaut client", retrouve dans la documentation Windows
-    REFUSEE PAR CE SCRIPT. L'ecrire ici s'ecarterait de la valeur client actuelle.
+    REM l'ancien libelle "defaut client" de la documentation Windows.
     REM Valeur conservee telle quelle : choix de l'outil, a valider si besoin.
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 2 /f >nul 2>&1
     for %%V in (CpuPriorityClass IoPriority) do reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v "%%V" /f >nul 2>&1
     reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEng.exe\PerfOptions" /v CpuPriorityClass /f >nul 2>&1
+    REM MsMpEngCP.exe n'est plus ecrit en Gaming : Windows refuse la cle (acces refuse,
+    REM mesure 25H2 en session elevee). Suppression gardee pour les anciennes versions.
     reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEngCP.exe\PerfOptions" /v CpuPriorityClass /f >nul 2>&1
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages de reactivite appliques%COLOR_RESET%
@@ -1360,6 +1375,11 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Ajout de l'option Deveni
 REM  Localization : takeown et icacls n'acceptent pas les noms de groupe traduits.
 REM  /d y (Yes) puis /d o (Oui) car la lettre attendue depend de la locale ;
 REM  *S-1-5-32-544 = BUILTIN\Administrateurs, resolu par SID sur toute installation.
+REM  "runas" est le verbe d'elevation Windows ("Executer en tant qu'administrateur").
+REM  On capture son etat AVANT de le remplacer, sinon "Executer en tant
+REM  qu'administrateur" disparait du menu contextuel, sans retour possible.
+call :CAPTURE_RUNAS_VERB
+if !errorlevel! EQU 3 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le verbe runas est deja ecrase sur cette machine : rien a capturer.%COLOR_RESET%
 reg add "HKCR\*\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1
 reg add "HKCR\*\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1
 reg add "HKCR\*\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /d y || takeown /f \"%%1\" /d o && icacls \"%%1\" /grant *S-1-5-32-544:F" /f >nul 2>&1
@@ -1392,12 +1412,16 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages de confidentialite a
 REM  1.9 - Navigateurs
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisation navigateurs...%COLOR_RESET%
 REM  Microsoft Edge
-REM  DoH mode "allow" : chiffre le DNS quand Cloudflare est joignable, repli DNS normal sinon
-REM  ("secure" interdirait tout repli et casse les reseaux filtres/proxy d'entreprise).
+REM  DoH mode "automatic" : chiffre le DNS quand le resolveur DoH est joignable,
+REM  repli en clair sinon. Ce n'est pas un detail de formulation : Microsoft ne
+REM  documente que trois valeurs - off, automatic, secure. "allow" n'existe pas,
+REM  la politique etait donc entierement ignoree, DnsOverHttpsTemplates compris.
+REM  "automatic" est exactement le comportement decrit ci-dessus ; "secure"
+REM  interdirait tout repli et casserait les reseaux filtres/proxy d'entreprise.
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v HideFirstRunExperience /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v StartupBoostEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v QuicAllowed /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Policies\Microsoft\Edge" /v DnsOverHttpsMode /t REG_SZ /d allow /f >nul 2>&1
+reg add "HKCU\Software\Policies\Microsoft\Edge" /v DnsOverHttpsMode /t REG_SZ /d automatic /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v DnsOverHttpsTemplates /t REG_SZ /d "https://cloudflare-dns.com/dns-query" /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v HardwareAccelerationModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v UserFeedbackAllowed /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1408,7 +1432,7 @@ reg add "HKCU\Software\Policies\Microsoft\Edge" /v NewTabPagePrerenderEnabled /t
 
 REM  Google Chrome
 reg add "HKCU\Software\Policies\Google\Chrome" /v QuicAllowed /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Policies\Google\Chrome" /v DnsOverHttpsMode /t REG_SZ /d allow /f >nul 2>&1
+reg add "HKCU\Software\Policies\Google\Chrome" /v DnsOverHttpsMode /t REG_SZ /d automatic /f >nul 2>&1
 reg add "HKCU\Software\Policies\Google\Chrome" /v DnsOverHttpsTemplates /t REG_SZ /d "https://cloudflare-dns.com/dns-query" /f >nul 2>&1
 reg add "HKCU\Software\Policies\Google\Chrome" /v HardwareAccelerationModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Google\Chrome" /v BackgroundModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
@@ -1467,9 +1491,15 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de WPBT po
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager" /v DisableWpbtExecution /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%WPBT desactive%COLOR_RESET%
 
-REM  1.17 - Intel Thread Director / Core Parking (profil-aware)
-REM  SCHEDPOLICY : 0=Tous, 1=Performants, 2=Preferer performants, 3=Efficients, 4=Preferer efficients, 5=Auto.
-REM  Ne fait rien sur CPU non-hybride (AMD, Intel avant 12th gen).
+REM  1.17 - Intel Thread Director / Core Parking
+REM  Attributes ne regle que la visibilite du parametre dans les options
+REM  d'alimentation (2 = affiche, 1 = masque, valeur stock) : aucun effet sur
+REM  l'ordonnancement. Il est ecrit ici sans condition de profil, et le mode Eco
+REM  le remet a 1. Apres Eco, repasser par cette section laisse donc les
+REM  parametres affiches : etat cosmetique, sans consequence, laisse tel quel.
+REM  SCHEDPOLICY (0=Tous, 1=Performants, 2=Preferer performants, 3=Efficients,
+REM  4=Preferer efficients, 5=Auto). Sans effet sur CPU non-hybride (AMD,
+REM  Intel avant la 12e generation).
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration de la planification des coeurs du processeur...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\93b8b6dc-0698-4d1c-9ee4-0644e900c85d" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318584" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
@@ -1912,9 +1942,23 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Priorite reseau configuree se
 REM  5.2 - Pile TCP/IP Win11
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la connexion pour reduire les delais...%COLOR_RESET%
 netsh int tcp set global autotuninglevel=normal >nul 2>&1
-netsh int ipv4 set global loopbacklargemtu=disabled >nul 2>&1
-netsh int ipv6 set global loopbacklargemtu=disabled >nul 2>&1
+REM loopbacklargemtu n'est volontairement PAS ecrit ici : la section 5.3 le pose
+REM selon le profil (desactive en Gaming, reactive en Normal). L'ecrire aussi
+REM dans 5.2 etait sans effet, la branche de 5.3 executant toujours apres.
 REM minRto se configure uniquement avec 'set supplemental' ; 'set global' ne prend pas ce parametre.
+
+REM Deux reglages distincts, souvent confondus. Mesures sur Windows 11 25H2 :
+REM   netsh int tcp show heuristics                    -> wsh     = disabled
+REM   netsh int tcp show heuristics heuristics=forcews -> forcews = enabled
+REM   Get-NetTCPSetting                               -> ForceWS  = Enabled
+REM wsh, l'heuristique de mise a l'echelle des fenetres, n'est plus utilise
+REM depuis Windows 11 24H2/25H2 : 'set heuristics help' annonce que sa
+REM modification ne produit aucun effet, et la mesure confirme disabled.
+REM forcews, le forcage lors de la retransmission, est un AUTRE reglage,
+REM toujours pris en charge : la ligne ci-dessous prend effet.
+REM Elle remplace le forcews=default du profil Normal parce que l'aide indique
+REM que 'default' restaure la valeur systeme, documentee comme activee.
+netsh int tcp set heuristics forcews=enabled >nul 2>&1
 
 REM initialRTO (300-3000ms) ne regle que l'etablissement TCP (SYN) et pas le RTO
 REM d'une connexion deja etablie. Valeurs retenues par profil :
@@ -1923,13 +1967,11 @@ REM   Normal  -> 1000 / 4  (reprise plus rapide apres perte, choix de l'outil)
 REM Ne pas confondre ce choix de reglage avec une restauration : seul le mode
 REM Normal reapplique le couple du profil, pas celui du defaut systeme.
 if "!PROFIL_USAGE!"=="0" (
-    REM Depuis Windows 11 24H2/25H2, WSH n'est plus utilise. ForceWS reste supporte.
-    netsh int tcp set heuristics forcews=enabled >nul 2>&1
+    REM Latence : RTO initial long et peu de retransmissions pour etablir la connexion.
     netsh int tcp set global rss=enabled initialrto=3000 nonsackrttresiliency=disabled maxsynretransmissions=2 >nul 2>&1
 ) else (
     REM Stock Windows 11 25H2 mesure : Initial RTO=1000 ms et Max SYN Retransmissions=4.
     REM La documentation netsh affiche encore 3000/2 ; Normal suit ici l'etat client reel mesure.
-    netsh int tcp set heuristics forcews=default >nul 2>&1
     netsh int tcp set global rss=enabled initialrto=1000 nonsackrttresiliency=disabled maxsynretransmissions=4 >nul 2>&1
 )
 if "!PROFIL_POWER!"=="0" (
@@ -1997,8 +2039,14 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Registre TCP configure%COLOR_
 REM  5.4 - MSI Mode cartes reseau
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage des interruptions reseau...%COLOR_RESET%
 call :SET_DEVICE_MSI_PROFILE Net !PROFIL_USAGE!
-if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Reglage MSI reseau applique partiellement.%COLOR_RESET%
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Interruptions reseau reglees.%COLOR_RESET%
+REM L'echec doit rejoindre le code de sortie de la section : sans cela 'exit /b 0'
+REM annonce une reussite alors que rien n'a ete ecrit sur une carte sans MSI.
+if !errorlevel! NEQ 0 (
+    set "NETWORK_SECTION_ERROR=1"
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Reglage MSI reseau applique partiellement.%COLOR_RESET%
+) else (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Interruptions reseau reglees.%COLOR_RESET%
+)
 
 
 REM  5.5 - Optimisation BITS
@@ -2543,12 +2591,18 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage PCI Express demande ;
 REM  7.13 - Optimisations stockage et disques
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la gestion d'energie du stockage...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /t REG_DWORD /d 0 /f >nul 2>&1
-call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -PropertyType DWord -Value 0 -Force | Out-Null
+REM  Ne JAMAIS piper cet appel : Out-Null est une cmdlet PowerShell, pas une
+REM  commande cmd.exe. Un '| <commande inconnue>' dans un fichier batch
+REM  ARRETE le script sur place, sans message ni recapitulatif. Mesure sur
+REM  Windows 11 25H2 : la ligne suivante et tout le reste de la section
+REM  7.13 etaient sautes. FOR_STORAGE_CLASS redirige deja vers nul en interne,
+REM  et le chemin de restauration l'appelle sans pipe. Aucun pipe ici.
+call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -PropertyType DWord -Value 0 -Force
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie du stockage reglee pour les performances.%COLOR_RESET%
 
 REM  7.14 - Optimisations avancees des services
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des limites de latence du stockage...%COLOR_RESET%
-call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'IoLatencyCap' -PropertyType DWord -Value 0 -Force | Out-Null
+call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'IoLatencyCap' -PropertyType DWord -Value 0 -Force
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Limites de latence stockage supprimees%COLOR_RESET%
 
 REM  7.15 - GPU PreferMaxPerf
@@ -2717,6 +2771,9 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Mise en veille des coeurs ren
 
 REM  7.8 - Power Throttling
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Windows peut de nouveau limiter le processeur si necessaire.%COLOR_RESET%
+REM  VetoPolicy : 0 est la valeur stock mesuree sur 25H2. L'ecrire restaure donc
+REM  Windows ; la supprimer retirerait une valeur que le stock porte. Seul
+REM  PowerThrottlingOff distingue reellement Eco de Performance max.
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PDC\Activators\Default\VetoPolicy" /v "EA:EnergySaverEngaged" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PDC\Activators\28\VetoPolicy" /v "EA:PowerStateDischarging" /t REG_DWORD /d 0 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v PowerThrottlingOff /f >nul 2>&1
@@ -2887,11 +2944,20 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorE
 for %%V in (EnableVirtualizationBasedSecurity RequirePlatformSecurityFeatures HypervisorEnforcedCodeIntegrity) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v "%%V" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v LsaCfgFlags /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v LsaCfgFlags /t REG_DWORD /d 0 /f >nul 2>&1
-REM LSA-PPL reste actif sans verrou UEFI : RunAsPPL=1. La valeur 2 pose un verrou
-REM UEFI quasi irreversible (suppression via outil Microsoft en environnement de recuperation).
+REM LSA-PPL reste actif SANS verrou UEFI : RunAsPPL=2.
+REM Cartographie Microsoft (doc "Configure added LSA protection") :
+REM   1 = configurer la protection AVEC une variable UEFI
+REM   2 = configurer la protection SANS variable UEFI
+REM La valeur 1 demande a Windows d'ecrire la variable dans le firmware ; ensuite
+REM "the UEFI variable can't be deleted or changed to configure added LSA protection
+REM by modifying the registry or by policy" : seule sortie = outil Microsoft
+REM LsaPplConfig.efi depuis un environnement de recuperation.
+REM La valeur 2 est de plus le defaut d'une installation neuve de Windows 11 22H2+,
+REM et c'est ce que :CAPTURE_SECURITY_BASELINE releve sur un poste d'audit
+REM (RunAsPPL=2 / RunAsPPLBoot=2).
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v RunAsPPL /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPLBoot /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 2 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v WHQLSettings /f >nul 2>&1
 REM Supprime la surcharge BCD ; Windows reprend son comportement par defaut.
 bcdedit /deletevalue hypervisorlaunchtype >nul 2>&1
@@ -2928,11 +2994,20 @@ for %%V in (EnableVirtualizationBasedSecurity HypervisorEnforcedCodeIntegrity) d
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v RequirePlatformSecurityFeatures /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v LsaCfgFlags /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v LsaCfgFlags /t REG_DWORD /d 0 /f >nul 2>&1
-REM LSA-PPL reste actif sans verrou UEFI : RunAsPPL=1. La valeur 2 pose un verrou
-REM UEFI quasi irreversible (suppression via outil Microsoft en environnement de recuperation).
+REM LSA-PPL reste actif SANS verrou UEFI : RunAsPPL=2.
+REM Cartographie Microsoft (doc "Configure added LSA protection") :
+REM   1 = configurer la protection AVEC une variable UEFI
+REM   2 = configurer la protection SANS variable UEFI
+REM La valeur 1 demande a Windows d'ecrire la variable dans le firmware ; ensuite
+REM "the UEFI variable can't be deleted or changed to configure added LSA protection
+REM by modifying the registry or by policy" : seule sortie = outil Microsoft
+REM LsaPplConfig.efi depuis un environnement de recuperation.
+REM La valeur 2 est de plus le defaut d'une installation neuve de Windows 11 22H2+,
+REM et c'est ce que :CAPTURE_SECURITY_BASELINE releve sur un poste d'audit
+REM (RunAsPPL=2 / RunAsPPLBoot=2).
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v RunAsPPL /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPLBoot /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 2 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v WHQLSettings /f >nul 2>&1
 REM Supprime la surcharge BCD ; Windows reprend son comportement par defaut.
 bcdedit /deletevalue hypervisorlaunchtype >nul 2>&1
@@ -2947,6 +3022,10 @@ call :SCREEN_HEADER " APPLICATION DU MODE DEFAUT WINDOWS"
 REM Microsoft ne definit pas une valeur brute universelle pour le "defaut".
 REM Restaurer la base capturee si elle existe ; sans snapshot, appliquer uniquement
 REM les valeurs et absences mesurees sur l'installation Windows 11 25H2 de reference.
+call :RESTORE_RUNAS_VERB
+set "RUNAS_RESTORE_RC=!errorlevel!"
+if "!RUNAS_RESTORE_RC!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Verbe runas : restauration incomplete, la capture est conservee pour un nouvel essai.%COLOR_RESET%
+set "RUNAS_RESTORE_RC="
 call :RESTORE_SECURITY_BASELINE
 set "SECURITY_RESTORE_RC=!errorlevel!"
 if "!SECURITY_RESTORE_RC!"=="0" (
@@ -2969,8 +3048,10 @@ for %%V in (Enabled Locked WasEnabledBy) do reg delete "HKLM\SYSTEM\CurrentContr
 for %%V in (EnableVirtualizationBasedSecurity RequirePlatformSecurityFeatures HypervisorEnforcedCodeIntegrity LsaCfgFlags) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v "%%V" /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v RunAsPPL /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v LsaCfgFlags /f >nul 2>&1
-REM Base stock : PPL actif sans verrou UEFI (RunAsPPL=1) ; RunAsPPLBoot reste supprime.
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 1 /f >nul 2>&1
+REM Base stock : PPL actif sans verrou UEFI (RunAsPPL=2, le defaut d'une installation
+REM neuve Win11 22H2+) ; RunAsPPLBoot reste supprime. Voir la cartographie complete
+REM dans :APPLIQUER_SECURITE_GAMING.
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 2 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPLBoot /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v WHQLSettings /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Config" /v VulnerableDriverBlocklistEnable /t REG_DWORD /d 1 /f >nul 2>&1
@@ -3363,11 +3444,14 @@ REM  Le stock Windows 25H2 laisse VisualFXSetting absent : Windows choisit son c
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop\WindowMetrics" /v MinAnimate /t REG_SZ /d "1" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarAnimations /t REG_DWORD /d 1 /f >nul 2>&1
+REM  Nettoyage des valeurs ecrites par d'anciennes versions et que Windows ne lit pas.
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Accessibility\AnimationEffects" /v Enabled /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d "400" /f >nul 2>&1
 for %%V in (MenuAnimation TooltipAnimation SelectionFade MenuFade) do reg delete "HKCU\Control Panel\Desktop" /v "%%V" /f >nul 2>&1
 for %%V in (AnimateWindow ComboboxAnimation ListBoxSmoothScrolling) do reg delete "HKCU\Control Panel\Desktop" /v "%%V" /f >nul 2>&1
 reg delete "HKCU\Control Panel\Desktop" /v UserUIEffects /f >nul 2>&1
+call :SET_UI_ANIMATIONS 1
+set "UI_ANIMATIONS_RC=!errorlevel!"
 reg add "HKCU\Software\Microsoft\Windows\DWM" /v EnableAeroPeek /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 1 /f >nul 2>&1
 
@@ -3380,7 +3464,12 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Li
 reg delete "HKCU\Control Panel\Desktop" /v CursorShadow /f >nul 2>&1
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ExtendedUIHoverTime /f >nul 2>&1
 
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Activation des animations demandee.%COLOR_RESET%
+if "!UI_ANIMATIONS_RC!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Animations activees.%COLOR_RESET%
+) else (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Animations de l'interface non modifiees ; les autres reglages sont appliques.%COLOR_RESET%
+)
+set "UI_ANIMATIONS_RC="
 call :FINISH_ACTION "Reglages animations"
 exit /b 0
 
@@ -3408,11 +3497,9 @@ REM  individuelles ci-dessous sans recalculer tous les effets (ce qui reset le m
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" /v VisualFXSetting /t REG_DWORD /d 3 /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop\WindowMetrics" /v MinAnimate /t REG_SZ /d "0" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarAnimations /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Accessibility\AnimationEffects" /v Enabled /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Control Panel\Desktop" /v MenuShowDelay /t REG_SZ /d "0" /f >nul 2>&1
-for %%V in (MenuAnimation TooltipAnimation SelectionFade MenuFade) do reg add "HKCU\Control Panel\Desktop" /v "%%V" /t REG_SZ /d "0" /f >nul 2>&1
-for %%V in (AnimateWindow ComboboxAnimation ListBoxSmoothScrolling) do reg add "HKCU\Control Panel\Desktop" /v "%%V" /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Control Panel\Desktop" /v UserUIEffects /t REG_DWORD /d 0 /f >nul 2>&1
+call :SET_UI_ANIMATIONS 0
+set "UI_ANIMATIONS_RC=!errorlevel!"
 reg add "HKCU\Software\Microsoft\Windows\DWM" /v EnableAeroPeek /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize" /v EnableTransparency /t REG_DWORD /d 0 /f >nul 2>&1
 
@@ -3425,7 +3512,12 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Li
 reg add "HKCU\Control Panel\Desktop" /v CursorShadow /t REG_SZ /d "0" /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ExtendedUIHoverTime /t REG_DWORD /d 0 /f >nul 2>&1
 
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Desactivation des animations demandee.%COLOR_RESET%
+if "!UI_ANIMATIONS_RC!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Animations desactivees.%COLOR_RESET%
+) else (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Animations de l'interface non modifiees ; les autres reglages sont appliques.%COLOR_RESET%
+)
+set "UI_ANIMATIONS_RC="
 call :FINISH_ACTION "Reglages animations"
 exit /b 0
 
@@ -3502,7 +3594,7 @@ echo %COLOR_WHITE%Voulez-vous vraiment desactiver Recall ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_WHITE%Recall peut enregistrer des instantanes de votre activite.%COLOR_RESET%
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres ne seront pas supprimes.%COLOR_RESET%
+echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres seront SUPPRIMES du PC.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Recall pourra etre reactive depuis ce menu.%COLOR_RESET%
 echo.
 call :ASK_IF_INTERACTIVE "%STYLE_BOLD%%COLOR_YELLOW%Votre choix [O=Desactiver / N=Annuler] : %COLOR_RESET%"
@@ -3510,7 +3602,7 @@ if !errorlevel! NEQ 0 goto :MENU_IA_WIDGETS_RECALL
 :MENU_IA_OPTION_6
 call :SCREEN_HEADER " DESACTIVATION DE RECALL"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de Recall...%COLOR_RESET%
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les instantanes existants sont conserves.%COLOR_RESET%
+echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Suppression des instantanes existants en cours.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
@@ -3729,6 +3821,16 @@ set "AI_FEATURE_RC="
 exit /b 0
 
 :CORE_DESACTIVER_RECALL
+REM  ATTENTION - cette fonction SUPPRIME les instantanes deja enregistres.
+REM  Ce n'est pas un choix de ce script : les deux politiques posees ici le font.
+REM  AllowRecallEnablement=0 : "the bits for Recall will be removed from the
+REM  device. If snapshots were previously saved on the device, they'll be
+REM  deleted when this policy is disabled."
+REM  DisableAIDataAnalysis=1 : "If snapshots were previously saved on the
+REM  device, they'll be deleted when this policy is enabled."
+REM  Source : learn.microsoft.com/windows/client-management/manage-recall et
+REM  learn.microsoft.com/windows/client-management/mdm/policy-csp-windowsai
+REM  Les trois ecrans qui appellent cette fonction annoncent donc la suppression.
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Application des restrictions pour Recall...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v "DisableAIDataAnalysis" /t REG_DWORD /d 1 /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v "TurnOffSavingSnapshots" /f >nul 2>&1
@@ -3788,11 +3890,14 @@ taskkill /f /im OneDriveSetup.exe >nul 2>&1
 taskkill /f /im FileCoAuth.exe >nul 2>&1
 taskkill /f /im FileSyncHelper.exe >nul 2>&1
 taskkill /f /im OneDriveStandaloneUpdater.exe >nul 2>&1
-timeout /t 3 /nobreak >nul
+REM  'timeout' echoue silencieusement des que l'entree standard est redirigee, ce
+REM  qui annule exactement les attentes destinees a laisser OneDrive liberer ses
+REM  fichiers. 'ping -n' fonctionne dans les deux cas (cf. END_SCRIPT).
+ping -n 4 127.0.0.1 >nul
 taskkill /f /im explorer.exe >nul 2>&1
-timeout /t 2 /nobreak >nul
+ping -n 3 127.0.0.1 >nul
 start "" explorer.exe >nul 2>&1
-timeout /t 3 /nobreak >nul
+ping -n 4 127.0.0.1 >nul
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Processus OneDrive arretes.%COLOR_RESET%
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Etape 2 sur 7 : deconnexion des comptes OneDrive...%COLOR_RESET%
@@ -3847,10 +3952,27 @@ if exist "%AppData%\Microsoft\OneDrive" rd "%AppData%\Microsoft\OneDrive" /q /s 
 if exist "%SystemDrive%\OneDriveTemp" rd "%SystemDrive%\OneDriveTemp" /q /s >nul 2>&1
 REM  Wildcards : rd ne supporte pas les wildcards, il faut une enumeration for /d
 for /d %%C in ("%Temp%\OneDrive*") do rd "%%C" /q /s >nul 2>&1
-if exist "%USERPROFILE%\OneDrive" (
+REM  OneDrive Known Folder Backup (KFM) deplace Bureau, Documents et Images
+REM  DANS %USERPROFILE%\OneDrive des la connexion a un compte Microsoft, ce qui est
+REM  le defaut de Windows 11. Sur un tel profil, supprimer ce dossier detruit ces
+REM  trois dossiers, et les fichiers non hydrates (Fichiers a la demande) sont
+REM  irreversibles : ils n'existent plus que sur le cloud, inaccessible sans client.
+REM  Detection volontairement large : si une seule valeur 'User Shell Folders'
+REM  mentionne OneDrive, la suppression est sautee. Un faux positif ne protege que
+REM  le dossier, ce qui est le bon sens de securite ; un faux negatif perd des
+REM  fichiers. Regle AGENTS.md : supprimer une valeur n'est pas l'inverse correct.
+set "ONEDRIVE_KFM_PROTECTED=0"
+reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" 2>nul | findstr /i "OneDrive" >nul 2>&1 && set "ONEDRIVE_KFM_PROTECTED=1"
+if "%ONEDRIVE_KFM_PROTECTED%"=="1" (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Bureau, Documents ou Images sont ranges DANS le dossier OneDrive.%COLOR_RESET%
+    echo %COLOR_WHITE%   Ce dossier n'est donc PAS supprime : vos fichiers y sont encore.%COLOR_RESET%
+    echo %COLOR_WHITE%   Desactivez d'abord 'Sauvegarde des dossiers Bureau, Documents et Images'%COLOR_RESET%
+    echo %COLOR_WHITE%   Parametres ^> Comptes ^> Sauvegarde et synchronisation, puis relancez.%COLOR_RESET%
+) else if exist "%USERPROFILE%\OneDrive" (
     call :TAKEOWN_RECURSIF "%USERPROFILE%\OneDrive"
     rd "%USERPROFILE%\OneDrive" /s /q >nul 2>&1
 )
+set "ONEDRIVE_KFM_PROTECTED="
 if exist "%LOCALAPPDATA%\Microsoft\OneDrive" (
     call :TAKEOWN_RECURSIF "%LOCALAPPDATA%\Microsoft\OneDrive"
     rd "%LOCALAPPDATA%\Microsoft\OneDrive" /s /q >nul 2>&1
@@ -4686,7 +4808,9 @@ echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% %COLOR_WHITE%Merci d'avoir utilise le s
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_YELLOW%Redemarrez votre PC pour finaliser l'optimisation.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
-timeout /t 3 /nobreak >nul
+REM 'timeout' echoue silencieusement des que l'entree standard est redirigee ;
+REM le fichier possede deja l'idiome toujours actif 'ping -n N 127.0.0.1'.
+ping -n 4 127.0.0.1 >nul
 REM  EXIT /B ferme automatiquement les SETLOCAL. Garder EnableExtensions actif
 REM  jusqu'a la sortie evite un echec final si CMD les avait desactivees au depart.
 exit /b 0
@@ -4697,7 +4821,10 @@ REM  ===========================================================================
 
 REM  --- Windows, registre et nettoyage ------------------------------------------------
 :BACKUP_SELF_BEFORE_EXECUTION
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$d=$env:WINOPT_BACKUP_DIR;$s=$env:WINOPT_SELF_BACKUP_SOURCE;if([string]::IsNullOrWhiteSpace($s)-or-not(Test-Path -LiteralPath $s)){exit 1};New-Item -ItemType Directory -Path $d -Force|Out-Null;$dst=Join-Path $d ('All in One_'+[guid]::NewGuid().ToString('N')+'.cmd');Copy-Item -LiteralPath $s -Destination $dst -Force;if(-not(Test-Path -LiteralPath $dst)-or((Get-Item -LiteralPath $dst).Length-ne(Get-Item -LiteralPath $s).Length)){exit 1};exit 0}catch{exit 1}" >nul 2>&1
+REM  Une copie par execution : sans purge, le dossier grossit indefiniment
+REM  (constate : 39 copies pour 12,9 Mo sur une machine d'audit). On conserve les
+REM  5 plus recentes, ce qui suffit largement a revenir en arriere.
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$d=$env:WINOPT_BACKUP_DIR;$s=$env:WINOPT_SELF_BACKUP_SOURCE;if([string]::IsNullOrWhiteSpace($s)-or-not(Test-Path -LiteralPath $s)){exit 1};New-Item -ItemType Directory -Path $d -Force|Out-Null;$dst=Join-Path $d ('All in One_'+[guid]::NewGuid().ToString('N')+'.cmd');Copy-Item -LiteralPath $s -Destination $dst -Force;if(-not(Test-Path -LiteralPath $dst)-or((Get-Item -LiteralPath $dst).Length-ne(Get-Item -LiteralPath $s).Length)){exit 1};$k=@(Get-ChildItem -LiteralPath $d -Filter 'All in One_*.cmd' -Force -EA SilentlyContinue|Sort-Object CreationTime -Descending);if($k.Count-gt 5){$k[5..($k.Count-1)]|Remove-Item -Force -EA SilentlyContinue};exit 0}catch{exit 1}" >nul 2>&1
 exit /b !errorlevel!
 
 :BACKUP_HOSTS_BEFORE_CHANGE
@@ -4707,6 +4834,51 @@ powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$s=$env:WINOPT
 set "WINOPT_HOSTS_BACKUP_RC=!errorlevel!"
 set "WINOPT_HOSTS_SOURCE="
 exit /b !WINOPT_HOSTS_BACKUP_RC!
+
+:: Capture les deux cles du verbe "runas" du menu contextuel AVANT que la
+:: section 1.8 ne les ecrase. reg export est utilise plutot qu'un .reg ecrit a
+:: la main : il restitue fidelement tous les types de valeurs.
+:: Capture unique : si le fichier existe deja il n'est pas reecrit, donc seule
+:: la premiere capture - la seule qui decrive l'etat de Windows - compte.
+:CAPTURE_RUNAS_VERB
+if exist "%WINOPT_RUNAS_BACKUP%" exit /b 0
+REM  Ne jamais capturer un verbe deja ecrase. Sur une machine ou une
+REM  version anterieure a deja applique "Devenir Proprietaire", la capture
+REM  ne contiendrait que l'etat du script : la restauration afficherait
+REM  [FAIT] sans jamais ramener "Executer en tant qu'administrateur", et
+REM  les passages suivants ne re-captureraient plus rien. Rc = 3.
+reg query "HKCR\*\shell\runas" /v * 2>nul | findstr /I /C:"Devenir Proprietaire" >nul
+if !errorlevel! EQU 0 exit /b 3
+reg export "HKCR\*\shell\runas" "%WINOPT_RUNAS_BACKUP%" /y >nul 2>&1
+if !errorlevel! NEQ 0 exit /b 1
+if not exist "%WINOPT_RUNAS_BACKUP%" exit /b 1
+reg export "HKCR\Directory\shell\runas" "%WINOPT_DIR_RUNAS_BACKUP%" /y >nul 2>&1
+exit /b 0
+
+:: Restaure les deux cles capturees. "reg import" ajoute et remplace mais ne
+:: supprime rien : les valeurs ajoutees par le script sont retirees apres un
+:: premier import reussi, puis un second import remet celles que la capture
+:: contenait. En cas d'echec la capture est conservee pour un nouvel essai.
+:RESTORE_RUNAS_VERB
+if not exist "%WINOPT_RUNAS_BACKUP%" if not exist "%WINOPT_DIR_RUNAS_BACKUP%" exit /b 2
+set "RUNAS_RESTORE_RC=0"
+if exist "%WINOPT_RUNAS_BACKUP%" (
+    reg import "%WINOPT_RUNAS_BACKUP%" >nul 2>&1
+    if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
+)
+if exist "%WINOPT_DIR_RUNAS_BACKUP%" (
+    reg import "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
+    if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
+)
+if "!RUNAS_RESTORE_RC!"=="1" exit /b 1
+for %%V in (NoWorkingDirectory IsolatedCommand) do (
+    reg delete "HKCR\*\shell\runas" /v "%%V" /f >nul 2>&1
+    reg delete "HKCR\Directory\shell\runas" /v "%%V" /f >nul 2>&1
+)
+if exist "%WINOPT_RUNAS_BACKUP%" reg import "%WINOPT_RUNAS_BACKUP%" >nul 2>&1
+if exist "%WINOPT_DIR_RUNAS_BACKUP%" reg import "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
+del /f /q "%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
+exit /b 0
 
 :CAPTURE_SECURITY_BASELINE
 if exist "%WINOPT_SECURITY_BACKUP%" if exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 0
@@ -4793,6 +4965,14 @@ if not "%~4"=="" echo %COLOR_WHITE%%~4%COLOR_RESET%
 set "STEP_ERRORS=0"
 set "STEP_TAG="
 exit /b 0
+
+:SET_UI_ANIMATIONS
+REM  Argument 1 : 0 = desactiver, 1 = activer (stock). Les animations de menus, listes,
+REM  infobulles et de la zone cliente vivent dans UserPreferencesMask : seul
+REM  SystemParametersInfo l'ecrit correctement et l'applique sans reconnexion.
+REM  Exige une session interactive (erreur 1459 depuis une session de service).
+powershell -NoProfile -Command "$s=Add-Type -PassThru -Name U -Namespace W -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool SystemParametersInfo(uint a,uint b,IntPtr c,uint d);'; $f=0; foreach($a in 0x1003,0x1005,0x1007,0x1013,0x1015,0x1017,0x1043){ if(-not $s::SystemParametersInfo($a,0,[IntPtr]%~1,3)){$f=1} }; exit $f" >nul 2>&1
+exit /b !errorlevel!
 
 :FTH_DISABLE
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=$env:WINOPT_FTH_BACKUP;$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);if(-not$key){$key=$base.CreateSubKey('SOFTWARE\Microsoft\FTH')};if(Test-Path -LiteralPath $f){$present=$key.GetValueNames()-contains'Enabled';if($present-and$key.GetValueKind('Enabled')-eq[Microsoft.Win32.RegistryValueKind]::DWord-and[int]$key.GetValue('Enabled')-eq 0){exit 0};exit 2};$present=$key.GetValueNames()-contains'Enabled';$state=[ordered]@{Present=$present;Kind='None';Value=$null};if($present){$kind=$key.GetValueKind('Enabled');$state.Kind=[string]$kind;$value=$key.GetValue('Enabled',$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$state.Value=[Convert]::ToBase64String([byte[]]$value)}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::MultiString){$state.Value=@($value)}else{$state.Value=$value}};[IO.File]::WriteAllText($f,($state|ConvertTo-Json -Depth 5),[Text.Encoding]::UTF8);$key.SetValue('Enabled',0,[Microsoft.Win32.RegistryValueKind]::DWord);if($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne 0){exit 1};exit 0}catch{exit 1}" >nul 2>&1
@@ -4896,11 +5076,15 @@ if "%~1"=="1" (
     if errorlevel 1 exit /b 1
     exit /b 0
 )
+REM  Windows masque "Performances optimales" (e9a42b02) dans 'powercfg /list'
+REM  tant qu'il n'est pas duplique : une recherche par findstr sur /list ne peut donc
+REM  jamais reussir (mesure : e9a42b02 absent de /list sur 25H2 build 26200).
+REM  Le plan reel est enregistre mais NON activable : 'powercfg /setactive e9a42b02'
+REM  renvoie 1 ("ecriture sur un parametre non pris en charge"). La duplication sous
+REM  un GUID fixe est donc le seul chemin fonctionnel, et reste idempotente car
+REM  'duplicatescheme' echoue si le GUID de destination existe deja.
 set "AIO_TARGET_GUID="
-for /f "tokens=2 delims=:()" %%G in ('powercfg -list 2^>nul ^| findstr /i "e9a42b02-d5df-448d-aa00-03f14749eb61"') do (set "AIO_TARGET_GUID=%%G" & set "AIO_TARGET_GUID=!AIO_TARGET_GUID: =!")
-if not defined AIO_TARGET_GUID (
-    for /f "tokens=2 delims=:()" %%G in ('powercfg -list 2^>nul ^| findstr /i "99999999-9999-9999-9999-999999999999"') do (set "AIO_TARGET_GUID=%%G" & set "AIO_TARGET_GUID=!AIO_TARGET_GUID: =!")
-)
+for /f "tokens=2 delims=:()" %%G in ('powercfg -list 2^>nul ^| findstr /i "99999999-9999-9999-9999-999999999999"') do (set "AIO_TARGET_GUID=%%G" & set "AIO_TARGET_GUID=!AIO_TARGET_GUID: =!")
 if not defined AIO_TARGET_GUID (
     powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 99999999-9999-9999-9999-999999999999 >nul 2>&1
     if errorlevel 1 exit /b 1
