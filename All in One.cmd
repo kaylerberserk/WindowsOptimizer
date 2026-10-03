@@ -793,8 +793,8 @@ call :AIO_QUESTION_HEADER 4 "COPILOT, WIDGETS ET RECALL"
 echo %COLOR_WHITE% Cette option bloque Copilot, masque les Widgets et desactive Recall.%COLOR_RESET%
 echo %COLOR_WHITE% Elle utilise les reglages disponibles sur votre version de Windows.%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Recall ne creera plus de nouveaux instantanes.%COLOR_RESET%
-echo %COLOR_WHITE%        Les instantanes deja enregistres resteront sur le PC.%COLOR_RESET%
+echo %COLOR_RED% [AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres seront SUPPRIMES du PC.%COLOR_RESET%
+echo %COLOR_WHITE%        C'est le comportement documente de Windows, pas un choix de ce script.%COLOR_RESET%
 echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Chaque fonction disponible pourra etre reactivee depuis Gestion Windows.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
@@ -3540,7 +3540,7 @@ echo %COLOR_WHITE%Voulez-vous vraiment desactiver Recall ?%COLOR_RESET%
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_WHITE%Recall peut enregistrer des instantanes de votre activite.%COLOR_RESET%
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres ne seront pas supprimes.%COLOR_RESET%
+echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres seront SUPPRIMES du PC.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Recall pourra etre reactive depuis ce menu.%COLOR_RESET%
 echo.
 call :ASK_IF_INTERACTIVE "%STYLE_BOLD%%COLOR_YELLOW%Votre choix [O=Desactiver / N=Annuler] : %COLOR_RESET%"
@@ -3548,7 +3548,7 @@ if !errorlevel! NEQ 0 goto :MENU_IA_WIDGETS_RECALL
 :MENU_IA_OPTION_6
 call :SCREEN_HEADER " DESACTIVATION DE RECALL"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de Recall...%COLOR_RESET%
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les instantanes existants sont conserves.%COLOR_RESET%
+echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Suppression des instantanes existants en cours.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
@@ -3767,6 +3767,16 @@ set "AI_FEATURE_RC="
 exit /b 0
 
 :CORE_DESACTIVER_RECALL
+REM  ATTENTION - cette fonction SUPPRIME les instantanes deja enregistres.
+REM  Ce n'est pas un choix de ce script : les deux politiques posees ici le font.
+REM  AllowRecallEnablement=0 : "the bits for Recall will be removed from the
+REM  device. If snapshots were previously saved on the device, they'll be
+REM  deleted when this policy is disabled."
+REM  DisableAIDataAnalysis=1 : "If snapshots were previously saved on the
+REM  device, they'll be deleted when this policy is enabled."
+REM  Source : learn.microsoft.com/windows/client-management/manage-recall et
+REM  learn.microsoft.com/windows/client-management/mdm/policy-csp-windowsai
+REM  Les trois ecrans qui appellent cette fonction annoncent donc la suppression.
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Application des restrictions pour Recall...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v "DisableAIDataAnalysis" /t REG_DWORD /d 1 /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI" /v "TurnOffSavingSnapshots" /f >nul 2>&1
