@@ -32,10 +32,10 @@ Apres une edition de structure (label, `goto`, bloc `if`), verifier que chaque `
 
 ## Regles du projet
 
-- Le README fait partie du contrat : garder le code, la documentation et la publication alignes. Tout chiffre annonce dans le README se mesure sur le code ou sur une reponse HTTP, jamais a l'estime. Valeurs actuelles, a remesurer des que le code change : **76** commandes PowerShell, **66** ecritures de registre de vie privee (**43** directes + **23** dans la boucle Content Delivery Manager, sections 1.4-1.5 uniquement), **26** taches planifiees (boucle de desactivation uniquement, la boucle de restauration est une autre liste), **6** autologgers WMI, **~120 Mo** de runtimes.
+- Le README fait partie du contrat : garder le code, la documentation et la publication alignes. Tout chiffre annonce dans le README se mesure sur le code ou sur une reponse HTTP, jamais a l'estime. Valeurs actuelles, a remesurer des que le code change : **77** commandes PowerShell, **66** ecritures de registre de vie privee (**43** directes + **23** dans la boucle Content Delivery Manager, sections 1.4-1.5 uniquement), **26** taches planifiees nommees dans la boucle de desactivation (autre boucle pour la restauration) — **14** d'entre elles existent et sont desactivees sur Windows 11 25H2, **11** n'existent pas sur cette version, `Subscription\EnableLicenseAcquisition` reste active, **6** autologgers WMI, **~120 Mo** de runtimes.
 - `All in One.cmd` est volontairement un script unique, dense et portable. Preserve ce choix : pas de sur-ingenierie, de couches inutiles ni de multiplication de fichiers. Le fichier se parcourt par label, jamais par numero de ligne.
 - Le launcher n'epingle aucun SHA : `-VerifyOnly` affiche seulement un SHA-256 informatif du batch prepare.
-- Le script n'a jamais ete execute en entier sur une machine reelle. Les parcours manuel et `Tout optimiser`, ainsi que les transitions Normal/Gaming et Eco/Performance Max dans les deux sens, restent non verifies : c'est le premier manque a couvrir.
+- Aucun parcours complet n'a ete controle de bout en bout, avec releve avant et apres. `pc-gaming` porte bien l'etat Gaming + Performance max et des dizaines de lancements, mais sans mesure associee. Les transitions Normal/Gaming et Eco/Performance Max sont couvertes par analyse du code et par tests de fragments, pas par execution : les parcours manuel et `Tout optimiser` restent le premier manque a couvrir.
 - Une restauration "par defaut" restaure un etat capture ou applique un fallback Windows documente. Supprimer une valeur n'est pas toujours l'inverse correct.
 - Pour les tweaks Windows, faire une recherche Web recente et croiser les sources : la documentation Microsoft peut etre incomplete, imprecise, ancienne ou trop prudente. Comprendre le mecanisme reel, puis confronter documentation, forums techniques, tests reproductibles et retours terrain.
 
@@ -52,6 +52,8 @@ Apres une edition de structure (label, `goto`, bloc `if`), verifier que chaque `
 Verifiees sur ce depot. Revalider avant de les conserver : une regle qui ne s'est pas reproduite deux fois est un candidat a la suppression.
 
 - **Executer plutot que relire.** Syntaxe, parentheses, encodage et logique se controlent par un programme, jamais a l'oeil. Un helper teste sur une cle scratch revele ce qu'un test de syntaxe laisse passer.
+- **Une cle absente ne prouve pas un no-op.** `reg add` cree tout le chemin : l'absence dit que l'ecriture n'a pas eu lieu ou a ete refusee. Rejouer l'ecriture et lire le message (`MsMpEngCP.exe` : acces refuse).
+- **Un appel qui touche l'interface se teste en session interactive.** Par SSH, `SystemParametersInfo` echoue en 1459 ; une tache planifiee `/it` ponctuelle donne le vrai resultat.
 - **Verifier un changement d'etat par relecture de la valeur stockee**, pas par le code de retour de l'ecriture : une ecriture refusee (UCPD, strategie de groupe) ne renvoie rien d'exploitable. Un helper qui calcule un code d'erreur sans appelant qui le lit laisse le succes annonce inconditionnellement.
 
 Ne pas recopier ici les pieges techniques (SID pour `icacls`, Latin-1, `NetCfgInstanceId`) : le batch les commente deja sur place, la ou ils expliquent le pourquoi.
