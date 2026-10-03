@@ -2901,11 +2901,20 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorE
 for %%V in (EnableVirtualizationBasedSecurity RequirePlatformSecurityFeatures HypervisorEnforcedCodeIntegrity) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v "%%V" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v LsaCfgFlags /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v LsaCfgFlags /t REG_DWORD /d 0 /f >nul 2>&1
-REM LSA-PPL reste actif sans verrou UEFI : RunAsPPL=1. La valeur 2 pose un verrou
-REM UEFI quasi irreversible (suppression via outil Microsoft en environnement de recuperation).
+REM LSA-PPL reste actif SANS verrou UEFI : RunAsPPL=2.
+REM Cartographie Microsoft (doc "Configure added LSA protection") :
+REM   1 = configurer la protection AVEC une variable UEFI
+REM   2 = configurer la protection SANS variable UEFI
+REM La valeur 1 demande a Windows d'ecrire la variable dans le firmware ; ensuite
+REM "the UEFI variable can't be deleted or changed to configure added LSA protection
+REM by modifying the registry or by policy" : seule sortie = outil Microsoft
+REM LsaPplConfig.efi depuis un environnement de recuperation.
+REM La valeur 2 est de plus le defaut d'une installation neuve de Windows 11 22H2+,
+REM et c'est ce que :CAPTURE_SECURITY_BASELINE releve sur un poste d'audit
+REM (RunAsPPL=2 / RunAsPPLBoot=2).
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v RunAsPPL /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPLBoot /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 2 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v WHQLSettings /f >nul 2>&1
 REM Supprime la surcharge BCD ; Windows reprend son comportement par defaut.
 bcdedit /deletevalue hypervisorlaunchtype >nul 2>&1
@@ -2942,11 +2951,20 @@ for %%V in (EnableVirtualizationBasedSecurity HypervisorEnforcedCodeIntegrity) d
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v RequirePlatformSecurityFeatures /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v LsaCfgFlags /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v LsaCfgFlags /t REG_DWORD /d 0 /f >nul 2>&1
-REM LSA-PPL reste actif sans verrou UEFI : RunAsPPL=1. La valeur 2 pose un verrou
-REM UEFI quasi irreversible (suppression via outil Microsoft en environnement de recuperation).
+REM LSA-PPL reste actif SANS verrou UEFI : RunAsPPL=2.
+REM Cartographie Microsoft (doc "Configure added LSA protection") :
+REM   1 = configurer la protection AVEC une variable UEFI
+REM   2 = configurer la protection SANS variable UEFI
+REM La valeur 1 demande a Windows d'ecrire la variable dans le firmware ; ensuite
+REM "the UEFI variable can't be deleted or changed to configure added LSA protection
+REM by modifying the registry or by policy" : seule sortie = outil Microsoft
+REM LsaPplConfig.efi depuis un environnement de recuperation.
+REM La valeur 2 est de plus le defaut d'une installation neuve de Windows 11 22H2+,
+REM et c'est ce que :CAPTURE_SECURITY_BASELINE releve sur un poste d'audit
+REM (RunAsPPL=2 / RunAsPPLBoot=2).
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v RunAsPPL /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPLBoot /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 2 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v WHQLSettings /f >nul 2>&1
 REM Supprime la surcharge BCD ; Windows reprend son comportement par defaut.
 bcdedit /deletevalue hypervisorlaunchtype >nul 2>&1
@@ -2983,8 +3001,10 @@ for %%V in (Enabled Locked WasEnabledBy) do reg delete "HKLM\SYSTEM\CurrentContr
 for %%V in (EnableVirtualizationBasedSecurity RequirePlatformSecurityFeatures HypervisorEnforcedCodeIntegrity LsaCfgFlags) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceGuard" /v "%%V" /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v RunAsPPL /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v LsaCfgFlags /f >nul 2>&1
-REM Base stock : PPL actif sans verrou UEFI (RunAsPPL=1) ; RunAsPPLBoot reste supprime.
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 1 /f >nul 2>&1
+REM Base stock : PPL actif sans verrou UEFI (RunAsPPL=2, le defaut d'une installation
+REM neuve Win11 22H2+) ; RunAsPPLBoot reste supprime. Voir la cartographie complete
+REM dans :APPLIQUER_SECURITE_GAMING.
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPL /t REG_DWORD /d 2 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v RunAsPPLBoot /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v WHQLSettings /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Config" /v VulnerableDriverBlocklistEnable /t REG_DWORD /d 1 /f >nul 2>&1
