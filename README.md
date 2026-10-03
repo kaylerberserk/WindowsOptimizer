@@ -29,45 +29,6 @@
 
 Ce script privilégie une configuration lisible et des profils explicites pour Windows 10 et 11. Le résultat dépend toutefois de la version de Windows, des pilotes, du matériel et des logiciels installés. Créez un point de restauration et lisez les avertissements avant les options sensibles (sécurité, Edge, OneDrive et nettoyage avancé).
 
-### Prérequis
-
-| Besoin | Détail | Comportement si absent |
-|---|---|---|
-| **PowerShell** | Obligatoire, dans la version fournie avec Windows 10/11 | Le script s'arrête immédiatement avec un message explicite : 77 commandes PowerShell portent les opérations que cmd ne sait pas faire proprement (registre en masse, WMI, Storage, CIM). |
-| **Jeton administrateur élevé** | Contrôle via le jeton UAC, pas via le service Serveur | Arrêt avec message. Appartenir au groupe Administrateurs ne suffit pas. |
-| **Connexion Internet** | Facultative | Le menu affiche « Hors ligne ou connexion filtrée » et les sections continuent. Seuls les téléchargements (runtimes, SetTimerResolution, MAS/WinUtil) sont ignorés. |
-| **Espace disque** | ~120 Mo pour les runtimes, plus l'espace disque léré par les planifications | L'installation des runtimes échoue proprement et le reste du parcours continue. |
-
-### Ce qui est réversible, et ce qui ne l'est pas
-
-C'est la distinction la plus importante avant de lancer le script.
-
-| Domaine | Réversible | Comment |
-|---|---|---|
-| Sécurité (VBS, HVCI, mitigations CPU) | ✅ | Snapshot `.reg` capturé avant le premier profil, réimporté par « Défaut Windows ». |
-| Réseau, GPU, périphériques | ✅ | Chaque valeur a son pendant de restauration dans le profil opposé. |
-| Énergie (`powercfg`) | ⚠️ **Partiel** | Eco **bascule le plan actif sur Équilibré** ; il ne rétablit pas valeur par valeur les 21 réglages du mode Performance max. Le plan « Performances optimales » dupliqué **reste dans la liste** et redevient sélectionnable d'un clic — c'est deliberé, pour ne pas multiplier les GUID. Les clés `VetoPolicy` sont réécrites avec la même valeur dans les deux modes, donc sans effet de restauration. |
-| MSI, FTH, état des pilotes | ✅ | Sauvegarde par périphérique / par clé, restaurée à l'identique. |
-| **`Tout optimiser` : Confidentialité (section 1.4-1.5)** | ❌ **Volontairement définitif** | **66 écritures de registre** (43 directes + 23 dans la boucle Content Delivery Manager) couvrant télémétrie, contenu sponsorisé, Cortana/Bing, publicités et navigation sur le web, **26 tâches planifiées nommées — dont 14 existent et sont désactivées sur Windows 11 25H2** (11 n'existent pas sur cette version, et `Subscription\EnableLicenseAcquisition` reste active), **6 autologgers WMI**, plus le stockage réservé, Delivery Optimization, la touche F1, l'atténuation audio, WPBT et le menu « Devenir Propriétaire ». **Aucun parcours du script ne les remet à l'état d'origine.** C'est cohérent avec le but, mais il faut le savoir : un point de restauration système est le seul retour arrière. |
-| Désinstallation de OneDrive / Edge | ❌ | Irréversible par nature ; les données sont supprimées après confirmation explicite. |
-| Stratégies anti-réinstallation Edge | ❌ | `InstallDefault=2` et `Install{56EB18F8-…}=0` restent en place. Retour manuel : `reg delete "HKLM\SOFTWARE\Policies\Microsoft\EdgeUpdate" /v InstallDefault /f` puis la même commande pour la valeur `Install{…}`. |
-
-> Le nettoyage du bloc `# Copilot Block` dans `hosts` ne réécrit le fichier qu'**en conservant chaque octet** (lecture/écriture Latin-1) et seulement si ce bloc existe encore, c'est-à-dire si une version antérieure du script l'avait écrit. Un backup est pris avant.
-
-### Où sont les sauvegardes
-
-Toutes dans `%ProgramData%\WindowsOptimizer\Backups` :
-
-| Fichier | Contenu | Cycle de vie |
-|---|---|---|
-| `All in One_<guid>.cmd` | Copie du batch au lancement | Conservée (une par exécution) |
-| `security-baseline.reg` + `security-hypervisorlaunchtype.txt` | Snapshot de la base de sécurité | **Supprimé après une restauration réussie** |
-| `fth-state.json` | État FTH avant désactivation | Supprimé après restauration |
-| `msi_<classe>_baseline.clixml` | Valeurs MSI par périphérique | Supprimé après restauration |
-| `Hosts\hosts_<guid>.bak` | Copie du fichier `hosts` | Conservée |
-
-> Conséquence importante : après un « Défaut Windows » réussi, le snapshot est effacé. Un **second** passage « Défaut Windows » n'a donc plus de snapshot et applique le fallback Windows documenté au lieu de l'état précédent. C'est voulu, mais il ne faut pas s'attendre à deux restaurations identiques.
-
 ---
 
 ## 🚀 Démarrage rapide
@@ -85,20 +46,6 @@ Depuis un clone local, cette commande vérifie le batch publié sans demander l'
 ```
 
 > Le launcher n'utilise pas un `All in One.cmd` placé à côté de lui : la commande `irm` et `.\launcher.ps1` utilisent le même batch publié. Pour tester la copie locale, ouvrez directement `All in One.cmd` en administrateur. Le mode `-VerifyOnly` affiche la source et le SHA-256 contrôlés.
-
-Le launcher accepte deux paramètres :
-
-| Paramètre | Défaut | Rôle |
-|---|---|---|
-| `-BaseUrl` | `https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/main` | Source du batch **et** de `Tools/Timer & Interrupt/SetTimerResolution.exe`. Accepte la branche `main` ou un commit SHA-1 complet (40 caractères hexadécimaux). La valeur est validée avant tout téléchargement : HTTPS obligatoire, port par défaut, hôte `raw.githubusercontent.com`, dépôt `kaylerberserk/WindowsOptimizer`, aucun `userinfo`, aucune requête, aucun fragment. Toute autre valeur est refusée. |
-| `-VerifyOnly` | absent | Télécharge et contrôle le batch, affiche la source et son SHA-256, puis sort **sans** demander l'UAC et **sans** exécuter l'optimiseur. Le dossier temporaire est supprimé dans tous les cas. |
-
-```powershell
-# vérifier un commit précis sans rien exécuter
-.\launcher.ps1 -VerifyOnly -BaseUrl https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/3d0db7f...
-```
-
-Le launcher **n'épingle aucun SHA** : `-VerifyOnly` affiche un SHA-256 purement informatif. La garantie repose sur le contrôle de format (ASCII strict, CRLF, deux labels obligatoires) et sur l'origine contrainte à `raw.githubusercontent.com`.
 
 ### Premier parcours
 
@@ -190,7 +137,7 @@ Exceptions réseau :
 
 > ### 💡 Vue d'ensemble des 3 modes
 >
-> * **Gaming (Recommandé ★)** : Conserve **VBS / HVCI** et **LSA Protection** (`RunAsPPL=2`, c'est-à-dire PPL actif **sans** écriture de variable UEFI — valeur qu'Microsoft n'applique qu'à partir du build 22H2) pour limiter les conflits avec les anti-cheats modernes, laisse **CFG** à `NOTSET` (défaut Windows), désactive **SEHOP**, réduit les mitigations CPU et demande la désactivation de la blocklist.
+> * **Gaming (Recommandé ★)** : Conserve **VBS / HVCI** et **LSA Protection** (`RunAsPPL=2`, c'est-à-dire PPL actif **sans** écriture de variable UEFI — valeur que Microsoft n'applique qu'à partir du build 22H2) pour limiter les conflits avec les anti-cheats modernes, laisse **CFG** à `NOTSET` (défaut Windows), désactive **SEHOP**, réduit les mitigations CPU et demande la désactivation de la blocklist.
 > * **Défaut Windows** : restaure le snapshot capturé avant un profil de sécurité. Sans snapshot, il applique la base stock mesurée (FeatureSettings=0, `RunAsPPL=2`, `RunAsPPLBoot` supprimé, blocklist de pilotes=1) et retire les overrides de l'outil.
 > * **Performance Max ⚠️ (Déconseillé)** : Désactive VBS, HVCI et SEHOP, conserve CFG et **LSA Protection** (`RunAsPPL=2`, PPL actif sans écriture de variable UEFI), réduit les mitigations CPU et demande la désactivation de la blocklist.
 

@@ -52,6 +52,7 @@ Apres une edition de structure (label, `goto`, bloc `if`), verifier que chaque `
 Verifiees sur ce depot. Revalider avant de les conserver : une regle qui ne s'est pas reproduite deux fois est un candidat a la suppression.
 
 - **Executer plutot que relire.** Syntaxe, parentheses, encodage et logique se controlent par un programme, jamais a l'oeil. Un helper teste sur une cle scratch revele ce qu'un test de syntaxe laisse passer.
+- **Un fragment de test s'extrait par label en debut de ligne.** Chercher `:LABEL` sans le saut de ligne qui precede tombe sur un `call :LABEL` et embarque du vrai code : le 2026-10-03, un tel test a rejoue les sections 1.8 a 1.17 sur `pc-gaming`. Avant d'envoyer un fragment, verifier sa taille, l'absence de `HKLM`/`HKCR`/`powercfg` et que chaque `call :` vise un label du fragment.
 - **Une cle absente ne prouve pas un no-op.** `reg add` cree tout le chemin : l'absence dit que l'ecriture n'a pas eu lieu ou a ete refusee. Rejouer l'ecriture et lire le message (`MsMpEngCP.exe` : acces refuse).
 - **Un appel qui touche l'interface se teste en session interactive.** Par SSH, `SystemParametersInfo` echoue en 1459 ; une tache planifiee `/it` ponctuelle donne le vrai resultat.
 - **Verifier un changement d'etat par relecture de la valeur stockee**, pas par le code de retour de l'ecriture : une ecriture refusee (UCPD, strategie de groupe) ne renvoie rien d'exploitable. Un helper qui calcule un code d'erreur sans appelant qui le lit laisse le succes annonce inconditionnellement.

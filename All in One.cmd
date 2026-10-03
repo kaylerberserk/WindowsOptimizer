@@ -2040,7 +2040,7 @@ REM  5.4 - MSI Mode cartes reseau
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage des interruptions reseau...%COLOR_RESET%
 call :SET_DEVICE_MSI_PROFILE Net !PROFIL_USAGE!
 REM L'echec doit rejoindre le code de sortie de la section : sans cela 'exit /b 0'
-REM announces une reussite alors que rien n'a ete ecrit sur une carte sans MSI.
+REM annonce une reussite alors que rien n'a ete ecrit sur une carte sans MSI.
 if !errorlevel! NEQ 0 (
     set "NETWORK_SECTION_ERROR=1"
     echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Reglage MSI reseau applique partiellement.%COLOR_RESET%
@@ -3024,7 +3024,7 @@ REM Restaurer la base capturee si elle existe ; sans snapshot, appliquer uniquem
 REM les valeurs et absences mesurees sur l'installation Windows 11 25H2 de reference.
 call :RESTORE_RUNAS_VERB
 set "RUNAS_RESTORE_RC=!errorlevel!"
-if "!RUNAS_RESTORE_RC!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Verbe runas : restauration partielle, voir le menu Dedoublonnage du systeme.%COLOR_RESET%
+if "!RUNAS_RESTORE_RC!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Verbe runas : restauration incomplete, la capture est conservee pour un nouvel essai.%COLOR_RESET%
 set "RUNAS_RESTORE_RC="
 call :RESTORE_SECURITY_BASELINE
 set "SECURITY_RESTORE_RC=!errorlevel!"
@@ -4835,24 +4835,9 @@ set "WINOPT_HOSTS_BACKUP_RC=!errorlevel!"
 set "WINOPT_HOSTS_SOURCE="
 exit /b !WINOPT_HOSTS_BACKUP_RC!
 
-:: Capture les deux cles du verbe runas AVANT que la section 1.8 ne les
-:: ecrase. reg export est utilise plutot qu'un .reg ecrit a la main : il
-:: restitue fidelement tous les types de valeurs, y compris celles absentes
-:: de la capture (effacera alors la cle), sans conversion a maintenir.
-:: Capture unique : si le fichier existe deja, il n'est pas reecrit, donc la
-:: premiere capture - la seule qui decrive l'etat de Windows - reste valide.
 :: Capture les deux cles du verbe "runas" du menu contextuel AVANT que la
-:: section 1.8 ne les ecrase. Ce verbe porte l'elevation Windows
-:: ("Executer en tant qu'administrateur") : ecrase, il ne revient pas tout seul.
-:: reg export est utilise plutot qu'un .reg ecrit a la main : il restitue
-:: fidelement tous les types de valeurs, sans conversion a maintenir.
-:: Capture unique : si le fichier existe deja il n'est pas reecrit, donc seule
-:: la premiere capture - la seule qui decrive l'etat de Windows - compte.
-:: Capture les deux cles du verbe "runas" du menu contextuel AVANT que la
-:: section 1.8 ne les ecrase. Ce verbe porte l'elevation Windows
-:: ("Executer en tant qu'administrateur") : ecrase, il ne revient pas tout seul.
-:: reg export est utilise plutot qu'un .reg ecrit a la main : il restitue
-:: fidelement tous les types de valeurs, sans conversion a maintenir.
+:: section 1.8 ne les ecrase. reg export est utilise plutot qu'un .reg ecrit a
+:: la main : il restitue fidelement tous les types de valeurs.
 :: Capture unique : si le fichier existe deja il n'est pas reecrit, donc seule
 :: la premiere capture - la seule qui decrive l'etat de Windows - compte.
 :CAPTURE_RUNAS_VERB
@@ -4870,9 +4855,10 @@ if not exist "%WINOPT_RUNAS_BACKUP%" exit /b 1
 reg export "HKCR\Directory\shell\runas" "%WINOPT_DIR_RUNAS_BACKUP%" /y >nul 2>&1
 exit /b 0
 
-:: Restaure les deux cles capturees. Les valeurs que le script ajoute et que la
-:: capture ne contient pas sont retirees avant le reimport : "reg import"
-:: n'ajoute jamais, il ne sait pas supprimer.
+:: Restaure les deux cles capturees. "reg import" ajoute et remplace mais ne
+:: supprime rien : les valeurs ajoutees par le script sont retirees apres un
+:: premier import reussi, puis un second import remet celles que la capture
+:: contenait. En cas d'echec la capture est conservee pour un nouvel essai.
 :RESTORE_RUNAS_VERB
 if not exist "%WINOPT_RUNAS_BACKUP%" if not exist "%WINOPT_DIR_RUNAS_BACKUP%" exit /b 2
 set "RUNAS_RESTORE_RC=0"
@@ -4885,13 +4871,12 @@ if exist "%WINOPT_DIR_RUNAS_BACKUP%" (
     if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
 )
 if "!RUNAS_RESTORE_RC!"=="1" exit /b 1
-REM  Import reussi. "reg import" n'ajoute que, il ne sait pas supprimer : les
-REM  valeurs que le script a ajoutees et que la capture ne contient pas restent
-REM  en place. Elles ne sont retirees qu'APRES un import reussi.
 for %%V in (NoWorkingDirectory IsolatedCommand) do (
     reg delete "HKCR\*\shell\runas" /v "%%V" /f >nul 2>&1
     reg delete "HKCR\Directory\shell\runas" /v "%%V" /f >nul 2>&1
 )
+if exist "%WINOPT_RUNAS_BACKUP%" reg import "%WINOPT_RUNAS_BACKUP%" >nul 2>&1
+if exist "%WINOPT_DIR_RUNAS_BACKUP%" reg import "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
 del /f /q "%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
 exit /b 0
 
