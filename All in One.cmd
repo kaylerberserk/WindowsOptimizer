@@ -1395,12 +1395,16 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages de confidentialite a
 REM  1.9 - Navigateurs
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisation navigateurs...%COLOR_RESET%
 REM  Microsoft Edge
-REM  DoH mode "allow" : chiffre le DNS quand Cloudflare est joignable, repli DNS normal sinon
-REM  ("secure" interdirait tout repli et casse les reseaux filtres/proxy d'entreprise).
+REM  DoH mode "automatic" : chiffre le DNS quand le resolveur DoH est joignable,
+REM  repli en clair sinon. Ce n'est pas un detail de formulation : Microsoft ne
+REM  documente que trois valeurs - off, automatic, secure. "allow" n'existe pas,
+REM  la politique etait donc entierement ignoree, DnsOverHttpsTemplates compris.
+REM  "automatic" est exactement le comportement decrit ci-dessus ; "secure"
+REM  interdirait tout repli et casserait les reseaux filtres/proxy d'entreprise.
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v HideFirstRunExperience /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v StartupBoostEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v QuicAllowed /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Policies\Microsoft\Edge" /v DnsOverHttpsMode /t REG_SZ /d allow /f >nul 2>&1
+reg add "HKCU\Software\Policies\Microsoft\Edge" /v DnsOverHttpsMode /t REG_SZ /d automatic /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v DnsOverHttpsTemplates /t REG_SZ /d "https://cloudflare-dns.com/dns-query" /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v HardwareAccelerationModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v UserFeedbackAllowed /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1411,7 +1415,7 @@ reg add "HKCU\Software\Policies\Microsoft\Edge" /v NewTabPagePrerenderEnabled /t
 
 REM  Google Chrome
 reg add "HKCU\Software\Policies\Google\Chrome" /v QuicAllowed /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Policies\Google\Chrome" /v DnsOverHttpsMode /t REG_SZ /d allow /f >nul 2>&1
+reg add "HKCU\Software\Policies\Google\Chrome" /v DnsOverHttpsMode /t REG_SZ /d automatic /f >nul 2>&1
 reg add "HKCU\Software\Policies\Google\Chrome" /v DnsOverHttpsTemplates /t REG_SZ /d "https://cloudflare-dns.com/dns-query" /f >nul 2>&1
 reg add "HKCU\Software\Policies\Google\Chrome" /v HardwareAccelerationModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Google\Chrome" /v BackgroundModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
