@@ -52,12 +52,15 @@ reg add "HKCU\Console" /v VirtualTerminalLevel /t REG_DWORD /d 1 /f >nul 2>&1
 title Script d'Optimisation Windows - All in One
 
 :: Definition du caractere ESC (ASCII 27)
-for /f "delims=" %%a in ('powershell -NoProfile -Command "$([char]27)"') do set "ESC=%%a"
+:: Mesure sur Windows 11 25H2 / PowerShell 5.1 : 'prompt $E' = 16 ms, un spawn
+:: PowerShell = 164 ms. L'astuce CMD est donc tentee en premier ; le spawn ne sert
+:: que de repli. 'prompt $E' ne modifie que le prompt du cmd.exe enfant : le
+:: PROMPT de la session appelante reste intact (verifie).
+for /f %%a in ('"prompt $E ^& echo on & for %%b in (1) do rem"') do set "ESC=%%a"
 
-:: Si PowerShell echoue, CMD fournit le caractere ESC en solution de secours
+:: Repli : PowerShell, si l'astuce CMD n'a rien renvoye
 if not defined ESC (
-    REM Methode alternative via CMD escape sequence
-    for /f %%a in ('"prompt $E ^& echo on & for %%b in (1) do rem"') do set "ESC=%%a"
+    for /f "delims=" %%a in ('powershell -NoProfile -Command "$([char]27)"') do set "ESC=%%a"
 )
 
 :: Fallback ultime : utiliser une variable vide si tout echoue (les couleurs ne s'afficheront pas mais le script fonctionnera)
@@ -1912,9 +1915,16 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Priorite reseau configuree se
 REM  5.2 - Pile TCP/IP Win11
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la connexion pour reduire les delais...%COLOR_RESET%
 netsh int tcp set global autotuninglevel=normal >nul 2>&1
-netsh int ipv4 set global loopbacklargemtu=disabled >nul 2>&1
-netsh int ipv6 set global loopbacklargemtu=disabled >nul 2>&1
+REM loopbacklargemtu n'est volontairement PAS ecrit ici : la section 5.3 le pose
+REM selon le profil (desactive en Gaming, reactive en Normal). L'ecrire aussi
+REM dans 5.2 etait sans effet, la branche de 5.3 executant toujours apres.
 REM minRto se configure uniquement avec 'set supplemental' ; 'set global' ne prend pas ce parametre.
+
+REM Depuis Windows 11 24H2/25H2, WSH n'est plus utilise. ForceWS reste supporte,
+REM mais 'default' et 'enabled' aboutissent au meme etat (le forcage de la mise a
+REM l'echelle des fenetres actif) d'apres 'netsh int tcp set heuristics help' :
+REM une seule ecriture suffit, elle ne depend pas du profil.
+netsh int tcp set heuristics forcews=enabled >nul 2>&1
 
 REM initialRTO (300-3000ms) ne regle que l'etablissement TCP (SYN) et pas le RTO
 REM d'une connexion deja etablie. Valeurs retenues par profil :
@@ -1923,13 +1933,11 @@ REM   Normal  -> 1000 / 4  (reprise plus rapide apres perte, choix de l'outil)
 REM Ne pas confondre ce choix de reglage avec une restauration : seul le mode
 REM Normal reapplique le couple du profil, pas celui du defaut systeme.
 if "!PROFIL_USAGE!"=="0" (
-    REM Depuis Windows 11 24H2/25H2, WSH n'est plus utilise. ForceWS reste supporte.
-    netsh int tcp set heuristics forcews=enabled >nul 2>&1
+    REM Latence : RTO initial long et peu de retransmissions pour etablir la connexion.
     netsh int tcp set global rss=enabled initialrto=3000 nonsackrttresiliency=disabled maxsynretransmissions=2 >nul 2>&1
 ) else (
     REM Stock Windows 11 25H2 mesure : Initial RTO=1000 ms et Max SYN Retransmissions=4.
     REM La documentation netsh affiche encore 3000/2 ; Normal suit ici l'etat client reel mesure.
-    netsh int tcp set heuristics forcews=default >nul 2>&1
     netsh int tcp set global rss=enabled initialrto=1000 nonsackrttresiliency=disabled maxsynretransmissions=4 >nul 2>&1
 )
 if "!PROFIL_POWER!"=="0" (
@@ -1997,8 +2005,14 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Registre TCP configure%COLOR_
 REM  5.4 - MSI Mode cartes reseau
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage des interruptions reseau...%COLOR_RESET%
 call :SET_DEVICE_MSI_PROFILE Net !PROFIL_USAGE!
-if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Reglage MSI reseau applique partiellement.%COLOR_RESET%
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Interruptions reseau reglees.%COLOR_RESET%
+REM L'echec doit rejoindre le code de sortie de la section : sans cela 'exit /b 0'
+REM announces une reussite alors que rien n'a ete ecrit sur une carte sans MSI.
+if !errorlevel! NEQ 0 (
+    set "NETWORK_SECTION_ERROR=1"
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Reglage MSI reseau applique partiellement.%COLOR_RESET%
+) else (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Interruptions reseau reglees.%COLOR_RESET%
+)
 
 
 REM  5.5 - Optimisation BITS
@@ -4686,7 +4700,9 @@ echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% %COLOR_WHITE%Merci d'avoir utilise le s
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_YELLOW%Redemarrez votre PC pour finaliser l'optimisation.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
-timeout /t 3 /nobreak >nul
+REM 'timeout' echoue silencieusement des que l'entree standard est redirigee ;
+REM le fichier possede deja l'idiome toujours actif 'ping -n N 127.0.0.1'.
+ping -n 4 127.0.0.1 >nul
 REM  EXIT /B ferme automatiquement les SETLOCAL. Garder EnableExtensions actif
 REM  jusqu'a la sortie evite un echec final si CMD les avait desactivees au depart.
 exit /b 0
@@ -4697,7 +4713,10 @@ REM  ===========================================================================
 
 REM  --- Windows, registre et nettoyage ------------------------------------------------
 :BACKUP_SELF_BEFORE_EXECUTION
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$d=$env:WINOPT_BACKUP_DIR;$s=$env:WINOPT_SELF_BACKUP_SOURCE;if([string]::IsNullOrWhiteSpace($s)-or-not(Test-Path -LiteralPath $s)){exit 1};New-Item -ItemType Directory -Path $d -Force|Out-Null;$dst=Join-Path $d ('All in One_'+[guid]::NewGuid().ToString('N')+'.cmd');Copy-Item -LiteralPath $s -Destination $dst -Force;if(-not(Test-Path -LiteralPath $dst)-or((Get-Item -LiteralPath $dst).Length-ne(Get-Item -LiteralPath $s).Length)){exit 1};exit 0}catch{exit 1}" >nul 2>&1
+REM  Une copie par execution : sans purge, le dossier grossit indefiniment
+REM  (constate : 39 copies pour 12,9 Mo sur une machine d'audit). On conserve les
+REM  5 plus recentes, ce qui suffit largement a revenir en arriere.
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$d=$env:WINOPT_BACKUP_DIR;$s=$env:WINOPT_SELF_BACKUP_SOURCE;if([string]::IsNullOrWhiteSpace($s)-or-not(Test-Path -LiteralPath $s)){exit 1};New-Item -ItemType Directory -Path $d -Force|Out-Null;$dst=Join-Path $d ('All in One_'+[guid]::NewGuid().ToString('N')+'.cmd');Copy-Item -LiteralPath $s -Destination $dst -Force;if(-not(Test-Path -LiteralPath $dst)-or((Get-Item -LiteralPath $dst).Length-ne(Get-Item -LiteralPath $s).Length)){exit 1};$k=@(Get-ChildItem -LiteralPath $d -Filter 'All in One_*.cmd' -Force -EA SilentlyContinue|Sort-Object CreationTime -Descending);if($k.Count-gt 5){$k[5..($k.Count-1)]|Remove-Item -Force -EA SilentlyContinue};exit 0}catch{exit 1}" >nul 2>&1
 exit /b !errorlevel!
 
 :BACKUP_HOSTS_BEFORE_CHANGE
@@ -4896,11 +4915,15 @@ if "%~1"=="1" (
     if errorlevel 1 exit /b 1
     exit /b 0
 )
+REM  Windows masque "Performances optimales" (e9a42b02) dans 'powercfg /list'
+REM  tant qu'il n'est pas duplique : une recherche par findstr sur /list ne peut donc
+REM  jamais reussir (mesure : e9a42b02 absent de /list sur 25H2 build 26200).
+REM  Le plan reel est enregistre mais NON activable : 'powercfg /setactive e9a42b02'
+REM  renvoie 1 ("ecriture sur un parametre non pris en charge"). La duplication sous
+REM  un GUID fixe est donc le seul chemin fonctionnel, et reste idempotente car
+REM  'duplicatescheme' echoue si le GUID de destination existe deja.
 set "AIO_TARGET_GUID="
-for /f "tokens=2 delims=:()" %%G in ('powercfg -list 2^>nul ^| findstr /i "e9a42b02-d5df-448d-aa00-03f14749eb61"') do (set "AIO_TARGET_GUID=%%G" & set "AIO_TARGET_GUID=!AIO_TARGET_GUID: =!")
-if not defined AIO_TARGET_GUID (
-    for /f "tokens=2 delims=:()" %%G in ('powercfg -list 2^>nul ^| findstr /i "99999999-9999-9999-9999-999999999999"') do (set "AIO_TARGET_GUID=%%G" & set "AIO_TARGET_GUID=!AIO_TARGET_GUID: =!")
-)
+for /f "tokens=2 delims=:()" %%G in ('powercfg -list 2^>nul ^| findstr /i "99999999-9999-9999-9999-999999999999"') do (set "AIO_TARGET_GUID=%%G" & set "AIO_TARGET_GUID=!AIO_TARGET_GUID: =!")
 if not defined AIO_TARGET_GUID (
     powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61 99999999-9999-9999-9999-999999999999 >nul 2>&1
     if errorlevel 1 exit /b 1
