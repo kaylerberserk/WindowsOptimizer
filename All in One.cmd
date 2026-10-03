@@ -2582,12 +2582,18 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage PCI Express demande ;
 REM  7.13 - Optimisations stockage et disques
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la gestion d'energie du stockage...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /t REG_DWORD /d 0 /f >nul 2>&1
-call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -PropertyType DWord -Value 0 -Force | Out-Null
+REM  Ne JAMAIS piper cet appel : Out-Null est une cmdlet PowerShell, pas une
+REM  commande cmd.exe. Un '| <commande inconnue>' dans un fichier batch
+REM  ARRETE le script sur place, sans message ni recapitulatif. Mesure sur
+REM  Windows 11 25H2 : la ligne suivante et tout le reste de la section
+REM  7.13 etaient sautes. FOR_STORAGE_CLASS redirige deja vers nul en interne,
+REM  et le chemin de restauration l'appelle sans pipe. Aucun pipe ici.
+call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -PropertyType DWord -Value 0 -Force
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie du stockage reglee pour les performances.%COLOR_RESET%
 
 REM  7.14 - Optimisations avancees des services
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des limites de latence du stockage...%COLOR_RESET%
-call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'IoLatencyCap' -PropertyType DWord -Value 0 -Force | Out-Null
+call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'IoLatencyCap' -PropertyType DWord -Value 0 -Force
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Limites de latence stockage supprimees%COLOR_RESET%
 
 REM  7.15 - GPU PreferMaxPerf
