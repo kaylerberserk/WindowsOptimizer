@@ -180,6 +180,10 @@ set "WINOPT_BACKUP_DIR=%ProgramData%\WindowsOptimizer\Backups"
 set "WINOPT_SECURITY_BACKUP=%WINOPT_BACKUP_DIR%\security-baseline.reg"
 set "WINOPT_SECURITY_BCD_BACKUP=%WINOPT_BACKUP_DIR%\security-hypervisorlaunchtype.txt"
 set "WINOPT_FTH_BACKUP=%WINOPT_BACKUP_DIR%\fth-state.json"
+REM Le verbe runas du menu contextuel est REECRIT par l'option "Devenir Proprietaire".
+REM Sans cette capture, "Executer en tant qu'administrateur" disparait definitivement.
+set "WINOPT_RUNAS_BACKUP=%WINOPT_BACKUP_DIR%\runas-file-verb.reg"
+set "WINOPT_DIR_RUNAS_BACKUP=%WINOPT_BACKUP_DIR%\runas-dir-verb.reg"
 call :BACKUP_SELF_BEFORE_EXECUTION
 if !errorlevel! NEQ 0 (
     echo [ERREUR] Impossible de sauvegarder All in One.cmd avant execution.
@@ -1371,6 +1375,10 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Ajout de l'option Deveni
 REM  Localization : takeown et icacls n'acceptent pas les noms de groupe traduits.
 REM  /d y (Yes) puis /d o (Oui) car la lettre attendue depend de la locale ;
 REM  *S-1-5-32-544 = BUILTIN\Administrateurs, resolu par SID sur toute installation.
+REM  "runas" est le verbe d'elevation Windows ("Executer en tant qu'administrateur").
+REM  On capture son etat AVANT de le remplacer, sinon "Executer en tant
+REM  qu'administrateur" disparait du menu contextuel, sans retour possible.
+call :CAPTURE_RUNAS_VERB
 reg add "HKCR\*\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1
 reg add "HKCR\*\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1
 reg add "HKCR\*\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /d y || takeown /f \"%%1\" /d o && icacls \"%%1\" /grant *S-1-5-32-544:F" /f >nul 2>&1
@@ -2991,6 +2999,10 @@ call :SCREEN_HEADER " APPLICATION DU MODE DEFAUT WINDOWS"
 REM Microsoft ne definit pas une valeur brute universelle pour le "defaut".
 REM Restaurer la base capturee si elle existe ; sans snapshot, appliquer uniquement
 REM les valeurs et absences mesurees sur l'installation Windows 11 25H2 de reference.
+call :RESTORE_RUNAS_VERB
+set "RUNAS_RESTORE_RC=!errorlevel!"
+if "!RUNAS_RESTORE_RC!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Verbe runas : restauration partielle, voir le menu Dedoublonnage du systeme.%COLOR_RESET%
+set "RUNAS_RESTORE_RC="
 call :RESTORE_SECURITY_BASELINE
 set "SECURITY_RESTORE_RC=!errorlevel!"
 if "!SECURITY_RESTORE_RC!"=="0" (
@@ -4789,6 +4801,56 @@ set "WINOPT_HOSTS_BACKUP_RC=!errorlevel!"
 set "WINOPT_HOSTS_SOURCE="
 exit /b !WINOPT_HOSTS_BACKUP_RC!
 
+:: Capture les deux cles du verbe runas AVANT que la section 1.8 ne les
+:: ecrase. reg export est utilise plutot qu'un .reg ecrit a la main : il
+:: restitue fidelement tous les types de valeurs, y compris celles absentes
+:: de la capture (effacera alors la cle), sans conversion a maintenir.
+:: Capture unique : si le fichier existe deja, il n'est pas reecrit, donc la
+:: premiere capture - la seule qui decrive l'etat de Windows - reste valide.
+:: Capture les deux cles du verbe "runas" du menu contextuel AVANT que la
+:: section 1.8 ne les ecrase. Ce verbe porte l'elevation Windows
+:: ("Executer en tant qu'administrateur") : ecrase, il ne revient pas tout seul.
+:: reg export est utilise plutot qu'un .reg ecrit a la main : il restitue
+:: fidelement tous les types de valeurs, sans conversion a maintenir.
+:: Capture unique : si le fichier existe deja il n'est pas reecrit, donc seule
+:: la premiere capture - la seule qui decrive l'etat de Windows - compte.
+:: Capture les deux cles du verbe "runas" du menu contextuel AVANT que la
+:: section 1.8 ne les ecrase. Ce verbe porte l'elevation Windows
+:: ("Executer en tant qu'administrateur") : ecrase, il ne revient pas tout seul.
+:: reg export est utilise plutot qu'un .reg ecrit a la main : il restitue
+:: fidelement tous les types de valeurs, sans conversion a maintenir.
+:: Capture unique : si le fichier existe deja il n'est pas reecrit, donc seule
+:: la premiere capture - la seule qui decrive l'etat de Windows - compte.
+:CAPTURE_RUNAS_VERB
+if exist "%WINOPT_RUNAS_BACKUP%" exit /b 0
+reg export "HKCR\*\shell\runas" "%WINOPT_RUNAS_BACKUP%" /y >nul 2>&1
+if !errorlevel! NEQ 0 exit /b 1
+if not exist "%WINOPT_RUNAS_BACKUP%" exit /b 1
+reg export "HKCR\Directory\shell\runas" "%WINOPT_DIR_RUNAS_BACKUP%" /y >nul 2>&1
+exit /b 0
+
+:: Restaure les deux cles capturees. Les valeurs que le script ajoute et que la
+:: capture ne contient pas sont retirees avant le reimport : "reg import"
+:: n'ajoute jamais, il ne sait pas supprimer.
+:RESTORE_RUNAS_VERB
+if not exist "%WINOPT_RUNAS_BACKUP%" if not exist "%WINOPT_DIR_RUNAS_BACKUP%" exit /b 2
+for %%V in (NoWorkingDirectory IsolatedCommand) do (
+    reg delete "HKCR\*\shell\runas" /v "%%V" /f >nul 2>&1
+    reg delete "HKCR\Directory\shell\runas" /v "%%V" /f >nul 2>&1
+)
+set "RUNAS_RESTORE_RC=0"
+if exist "%WINOPT_RUNAS_BACKUP%" (
+    reg import "%WINOPT_RUNAS_BACKUP%" >nul 2>&1
+    if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
+)
+if exist "%WINOPT_DIR_RUNAS_BACKUP%" (
+    reg import "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
+    if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
+)
+del /f /q "%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
+exit /b !RUNAS_RESTORE_RC!
+
+
 :CAPTURE_SECURITY_BASELINE
 if exist "%WINOPT_SECURITY_BACKUP%" if exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 0
 if exist "%WINOPT_SECURITY_BACKUP%" exit /b 1
@@ -4802,6 +4864,13 @@ if not exist "%WINOPT_SECURITY_BACKUP%" exit /b 1
 if not exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 1
 reg import "%WINOPT_SECURITY_BACKUP%" >nul 2>&1
 if !errorlevel! NEQ 0 exit /b 1
+REM Les valeurs posees par le script et absentes de la capture sont retirees :
+REM "reg import" ne fait qu'ajouter, il ne sait pas supprimer. Sans ce nettoyage,
+REM la restauration laisserait deriver les noms de valeurs du script.
+for %%V in (NoWorkingDirectory IsolatedCommand) do (
+    reg delete "HKCR\*\shell\runas" /v "%%V" /f >nul 2>&1
+    reg delete "HKCR\Directory\shell\runas" /v "%%V" /f >nul 2>&1
+)
 set "WINOPT_BCD_VALUE="
 for /f "usebackq delims=" %%A in ("%WINOPT_SECURITY_BCD_BACKUP%") do set "WINOPT_BCD_VALUE=%%A"
 if not defined WINOPT_BCD_VALUE exit /b 1
