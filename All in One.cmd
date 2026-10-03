@@ -1491,9 +1491,21 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de WPBT po
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager" /v DisableWpbtExecution /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%WPBT desactive%COLOR_RESET%
 
-REM  1.17 - Intel Thread Director / Core Parking (profil-aware)
-REM  SCHEDPOLICY : 0=Tous, 1=Performants, 2=Preferer performants, 3=Efficients, 4=Preferer efficients, 5=Auto.
-REM  Ne fait rien sur CPU non-hybride (AMD, Intel avant 12th gen).
+REM  1.17 - Intel Thread Director / Core Parking
+REM  Les trois Attributes ci-dessous sont ecrits SANS condition de profil :
+REM  cette section appartient a l'axe USAGE mais ce sont les memes GUID que la
+REM  section 7 ecrit en mode Eco (lignes 2756, 2763, 2811) avec la valeur 1,
+REM  et que le mode Performance max n'ecrit pas. Le proprietaire effectif de
+REM  cette cle est donc l'axe ENERGIE, alors que l'ecrivain est cette section.
+REM  Consequence mesurable : en mode Eco, passer par le menu SYSTEME - qui ne
+REM  demande que l'usage - et choisir Normal laisse Attributes a 2, valeur que
+REM  le mode Eco vient justement de retablir. Le script ne produit jamais cette
+REM  combinaison lui-meme et aucun affichage ne la signale. Rouvrir SYSTEME ou
+REM  ENERGIE la corrige.
+REM  SCHEDPOLICY (0=Tous, 1=Performants, 2=Preferer performants, 3=Efficients,
+REM  4=Preferer efficients, 5=Auto) n'est PAS ecrit par ce script : il n'existe
+REM  ici que comme documentation du GUID. Rien ne faire sur CPU non-hybride
+REM  (AMD, Intel avant 12th generation).
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration de la planification des coeurs du processeur...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\93b8b6dc-0698-4d1c-9ee4-0644e900c85d" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318584" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
