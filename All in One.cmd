@@ -3802,11 +3802,14 @@ taskkill /f /im OneDriveSetup.exe >nul 2>&1
 taskkill /f /im FileCoAuth.exe >nul 2>&1
 taskkill /f /im FileSyncHelper.exe >nul 2>&1
 taskkill /f /im OneDriveStandaloneUpdater.exe >nul 2>&1
-timeout /t 3 /nobreak >nul
+REM  'timeout' echoue silencieusement des que l'entree standard est redirigee, ce
+REM  qui annule exactement les attentes destinees a laisser OneDrive liberer ses
+REM  fichiers. 'ping -n' fonctionne dans les deux cas (cf. END_SCRIPT).
+ping -n 4 127.0.0.1 >nul
 taskkill /f /im explorer.exe >nul 2>&1
-timeout /t 2 /nobreak >nul
+ping -n 3 127.0.0.1 >nul
 start "" explorer.exe >nul 2>&1
-timeout /t 3 /nobreak >nul
+ping -n 4 127.0.0.1 >nul
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Processus OneDrive arretes.%COLOR_RESET%
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Etape 2 sur 7 : deconnexion des comptes OneDrive...%COLOR_RESET%
@@ -3861,10 +3864,27 @@ if exist "%AppData%\Microsoft\OneDrive" rd "%AppData%\Microsoft\OneDrive" /q /s 
 if exist "%SystemDrive%\OneDriveTemp" rd "%SystemDrive%\OneDriveTemp" /q /s >nul 2>&1
 REM  Wildcards : rd ne supporte pas les wildcards, il faut une enumeration for /d
 for /d %%C in ("%Temp%\OneDrive*") do rd "%%C" /q /s >nul 2>&1
-if exist "%USERPROFILE%\OneDrive" (
+REM  OneDrive Known Folder Backup (KFM) deplace Bureau, Documents et Images
+REM  DANS %USERPROFILE%\OneDrive des la connexion a un compte Microsoft, ce qui est
+REM  le defaut de Windows 11. Sur un tel profil, supprimer ce dossier detruit ces
+REM  trois dossiers, et les fichiers non hydrates (Fichiers a la demande) sont
+REM  irreversibles : ils n'existent plus que sur le cloud, inaccessible sans client.
+REM  Detection volontairement large : si une seule valeur 'User Shell Folders'
+REM  mentionne OneDrive, la suppression est sautee. Un faux positif ne protege que
+REM  le dossier, ce qui est le bon sens de securite ; un faux negatif perd des
+REM  fichiers. Regle AGENTS.md : supprimer une valeur n'est pas l'inverse correct.
+set "ONEDRIVE_KFM_PROTECTED=0"
+reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" 2>nul | findstr /i "OneDrive" >nul 2>&1 && set "ONEDRIVE_KFM_PROTECTED=1"
+if "%ONEDRIVE_KFM_PROTECTED%"=="1" (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Bureau, Documents ou Images sont ranges DANS le dossier OneDrive.%COLOR_RESET%
+    echo %COLOR_WHITE%   Ce dossier n'est donc PAS supprime : vos fichiers y sont encore.%COLOR_RESET%
+    echo %COLOR_WHITE%   Desactivez d'abord 'Sauvegarde des dossiers Bureau, Documents et Images'%COLOR_RESET%
+    echo %COLOR_WHITE%   (Parametres ^> Comptes ^> Sauvegarde et synchronisation), puis relancez.%COLOR_RESET%
+) else if exist "%USERPROFILE%\OneDrive" (
     call :TAKEOWN_RECURSIF "%USERPROFILE%\OneDrive"
     rd "%USERPROFILE%\OneDrive" /s /q >nul 2>&1
 )
+set "ONEDRIVE_KFM_PROTECTED="
 if exist "%LOCALAPPDATA%\Microsoft\OneDrive" (
     call :TAKEOWN_RECURSIF "%LOCALAPPDATA%\Microsoft\OneDrive"
     rd "%LOCALAPPDATA%\Microsoft\OneDrive" /s /q >nul 2>&1
