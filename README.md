@@ -45,7 +45,8 @@ C'est la distinction la plus importante avant de lancer le script.
 | Domaine | Réversible | Comment |
 |---|---|---|
 | Sécurité (VBS, HVCI, mitigations CPU) | ✅ | Snapshot `.reg` capturé avant le premier profil, réimporté par « Défaut Windows ». |
-| Énergie, réseau, GPU, périphériques | ✅ | Chaque valeur a son pendant de restauration dans le profil opposé. |
+| Réseau, GPU, périphériques | ✅ | Chaque valeur a son pendant de restauration dans le profil opposé. |
+| Énergie (`powercfg`) | ⚠️ **Partiel** | Eco **bascule le plan actif sur Équilibré** ; il ne rétablit pas valeur par valeur les 21 réglages du mode Performance max. Le plan « Performances optimales » dupliqué **reste dans la liste** et redevient sélectionnable d'un clic — c'est deliberé, pour ne pas multiplier les GUID. Les clés `VetoPolicy` sont réécrites avec la même valeur dans les deux modes, donc sans effet de restauration. |
 | MSI, FTH, état des pilotes | ✅ | Sauvegarde par périphérique / par clé, restaurée à l'identique. |
 | **`Tout optimiser` : Confidentialité (section 1.4-1.5)** | ❌ **Volontairement définitif** | **66 écritures de registre** (43 directes + 23 dans la boucle Content Delivery Manager) couvrant télémétrie, contenu sponsorisé, Cortana/Bing, publicités et navigation sur le web, **26 tâches planifiées**, **6 autologgers WMI**, plus le stockage réservé, Delivery Optimization, la touche F1, l'atténuation audio, WPBT et le menu « Devenir Propriétaire ». **Aucun parcours du script ne les remet à l'état d'origine.** C'est cohérent avec le but, mais il faut le savoir : un point de restauration système est le seul retour arrière. |
 | Désinstallation de OneDrive / Edge | ❌ | Irréversible par nature ; les données sont supprimées après confirmation explicite. |
