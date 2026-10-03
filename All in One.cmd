@@ -1941,14 +1941,17 @@ REM selon le profil (desactive en Gaming, reactive en Normal). L'ecrire aussi
 REM dans 5.2 etait sans effet, la branche de 5.3 executant toujours apres.
 REM minRto se configure uniquement avec 'set supplemental' ; 'set global' ne prend pas ce parametre.
 
-REM ATTENTION : sur Windows 11 24H2/25H2 cette ecriture ne produit aucun effet.
-REM 'netsh int tcp set heuristics help' annonce que la methode n'est plus prise en
-REM charge, pour wsh comme pour forcews. Mesure : la machine affiche
-REM 'netsh int tcp show heuristics' = disabled alors que ce script ecrit enabled
-REM depuis des dizaines d'executions - l'ecriture ne prend pas.
-REM Elle est conservee pour les versions ou le parametre existe encore. Elle
-REM remplace le forcews=default du profil Normal parce que l'aide indique que
-REM 'default' restaure la valeur systeme, c'est-a-dire activee : meme etat.
+REM Deux reglages distincts, souvent confondus. Mesures sur Windows 11 25H2 :
+REM   netsh int tcp show heuristics                    -> wsh     = disabled
+REM   netsh int tcp show heuristics heuristics=forcews -> forcews = enabled
+REM   Get-NetTCPSetting                               -> ForceWS  = Enabled
+REM wsh, l'heuristique de mise a l'echelle des fenetres, n'est plus utilise
+REM depuis Windows 11 24H2/25H2 : 'set heuristics help' annonce que sa
+REM modification ne produit aucun effet, et la mesure confirme disabled.
+REM forcews, le forcage lors de la retransmission, est un AUTRE reglage,
+REM toujours pris en charge : la ligne ci-dessous prend effet.
+REM Elle remplace le forcews=default du profil Normal parce que l'aide indique
+REM que 'default' restaure la valeur systeme, documentee comme activee.
 netsh int tcp set heuristics forcews=enabled >nul 2>&1
 
 REM initialRTO (300-3000ms) ne regle que l'etablissement TCP (SYN) et pas le RTO
@@ -4852,10 +4855,6 @@ exit /b 0
 :: n'ajoute jamais, il ne sait pas supprimer.
 :RESTORE_RUNAS_VERB
 if not exist "%WINOPT_RUNAS_BACKUP%" if not exist "%WINOPT_DIR_RUNAS_BACKUP%" exit /b 2
-for %%V in (NoWorkingDirectory IsolatedCommand) do (
-    reg delete "HKCR\*\shell\runas" /v "%%V" /f >nul 2>&1
-    reg delete "HKCR\Directory\shell\runas" /v "%%V" /f >nul 2>&1
-)
 set "RUNAS_RESTORE_RC=0"
 if exist "%WINOPT_RUNAS_BACKUP%" (
     reg import "%WINOPT_RUNAS_BACKUP%" >nul 2>&1
@@ -4865,9 +4864,16 @@ if exist "%WINOPT_DIR_RUNAS_BACKUP%" (
     reg import "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
     if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
 )
+if "!RUNAS_RESTORE_RC!"=="1" exit /b 1
+REM  Import reussi. "reg import" n'ajoute que, il ne sait pas supprimer : les
+REM  valeurs que le script a ajoutees et que la capture ne contient pas restent
+REM  en place. Elles ne sont retirees qu'APRES un import reussi.
+for %%V in (NoWorkingDirectory IsolatedCommand) do (
+    reg delete "HKCR\*\shell\runas" /v "%%V" /f >nul 2>&1
+    reg delete "HKCR\Directory\shell\runas" /v "%%V" /f >nul 2>&1
+)
 del /f /q "%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
-exit /b !RUNAS_RESTORE_RC!
-
+exit /b 0
 
 :CAPTURE_SECURITY_BASELINE
 if exist "%WINOPT_SECURITY_BACKUP%" if exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 0
@@ -4882,13 +4888,6 @@ if not exist "%WINOPT_SECURITY_BACKUP%" exit /b 1
 if not exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 1
 reg import "%WINOPT_SECURITY_BACKUP%" >nul 2>&1
 if !errorlevel! NEQ 0 exit /b 1
-REM Les valeurs posees par le script et absentes de la capture sont retirees :
-REM "reg import" ne fait qu'ajouter, il ne sait pas supprimer. Sans ce nettoyage,
-REM la restauration laisserait deriver les noms de valeurs du script.
-for %%V in (NoWorkingDirectory IsolatedCommand) do (
-    reg delete "HKCR\*\shell\runas" /v "%%V" /f >nul 2>&1
-    reg delete "HKCR\Directory\shell\runas" /v "%%V" /f >nul 2>&1
-)
 set "WINOPT_BCD_VALUE="
 for /f "usebackq delims=" %%A in ("%WINOPT_SECURITY_BCD_BACKUP%") do set "WINOPT_BCD_VALUE=%%A"
 if not defined WINOPT_BCD_VALUE exit /b 1
