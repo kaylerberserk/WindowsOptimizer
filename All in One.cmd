@@ -3967,7 +3967,7 @@ if "%ONEDRIVE_KFM_PROTECTED%"=="1" (
     echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Bureau, Documents ou Images sont ranges DANS le dossier OneDrive.%COLOR_RESET%
     echo %COLOR_WHITE%   Ce dossier n'est donc PAS supprime : vos fichiers y sont encore.%COLOR_RESET%
     echo %COLOR_WHITE%   Desactivez d'abord 'Sauvegarde des dossiers Bureau, Documents et Images'%COLOR_RESET%
-    echo %COLOR_WHITE%   (Parametres ^> Comptes ^> Sauvegarde et synchronisation), puis relancez.%COLOR_RESET%
+    echo %COLOR_WHITE%   Parametres ^> Comptes ^> Sauvegarde et synchronisation, puis relancez.%COLOR_RESET%
 ) else if exist "%USERPROFILE%\OneDrive" (
     call :TAKEOWN_RECURSIF "%USERPROFILE%\OneDrive"
     rd "%USERPROFILE%\OneDrive" /s /q >nul 2>&1
