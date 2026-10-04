@@ -208,7 +208,7 @@ call :DETECT_HARDWARE
 :: Etape 5 : Finalisation
 set /a "LOAD_STEP+=1"
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Preparation de l'interface"
-timeout /t 1 /nobreak >nul
+ping -n 2 127.0.0.1 >nul
 set "LOAD_STEP="
 set "LOAD_TOTAL="
 
@@ -279,8 +279,11 @@ if not "%~1"=="1" (
     set "DETECTE_PORTABLE=0"
 )
 :: Detection materiel en une seule commande pour eviter les scripts temporaires fragiles en CMD.
+REM  Le fichier est ecrit dans la page de codes de la console : cmd le relit ainsi.
+REM  En UTF-8, "Carte video de base" ou une edition accentuee s'affichaient en
+REM  caracteres casses. L'apostrophe typographique n'existe pas en OEM : remplacee.
 set "WINOPT_HW_FILE=%TEMP%\hw_info_%RANDOM%_%RANDOM%.tmp"
-powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem; $c=Get-CimInstance Win32_Processor; $v=Get-CimInstance Win32_VideoController; $m=Get-CimInstance Win32_PhysicalMemory; if(-not $m){$m=Get-CimInstance Win32_ComputerSystem}; $b=0; $lc=8,9,10,11,14,30,31,32; $enc=Get-CimInstance Win32_SystemEnclosure -EA SilentlyContinue; if($enc -and $enc.ChassisTypes){foreach($t in $enc.ChassisTypes){if($lc -contains $t){$b=1;break}}}; if(-not $b -and (Get-CimInstance Win32_Battery -EA SilentlyContinue)){$b=1}; $res=@(); $cap=$o.Caption; if(-not $cap){$pn=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName; if($pn){$cap=$pn}else{$cap='Windows'}}; $res+='OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Name.Trim()}; if($v){$gn=@($v|Where-Object{$_.Name -and $_.Name -notmatch 'Parsec|Virtual Display|Microsoft Basic|Remote|Indirect|Mirror'}|ForEach-Object{$_.Name.Trim()}|Select-Object -Unique); if(-not $gn.Count){$gn=@($v|ForEach-Object{$_.Name.Trim()})}; $res+='GPU:'+($gn -join ' / ')}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}elseif($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}; $res+='LAPTOP:'+$b; [System.IO.File]::WriteAllLines($env:WINOPT_HW_FILE, $res)" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem; $c=Get-CimInstance Win32_Processor; $v=Get-CimInstance Win32_VideoController; $m=Get-CimInstance Win32_PhysicalMemory; if(-not $m){$m=Get-CimInstance Win32_ComputerSystem}; $b=0; $lc=8,9,10,11,14,30,31,32; $enc=Get-CimInstance Win32_SystemEnclosure -EA SilentlyContinue; if($enc -and $enc.ChassisTypes){foreach($t in $enc.ChassisTypes){if($lc -contains $t){$b=1;break}}}; if(-not $b -and (Get-CimInstance Win32_Battery -EA SilentlyContinue)){$b=1}; $res=@(); $cap=$o.Caption; if(-not $cap){$pn=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName; if($pn){$cap=$pn}else{$cap='Windows'}}; $res+='OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Name.Trim()}; if($v){$gn=@($v|Where-Object{$_.Name -and $_.Name -notmatch 'Parsec|Virtual Display|Microsoft Basic|Remote|Indirect|Mirror'}|ForEach-Object{$_.Name.Trim()}|Select-Object -Unique); if(-not $gn.Count){$gn=@($v|ForEach-Object{$_.Name.Trim()})}; $res+='GPU:'+($gn -join ' / ')}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}elseif($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}; $res+='LAPTOP:'+$b; $res=@($res|ForEach-Object{$_ -replace [string][char]0x2019,[string][char]39}); [System.IO.File]::WriteAllLines($env:WINOPT_HW_FILE, $res, [Console]::OutputEncoding)" >nul 2>&1
 if !errorlevel! NEQ 0 (
     echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Detection du materiel impossible.%COLOR_RESET%
     echo %COLOR_WHITE%Les valeurs par defaut seront utilisees.%COLOR_RESET%
@@ -476,7 +479,7 @@ if !errorlevel! EQU 0 (
     cls
     echo.
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Redemarrage programme dans 10 secondes...%COLOR_RESET%
-    timeout /t 5 /nobreak >nul
+    ping -n 6 127.0.0.1 >nul
     exit /b 0
 )
 echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Impossible de programmer le redemarrage.%COLOR_RESET%
@@ -1018,7 +1021,7 @@ if !errorlevel! EQU 1 (
     if !errorlevel! EQU 0 (
         echo.
         echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Redemarrage dans 3 secondes...%COLOR_RESET%
-        timeout /t 2 /nobreak >nul
+        ping -n 3 127.0.0.1 >nul
     ) else (
         echo.
         echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Echec de la demande de redemarrage. Veuillez redemarrer manuellement.%COLOR_RESET%
@@ -1058,10 +1061,9 @@ if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEng.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 1 /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 38 /f >nul 2>&1
 ) else (
-    REM Win32PrioritySeparation : 0x26 = 38 (quantums courts variables + separation
-    REM maximale) est la valeur des versions Windows clientes recentes ; 0x02 = 2 est
-    REM l'ancien libelle "defaut client" de la documentation Windows.
-    REM Valeur conservee telle quelle : choix de l'outil, a valider si besoin.
+    REM Win32PrioritySeparation : 2 est la valeur stock, mesuree sur une installation
+    REM neuve de Windows 11 (build 26300). Gaming ecrit 0x26 = 38 : quantums courts
+    REM variables et separation maximale.
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl" /v "Win32PrioritySeparation" /t REG_DWORD /d 2 /f >nul 2>&1
     for %%V in (CpuPriorityClass IoPriority) do reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v "%%V" /f >nul 2>&1
     reg delete "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\MsMpEng.exe\PerfOptions" /v CpuPriorityClass /f >nul 2>&1
@@ -1562,7 +1564,10 @@ if "!PROFIL_USAGE!"=="0" (
 ) else (
     REM Windows stock 25H2 : EnablePrefetcher=3 et autres valeurs absentes.
     reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" /v EnableBoottrace /f >nul 2>&1
-    reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" /v SfTracingState /f >nul 2>&1
+    REM SfTracingState vaut 1 sur une installation neuve (mesure build 26300) : le
+    REM supprimer n'etait pas un retour au stock. Windows le remet d'ailleurs a 1 au
+    REM redemarrage apres l'ecriture Gaming.
+    reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" /v SfTracingState /t REG_DWORD /d 1 /f >nul 2>&1
     reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" /v EnableSuperfetch /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" /v EnablePrefetcher /t REG_DWORD /d 3 /f >nul 2>&1
 )
@@ -2266,7 +2271,8 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des reglages souris et clavier du profil Normal...%COLOR_RESET%
     reg delete "HKLM\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" /v "MouseDataQueueSize" /f >nul 2>&1
     reg delete "HKLM\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" /v "MouseTransmitTimeout" /f >nul 2>&1
-    reg delete "HKLM\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" /v "KeyboardDataQueueSize" /f >nul 2>&1
+    REM Stock mesure (build 26300) : KeyboardDataQueueSize = 100 ; MouseDataQueueSize absent.
+    reg add "HKLM\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters" /v "KeyboardDataQueueSize" /t REG_DWORD /d 100 /f >nul 2>&1
     reg delete "HKLM\SYSTEM\CurrentControlSet\Services\mouclass\Parameters" /v "ThreadPriority" /f >nul 2>&1
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages souris et clavier demandes aux valeurs Windows.%COLOR_RESET%
 )
@@ -2561,7 +2567,7 @@ if exist "%STR_EXE%" (
     set "STR_START_RC=!errorlevel!"
     if "!STR_START_RC!"=="0" (
         echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Lancement de SetTimerResolution demande avec une resolution de 5070.%COLOR_RESET%
-        timeout /t 1 /nobreak >nul
+        ping -n 2 127.0.0.1 >nul
         powershell -NoProfile -Command "if (@(Get-Process -Name SetTimerResolution -ErrorAction SilentlyContinue).Count -gt 0) { exit 0 } else { exit 1 }" >nul 2>&1
         if !errorlevel! NEQ 0 (
             set "STR_TIMER_ERROR=1"
@@ -3583,7 +3589,7 @@ call :CORE_DESACTIVER_WIDGETS
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 call :CORE_DESACTIVER_RECALL
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
-call :STEP_RESULT "Restrictions Copilot, Widgets et Recall appliquees" "" "Restrictions Copilot, Widgets et Recall partiellement appliquees" "Une stratigie ou un composant indisponible peut avoir refuse une partie des reglages."
+call :STEP_RESULT "Restrictions Copilot, Widgets et Recall appliquees" "" "Restrictions Copilot, Widgets et Recall partiellement appliquees" "Une strategie ou un composant indisponible peut avoir refuse une partie des reglages."
 exit /b !STEP_ERRORS!
 
 :MENU_IA_OPTION_6_GATE
@@ -4138,7 +4144,7 @@ REM Explorer tient le cache d'icones ouvert : le supprimer sans l'arreter echoue
 REM silencieusement sur les .db locks. Arret / suppression / redemarrage, comme
 REM au nettoyage avance (ce script utilise deja ce motif pour les polices).
 taskkill /f /im explorer.exe >nul 2>&1
-timeout /t 2 /nobreak >nul
+ping -n 3 127.0.0.1 >nul
 del "%LOCALAPPDATA%\IconCache.db" /f /q >nul 2>&1
 del "%LOCALAPPDATA%\Microsoft\Windows\Explorer\iconcache*.db" /f /q >nul 2>&1
 if defined ProgramFiles(x86) reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\MuiCache" /v "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe.FriendlyAppName" /f >nul 2>&1
@@ -4217,7 +4223,7 @@ if !errorlevel! EQU 0 (
 ) else (
     echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Restauration systeme non confirmee ; creation du point continue.%COLOR_RESET%
 )
-timeout /t 2 /nobreak >nul
+ping -n 3 127.0.0.1 >nul
 echo.
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Creation d'un point de restauration en cours...%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%La creation peut prendre jusqu'a 60 secondes.%COLOR_RESET%
@@ -4311,7 +4317,7 @@ for %%S in (wuauserv bits cryptsvc dosvc) do (
     if !errorlevel! EQU 0 set "CLEAN_WAS_RUNNING_%%S=1"
     net stop %%S >nul 2>&1
 )
-timeout /t 2 /nobreak >nul
+ping -n 3 127.0.0.1 >nul
 rd /s /q "%SystemRoot%\SoftwareDistribution\Download" >nul 2>&1
 md "%SystemRoot%\SoftwareDistribution\Download" >nul 2>&1
 REM  DataStore et ReportingEvents.log contiennent l'historique Windows Update : Ne pas les effacer.
@@ -4344,7 +4350,7 @@ set "CLEAN_FONTCACHE_WAS_RUNNING=0"
 powershell -NoProfile -Command "try{if((Get-Service FontCache -ErrorAction Stop).Status -eq 'Running'){exit 0};exit 1}catch{exit 2}" >nul 2>&1
 if !errorlevel! EQU 0 set "CLEAN_FONTCACHE_WAS_RUNNING=1"
 net stop FontCache >nul 2>&1
-timeout /t 1 /nobreak >nul
+ping -n 2 127.0.0.1 >nul
 del /s /q /f "%SystemRoot%\ServiceProfiles\LocalService\AppData\Local\FontCache\*.*" >nul 2>&1
 del /q /f "%SystemRoot%\System32\FNTCACHE.DAT" >nul 2>&1
 if "!CLEAN_FONTCACHE_WAS_RUNNING!"=="1" net start FontCache >nul 2>&1
@@ -4437,7 +4443,7 @@ set "CLEAN_EXPLORER_WAS_RUNNING=0"
 tasklist /fi "imagename eq explorer.exe" 2>nul | find /i "explorer.exe" >nul
 if !errorlevel! EQU 0 set "CLEAN_EXPLORER_WAS_RUNNING=1"
 if "!CLEAN_EXPLORER_WAS_RUNNING!"=="1" taskkill /f /im explorer.exe >nul 2>&1
-if "!CLEAN_EXPLORER_WAS_RUNNING!"=="1" timeout /t 1 /nobreak >nul
+if "!CLEAN_EXPLORER_WAS_RUNNING!"=="1" ping -n 2 127.0.0.1 >nul
 del /q /f "%LOCALAPPDATA%\Microsoft\Windows\Explorer\iconcache_*" >nul 2>&1
 del /q /f "%LOCALAPPDATA%\Microsoft\Windows\Explorer\thumbcache_*" >nul 2>&1
 if "!CLEAN_EXPLORER_WAS_RUNNING!"=="1" start explorer.exe >nul 2>&1
@@ -4492,7 +4498,7 @@ set "CLEAN_WSEARCH_WAS_RUNNING=0"
 powershell -NoProfile -Command "try{if((Get-Service WSearch -ErrorAction Stop).Status -eq 'Running'){exit 0};exit 1}catch{exit 2}" >nul 2>&1
 if !errorlevel! EQU 0 set "CLEAN_WSEARCH_WAS_RUNNING=1"
 net stop WSearch >nul 2>&1
-timeout /t 1 /nobreak >nul
+ping -n 2 127.0.0.1 >nul
 if exist "%ProgramData%\Microsoft\Search\Data\Applications\Windows\*.log" del /s /q /f "%ProgramData%\Microsoft\Search\Data\Applications\Windows\*.log" >nul 2>&1
 if "!CLEAN_WSEARCH_WAS_RUNNING!"=="1" net start WSearch >nul 2>&1
 set "CLEAN_WSEARCH_WAS_RUNNING="
@@ -4576,7 +4582,7 @@ if "%VCINSTALLED_COUNT%"=="2" (
     set "VC2015X86="
     set "VC2015X64="
     set "VCINSTALLED_COUNT="
-    if "!SKIP_PAUSE!"=="0" timeout /t 2 /nobreak >nul
+    if "!SKIP_PAUSE!"=="0" ping -n 3 127.0.0.1 >nul
     goto :INSTALLER_DIRECTX_SECTION
 )
 
@@ -4625,7 +4631,7 @@ if "%VCINSTALL%"=="2" (
     set "VC_SECTION_RESULT=1"
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Verification reelle : %COLOR_RED%%VCINSTALL%/2%COLOR_RESET% %COLOR_WHITE%versions presentes.%COLOR_RESET%
 )
-if "!SKIP_PAUSE!"=="0" timeout /t 3 /nobreak >nul
+if "!SKIP_PAUSE!"=="0" ping -n 4 127.0.0.1 >nul
 
 REM  Nettoyage des fichiers temporaires
 if exist "%VCREDIST_DIR%" rd /s /q "%VCREDIST_DIR%" >nul 2>&1
@@ -4920,12 +4926,17 @@ if !errorlevel! NEQ 0 exit /b 1
 set "WINOPT_BCD_VALUE="
 for /f "usebackq delims=" %%A in ("%WINOPT_SECURITY_BCD_BACKUP%") do set "WINOPT_BCD_VALUE=%%A"
 if not defined WINOPT_BCD_VALUE exit /b 1
+REM  bcdedit /deletevalue renvoie 1 quand la valeur est deja absente, ce qui est
+REM  le cas courant : les profils Gaming et Performance max la suppriment aussi.
+REM  Le succes se lit donc sur l'etat final, pas sur le code retour.
 if /i "!WINOPT_BCD_VALUE!"=="__ABSENT__" (
     bcdedit /deletevalue {current} hypervisorlaunchtype >nul 2>&1
+    bcdedit /enum {current} 2>nul | findstr /i "hypervisorlaunchtype" >nul
+    if !errorlevel! EQU 0 exit /b 1
 ) else (
     bcdedit /set {current} hypervisorlaunchtype !WINOPT_BCD_VALUE! >nul 2>&1
+    if !errorlevel! NEQ 0 exit /b 1
 )
-if !errorlevel! NEQ 0 exit /b 1
 del /f /q "%WINOPT_SECURITY_BACKUP%" "%WINOPT_SECURITY_BCD_BACKUP%" >nul 2>&1
 set "WINOPT_BCD_VALUE="
 exit /b 0
