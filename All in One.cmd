@@ -573,6 +573,15 @@ exit /b !errorlevel!
 :: Lecture d'une entree menu via choice.exe (silencieux : pas d'ecran de la liste).
 :AZCHOICE
 choice /c %~1 /n
+REM  choice.exe renvoie 255 quand il ne peut pas lire le clavier (entree fermee
+REM  ou redirigee et epuisee). Tout menu qui reboucle sur un choix non reconnu
+REM  tournerait alors sans fin : mesure en VM, 4 Mo de journal en quelques
+REM  minutes sur le menu Energie. L'arret se fait ici, une fois pour tous.
+if errorlevel 250 (
+    echo.
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Saisie clavier indisponible : arret du script.%COLOR_RESET%
+    exit 255
+)
 exit /b !errorlevel!
 
 :MENU_PRINCIPAL
