@@ -2442,12 +2442,15 @@ call :SET_POWERCFG_ACDC 7516b95f-f776-4464-8c53-06167f40cc99 3c0bc021-c8a8-4e07-
 
 call :SET_POWERCFG_ACDC 9596fb26-9850-41fd-ac3e-f7c3c00afd4b 10778347-1370-4ee0-8bbd-33bdacaade49 1
 call :SET_POWERCFG_ACDC 9596fb26-9850-41fd-ac3e-f7c3c00afd4b 34c7b99f-9a6d-4b3c-8dc7-b6693b78cef4 0
-call :SET_POWERCFG_ACDC 44f3beca-a7c0-460e-9df2-bb8b99e0cba6 3619c3f2-afb2-4afc-b0e9-e7fef372de36 2
-call :SET_POWERCFG_ACDC c763b4ec-0e50-4b6b-9bed-2b92a6ee884e 7ec1751b-60ed-4588-afb5-9819d3d77d90 3
-call :SET_POWERCFG_ACDC f693fb01-e858-4f00-b20f-f30e12ac06d6 191f65b5-d45c-4a4f-8aae-1ab8bfd980e6 1
-call :SET_POWERCFG_ACDC e276e160-7cb0-43c6-b20b-73f5dce39954 a1662ab2-9d34-4e53-ba8b-2639b9e20857 3
+REM  Reglages propres aux pilotes graphiques Intel, AMD, ATI et aux portables a
+REM  deux GPU : chacun n'existe que si son pilote est installe. Leur absence
+REM  n'est pas une erreur, donc ils ne comptent pas dans STEP_ERRORS.
+for %%S in ("44f3beca-a7c0-460e-9df2-bb8b99e0cba6 3619c3f2-afb2-4afc-b0e9-e7fef372de36 2" "c763b4ec-0e50-4b6b-9bed-2b92a6ee884e 7ec1751b-60ed-4588-afb5-9819d3d77d90 3" "f693fb01-e858-4f00-b20f-f30e12ac06d6 191f65b5-d45c-4a4f-8aae-1ab8bfd980e6 1" "e276e160-7cb0-43c6-b20b-73f5dce39954 a1662ab2-9d34-4e53-ba8b-2639b9e20857 3") do (
+    powercfg /setacvalueindex SCHEME_CURRENT %%~S >nul 2>&1
+    powercfg /setdcvalueindex SCHEME_CURRENT %%~S >nul 2>&1
+)
 
-call :STEP_RESULT "Parametres avances du plan d'alimentation appliques" "" "Parametres avances du plan d'alimentation partiellement appliques" "Windows a refuse certains reglages de ce materiel ; les autres restent actifs."
+call :STEP_RESULT "Parametres avances du plan d'alimentation appliques" "" "Parametres avances du plan d'alimentation partiellement appliques" "" "Windows a refuse certains reglages de ce materiel ; les autres restent actifs."
 
 REM  7.4 - Optimisations CPU (Intel Hybrid + AMD Core Parking)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Le processeur reste pret a repondre rapidement...%COLOR_RESET%
@@ -3589,7 +3592,7 @@ call :CORE_DESACTIVER_WIDGETS
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 call :CORE_DESACTIVER_RECALL
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
-call :STEP_RESULT "Restrictions Copilot, Widgets et Recall appliquees" "" "Restrictions Copilot, Widgets et Recall partiellement appliquees" "Une strategie ou un composant indisponible peut avoir refuse une partie des reglages."
+call :STEP_RESULT "Restrictions Copilot, Widgets et Recall appliquees" "" "Restrictions Copilot, Widgets et Recall partiellement appliquees" "" "Une strategie ou un composant indisponible peut avoir refuse une partie des reglages."
 exit /b !STEP_ERRORS!
 
 :MENU_IA_OPTION_6_GATE
@@ -4980,6 +4983,9 @@ exit /b !MEMORY_POWER_ERROR!
 :: %~3 = libelle d'echec, %~4 = texte de precision. Consomme puis remet STEP_ERRORS a zero.
 :: Routage par goto : 'set "X=Y"' sur une ligne de if/else est ambigu pour cmd.exe.
 :STEP_RESULT
+REM  Arguments : 1 = message de succes, 2 = etiquette d'echec (AVERTISSEMENT par
+REM  defaut), 3 = message d'echec, 4 = precision affichee apres un succes,
+REM  5 = precision affichee apres un echec.
 if not "%~2"=="" goto :STEP_RESULT_TAG
 set "STEP_TAG=AVERTISSEMENT"
 goto :STEP_RESULT_TEST
@@ -4989,6 +4995,7 @@ set "STEP_TAG=%~2"
 if "!STEP_ERRORS!"=="0" goto :STEP_RESULT_OK
 if "%~3"=="" goto :STEP_RESULT_WARN
 echo %COLOR_YELLOW%[!STEP_TAG!]%COLOR_RESET% %COLOR_WHITE%%~3.%COLOR_RESET%
+if not "%~5"=="" echo %COLOR_WHITE%%~5%COLOR_RESET%
 goto :STEP_RESULT_END
 :STEP_RESULT_WARN
 echo %COLOR_YELLOW%[!STEP_TAG!]%COLOR_RESET% %COLOR_WHITE%%~1%COLOR_RESET%
@@ -5375,9 +5382,11 @@ exit /b 0
 REM  %~1 = classe PnP (Display, Net ou USB) ; %~2 = PROFIL_USAGE (0=Gaming, 1=Normal).
 REM  Gaming capture l'etat exact de chaque peripherique avant sa premiere modification,
 REM  y compris ceux ajoutes entre deux executions, puis demande MSI=1.
+REM  La restauration passe par New-ItemProperty : Get-Item rend une cle en lecture
+REM  seule, et SetValue y echouait a chaque fois (mesure en VM, build 26300).
 REM  Normal restaure valeur, type et absence par peripherique. Sans sauvegarde, il ne
 REM  supprime rien : plusieurs pilotes de cette installation stock portent deja MSI=1.
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';$class='%~1';$gaming=('%~2'-eq'0');$dir=Join-Path $env:ProgramData 'WindowsOptimizer';$file=Join-Path $dir ('msi_'+$class+'_baseline.clixml');$devices=@(Get-PnpDevice -Class $class -ErrorAction Stop);if($gaming){New-Item -ItemType Directory -Path $dir -Force|Out-Null;$items=if(Test-Path -LiteralPath $file){@(Import-Clixml -LiteralPath $file)}else{@()};$known=@{};foreach($item in $items){$known[[string]$item.Path]=$true};foreach($d in $devices){$p='HKLM:\SYSTEM\CurrentControlSet\Enum\'+$d.InstanceId+'\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties';if(-not(Test-Path -LiteralPath $p)-or$known.ContainsKey($p)){continue};$k=Get-Item -LiteralPath $p;$present=$k.GetValueNames()-contains'MSISupported';$items+=[pscustomobject]@{Path=$p;Present=$present;Kind=if($present){[string]$k.GetValueKind('MSISupported')}else{$null};Value=if($present){$k.GetValue('MSISupported',$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)}else{$null}};$known[$p]=$true};$items|Export-Clixml -LiteralPath $file -Force;foreach($d in $devices){$p='HKLM:\SYSTEM\CurrentControlSet\Enum\'+$d.InstanceId+'\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties';if(Test-Path -LiteralPath $p){New-ItemProperty -LiteralPath $p -Name MSISupported -PropertyType DWord -Value 1 -Force|Out-Null}};exit 0};if(-not(Test-Path -LiteralPath $file)){exit 0};$items=@(Import-Clixml -LiteralPath $file);foreach($item in $items){if(-not(Test-Path -LiteralPath $item.Path)){continue};if($item.Present){$k=Get-Item -LiteralPath $item.Path;$kind=[Microsoft.Win32.RegistryValueKind]$item.Kind;$k.SetValue('MSISupported',$item.Value,$kind)}else{Remove-ItemProperty -LiteralPath $item.Path -Name MSISupported -ErrorAction SilentlyContinue}};Remove-Item -LiteralPath $file -Force;exit 0" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';$class='%~1';$gaming=('%~2'-eq'0');$dir=Join-Path $env:ProgramData 'WindowsOptimizer';$file=Join-Path $dir ('msi_'+$class+'_baseline.clixml');$devices=@(Get-PnpDevice -Class $class -ErrorAction Stop);if($gaming){New-Item -ItemType Directory -Path $dir -Force|Out-Null;$items=if(Test-Path -LiteralPath $file){@(Import-Clixml -LiteralPath $file)}else{@()};$known=@{};foreach($item in $items){$known[[string]$item.Path]=$true};foreach($d in $devices){$p='HKLM:\SYSTEM\CurrentControlSet\Enum\'+$d.InstanceId+'\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties';if(-not(Test-Path -LiteralPath $p)-or$known.ContainsKey($p)){continue};$k=Get-Item -LiteralPath $p;$present=$k.GetValueNames()-contains'MSISupported';$items+=[pscustomobject]@{Path=$p;Present=$present;Kind=if($present){[string]$k.GetValueKind('MSISupported')}else{$null};Value=if($present){$k.GetValue('MSISupported',$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)}else{$null}};$known[$p]=$true};$items|Export-Clixml -LiteralPath $file -Force;foreach($d in $devices){$p='HKLM:\SYSTEM\CurrentControlSet\Enum\'+$d.InstanceId+'\Device Parameters\Interrupt Management\MessageSignaledInterruptProperties';if(Test-Path -LiteralPath $p){New-ItemProperty -LiteralPath $p -Name MSISupported -PropertyType DWord -Value 1 -Force|Out-Null}};exit 0};if(-not(Test-Path -LiteralPath $file)){exit 0};$items=@(Import-Clixml -LiteralPath $file);foreach($item in $items){if(-not(Test-Path -LiteralPath $item.Path)){continue};if($item.Present){New-ItemProperty -LiteralPath $item.Path -Name MSISupported -PropertyType ([string]$item.Kind) -Value $item.Value -Force|Out-Null}else{Remove-ItemProperty -LiteralPath $item.Path -Name MSISupported -ErrorAction SilentlyContinue}};Remove-Item -LiteralPath $file -Force;exit 0" >nul 2>&1
 exit /b !errorlevel!
 
 REM  Parametres : %~1 = PROFIL_POWER (0=MaxPerf, 1=Eco).
