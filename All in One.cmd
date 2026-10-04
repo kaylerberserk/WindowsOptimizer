@@ -2575,7 +2575,10 @@ if exist "%STR_EXE%" (
         set "STR_TIMER_ERROR=1"
         echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Raccourci de demarrage non cree.%COLOR_RESET%
     )
-    start "" /D "%STR_DIR%" "%STR_EXE%" --resolution 5070 --no-console >nul 2>&1
+    REM  Lance par "start" depuis la console, le programme ne reste pas en vie
+    REM  (mesure en VM, console reelle) et le controle qui suit affichait une
+    REM  erreur a chaque passage. Start-Process en fenetre cachee le garde actif.
+    powershell -NoProfile -Command "try{Start-Process -FilePath $env:STR_EXE -ArgumentList '--resolution','5070','--no-console' -WorkingDirectory $env:STR_DIR -WindowStyle Hidden -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
     set "STR_START_RC=!errorlevel!"
     if "!STR_START_RC!"=="0" (
         echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Lancement de SetTimerResolution demande avec une resolution de 5070.%COLOR_RESET%
