@@ -573,6 +573,15 @@ exit /b !errorlevel!
 :: Lecture d'une entree menu via choice.exe (silencieux : pas d'ecran de la liste).
 :AZCHOICE
 choice /c %~1 /n
+REM  choice.exe renvoie 255 quand il ne peut pas lire le clavier (entree fermee
+REM  ou redirigee et epuisee). Tout menu qui reboucle sur un choix non reconnu
+REM  tournerait alors sans fin : mesure en VM, 4 Mo de journal en quelques
+REM  minutes sur le menu Energie. L'arret se fait ici, une fois pour tous.
+if errorlevel 250 (
+    echo.
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Saisie clavier indisponible : arret du script.%COLOR_RESET%
+    exit 255
+)
 exit /b !errorlevel!
 
 :MENU_PRINCIPAL
@@ -1429,7 +1438,11 @@ reg add "HKCU\Software\Policies\Microsoft\Edge" /v HardwareAccelerationModeEnabl
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v UserFeedbackAllowed /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v BackgroundModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v EdgeCollectionsEnabled /t REG_DWORD /d 0 /f >nul 2>&1
-reg add "HKCU\Software\Policies\Microsoft\Edge" /v NetworkPredictionOptions /t REG_DWORD /d 0 /f >nul 2>&1
+REM  NetworkPredictionOptions n'est plus impose. La valeur 0 forcait ce qu'Edge
+REM  fait deja sans strategie - prediction activee - et retirait seulement a
+REM  l'utilisateur le droit de la couper. La strategie posee par les anciennes
+REM  versions est retiree.
+reg delete "HKCU\Software\Policies\Microsoft\Edge" /v NetworkPredictionOptions /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v NewTabPagePrerenderEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 
 REM  Google Chrome
@@ -2566,7 +2579,10 @@ if exist "%STR_EXE%" (
         set "STR_TIMER_ERROR=1"
         echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Raccourci de demarrage non cree.%COLOR_RESET%
     )
-    start "" /D "%STR_DIR%" "%STR_EXE%" --resolution 5070 --no-console >nul 2>&1
+    REM  Lance par "start" depuis la console, le programme ne reste pas en vie
+    REM  (mesure en VM, console reelle) et le controle qui suit affichait une
+    REM  erreur a chaque passage. Start-Process en fenetre cachee le garde actif.
+    powershell -NoProfile -Command "try{Start-Process -FilePath $env:STR_EXE -ArgumentList '--resolution','5070','--no-console' -WorkingDirectory $env:STR_DIR -WindowStyle Hidden -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
     set "STR_START_RC=!errorlevel!"
     if "!STR_START_RC!"=="0" (
         echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Lancement de SetTimerResolution demande avec une resolution de 5070.%COLOR_RESET%
@@ -3090,7 +3106,7 @@ echo %COLOR_WHITE%    Conserve les protections utiles aux anti-cheats modernes.%
 echo.
 echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_RED%PERFORMANCE MAX%COLOR_RESET%  %COLOR_RED%DECONSEILLE%COLOR_RESET%
 echo %COLOR_WHITE%    Reduit davantage la securite et peut bloquer des anti-cheats.%COLOR_RESET%
-call :SUBMENU_CHOICE "Gestion Windows" "Choisissez une option [1-3, M] : " 123M
+call :SUBMENU_CHOICE "principal" "Choisissez une option [1-3, M] : " 123M
 if !errorlevel! EQU 4 goto :PROTECTIONS_RETURN
 if !errorlevel! EQU 3 goto :PROTECTIONS_PERF_MAX
 if !errorlevel! EQU 2 goto :PROTECTIONS_GAMING
@@ -4162,6 +4178,16 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\EdgeUpdate" /v "Install{56EB18F8-B008-
 reg delete "HKLM\SOFTWARE\Microsoft\EdgeUpdate" /v "DoNotUpdateToEdgeWithChromium" /f >nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\MicrosoftEdge\Main" /v "PreventFirstRunPage" /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Strategie anti-reinstallation Edge appliquee si prise en charge.%COLOR_RESET%
+REM  Le paquet systeme Microsoft.MicrosoftEdge.Stable survit au desinstalleur : c'est
+REM  par lui que Windows peut ramener Edge. Une fois le navigateur retire, Windows
+REM  accepte sa suppression et l'entree provisionnee disparait avec (mesure en VM,
+REM  build 26300). Le resultat se lit sur l'etat final.
+powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue';$n='Microsoft.MicrosoftEdge.Stable';foreach($p in @(Get-AppxPackage -AllUsers -Name $n)){Remove-AppxPackage -Package $p.PackageFullName -AllUsers};foreach($p in @(Get-AppxProvisionedPackage -Online|Where-Object{$_.DisplayName-eq$n})){Remove-AppxProvisionedPackage -Online -PackageName $p.PackageName|Out-Null};if(@(Get-AppxPackage -AllUsers -Name $n).Count-gt 0-or@(Get-AppxProvisionedPackage -Online|Where-Object{$_.DisplayName-eq$n}).Count-gt 0){exit 1};exit 0" >nul 2>&1
+if !errorlevel! EQU 0 (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Paquet systeme Edge retire.%COLOR_RESET%
+) else (
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Windows garde le paquet systeme Edge ; il pourra ramener Edge.%COLOR_RESET%
+)
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification finale de la desinstallation...%COLOR_RESET%
 set "EDGE_REMOVE_OK=1"
@@ -4314,11 +4340,15 @@ REM  Le dossier Diagnosis et les racines WER sont conserves pour garder leurs AC
 REM  ETAPE 6 - Cache Windows Update et Delivery Optimization
 set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Cache Windows Update et Delivery Optimization"
-for %%S in (wuauserv bits cryptsvc dosvc) do (
+REM  cryptsvc n'est pas arrete : les deux dossiers vides ici ne lui appartiennent
+REM  pas, et "net stop cryptsvc" demande une confirmation au clavier des qu'un
+REM  service dependant tourne (applockerfltr, mesure en VM). Sortie masquee, le
+REM  nettoyage restait alors fige sans fin sur cette etape. /y interdit toute question.
+for %%S in (wuauserv bits dosvc) do (
     set "CLEAN_WAS_RUNNING_%%S=0"
     powershell -NoProfile -Command "try { if((Get-Service -Name '%%S' -ErrorAction Stop).Status -eq 'Running'){exit 0}else{exit 1} } catch { exit 2 }" >nul 2>&1
     if !errorlevel! EQU 0 set "CLEAN_WAS_RUNNING_%%S=1"
-    net stop %%S >nul 2>&1
+    net stop %%S /y >nul 2>&1
 )
 ping -n 3 127.0.0.1 >nul
 rd /s /q "%SystemRoot%\SoftwareDistribution\Download" >nul 2>&1
@@ -4328,7 +4358,7 @@ if exist "%ProgramData%\Microsoft\Windows\DeliveryOptimization\Cache" (
     rd /s /q "%ProgramData%\Microsoft\Windows\DeliveryOptimization\Cache" >nul 2>&1
     md "%ProgramData%\Microsoft\Windows\DeliveryOptimization\Cache" >nul 2>&1
 )
-for %%S in (wuauserv bits cryptsvc dosvc) do (
+for %%S in (wuauserv bits dosvc) do (
     if "!CLEAN_WAS_RUNNING_%%S!"=="1" net start %%S >nul 2>&1
     set "CLEAN_WAS_RUNNING_%%S="
 )
@@ -4352,7 +4382,7 @@ call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Cache de polices"
 set "CLEAN_FONTCACHE_WAS_RUNNING=0"
 powershell -NoProfile -Command "try{if((Get-Service FontCache -ErrorAction Stop).Status -eq 'Running'){exit 0};exit 1}catch{exit 2}" >nul 2>&1
 if !errorlevel! EQU 0 set "CLEAN_FONTCACHE_WAS_RUNNING=1"
-net stop FontCache >nul 2>&1
+net stop FontCache /y >nul 2>&1
 ping -n 2 127.0.0.1 >nul
 del /s /q /f "%SystemRoot%\ServiceProfiles\LocalService\AppData\Local\FontCache\*.*" >nul 2>&1
 del /q /f "%SystemRoot%\System32\FNTCACHE.DAT" >nul 2>&1
@@ -4500,7 +4530,7 @@ call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Optimisation indexation recherche
 set "CLEAN_WSEARCH_WAS_RUNNING=0"
 powershell -NoProfile -Command "try{if((Get-Service WSearch -ErrorAction Stop).Status -eq 'Running'){exit 0};exit 1}catch{exit 2}" >nul 2>&1
 if !errorlevel! EQU 0 set "CLEAN_WSEARCH_WAS_RUNNING=1"
-net stop WSearch >nul 2>&1
+net stop WSearch /y >nul 2>&1
 ping -n 2 127.0.0.1 >nul
 if exist "%ProgramData%\Microsoft\Search\Data\Applications\Windows\*.log" del /s /q /f "%ProgramData%\Microsoft\Search\Data\Applications\Windows\*.log" >nul 2>&1
 if "!CLEAN_WSEARCH_WAS_RUNNING!"=="1" net start WSearch >nul 2>&1
@@ -4778,11 +4808,14 @@ set "APPX_REMOVED=0"
 set "APPX_MISSING=0"
 set "APPX_FAILED=0"
 set "APPX_RESULT_OK=0"
+REM  Le resultat se lit sur l'etat final : une des deux commandes de suppression
+REM  leve une erreur alors que le paquet a bien disparu (mesure en VM : cinq
+REM  applications supprimees, cinq annoncees "incompletes").
 REM  Get-AppxPackage -Name est une correspondance exacte : un nom approximatif
 REM  ne supprime rien et compte comme "deja absente". Noms releves sur 25H2 :
 REM  Microsoft.WindowsFeedbackHub, MicrosoftCorporationII.QuickAssist et
 REM  MicrosoftCorporationII.MicrosoftFamily ; king.com.* est le nom du Store.
-powershell -NoProfile -Command "$apps=@('Microsoft.BingNews','Microsoft.MicrosoftOfficeHub','Microsoft.MicrosoftSolitaireCollection','Microsoft.SkypeApp','Microsoft.WindowsFeedbackHub','Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.OneConnect','Microsoft.WindowsMaps','Microsoft.MixedReality.Portal','Microsoft.People','MicrosoftCorporationII.MicrosoftFamily','king.com.CandyCrushSaga','king.com.CandyCrushSodaSaga','MicrosoftCorporationII.QuickAssist');$removed=0;$missing=0;$failed=0;$prov=@(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue);foreach($app in $apps){$packages=@(Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue);$provisioned=@($prov|Where-Object{$_.DisplayName-eq$app-or$_.PackageName-like($app+'_*')});if($packages.Count-eq0-and$provisioned.Count-eq0){$missing++;Write-Host \"   [IGNORE] Non installe : $app\" -ForegroundColor DarkGray;continue};Write-Host \"   [INFO] Suppression de : $app ...\" -ForegroundColor Cyan;$appFailed=$false;foreach($package in $packages){try{$package|Remove-AppxPackage -AllUsers -ErrorAction Stop}catch{$appFailed=$true}};foreach($package in $provisioned){try{Remove-AppxProvisionedPackage -Online -PackageName $package.PackageName -ErrorAction Stop|Out-Null}catch{$appFailed=$true}};if($appFailed){$failed++;Write-Host \"   [AVERTISSEMENT] Suppression incomplete : $app\" -ForegroundColor Yellow}else{$removed++}};[IO.File]::WriteAllText($env:APPX_RESULT_FILE,($removed.ToString()+'|'+$missing.ToString()+'|'+$failed.ToString()),[Text.Encoding]::ASCII);if($failed-gt0){exit 1};exit 0"
+powershell -NoProfile -Command "$apps=@('Microsoft.BingNews','Microsoft.MicrosoftOfficeHub','Microsoft.MicrosoftSolitaireCollection','Microsoft.SkypeApp','Microsoft.WindowsFeedbackHub','Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.OneConnect','Microsoft.WindowsMaps','Microsoft.MixedReality.Portal','Microsoft.People','MicrosoftCorporationII.MicrosoftFamily','king.com.CandyCrushSaga','king.com.CandyCrushSodaSaga','MicrosoftCorporationII.QuickAssist');$removed=0;$missing=0;$failed=0;$prov=@(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue);foreach($app in $apps){$packages=@(Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue);$provisioned=@($prov|Where-Object{$_.DisplayName-eq$app-or$_.PackageName-like($app+'_*')});if($packages.Count-eq0-and$provisioned.Count-eq0){$missing++;Write-Host \"   [IGNORE] Non installe : $app\" -ForegroundColor DarkGray;continue};Write-Host \"   [INFO] Suppression de : $app ...\" -ForegroundColor Cyan;$appFailed=$false;foreach($package in $packages){try{$package|Remove-AppxPackage -AllUsers -ErrorAction Stop}catch{$appFailed=$true}};foreach($package in $provisioned){try{Remove-AppxProvisionedPackage -Online -PackageName $package.PackageName -ErrorAction Stop|Out-Null}catch{$appFailed=$true}};$appFailed=(@(Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue).Count-gt 0)-or(@(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue|Where-Object{$_.DisplayName-eq$app}).Count-gt 0);if($appFailed){$failed++;Write-Host \"   [AVERTISSEMENT] Suppression incomplete : $app\" -ForegroundColor Yellow}else{$removed++}};[IO.File]::WriteAllText($env:APPX_RESULT_FILE,($removed.ToString()+'|'+$missing.ToString()+'|'+$failed.ToString()),[Text.Encoding]::ASCII);if($failed-gt0){exit 1};exit 0"
 set "APPX_RC=!errorlevel!"
 if exist "!APPX_RESULT_FILE!" for /f "usebackq tokens=1-3 delims=^|" %%A in ("!APPX_RESULT_FILE!") do (
     set "APPX_REMOVED=%%A"
@@ -4795,10 +4828,10 @@ echo.
 if "!APPX_RESULT_OK!"=="0" (
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Le bilan de suppression n'a pas pu etre etabli.%COLOR_RESET%
 ) else if "!APPX_RC!"=="0" (
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%!APPX_REMOVED! application traitee ; !APPX_MISSING! deja absente.%COLOR_RESET%
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Applications supprimees : !APPX_REMOVED! ; deja absentes : !APPX_MISSING!.%COLOR_RESET%
 ) else (
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%!APPX_FAILED! application non supprimee completement.%COLOR_RESET%
-    echo %COLOR_WHITE%!APPX_REMOVED! traitee ; !APPX_MISSING! deja absente.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Applications non supprimees completement : !APPX_FAILED!.%COLOR_RESET%
+    echo %COLOR_WHITE%Supprimees : !APPX_REMOVED! ; deja absentes : !APPX_MISSING!.%COLOR_RESET%
 )
 set "APPX_RESULT_FILE="
 set "APPX_REMOVED="
@@ -4964,7 +4997,10 @@ set "MEMORY_FTH_RC=!errorlevel!"
 if not "!MEMORY_FTH_RC!"=="0" set "MEMORY_POWER_ERROR=1"
 if not "!MEMORY_FTH_RC!"=="0" set /a "STEP_ERRORS+=1"
 set "RAM_GB=0"
-for /f %%A in ('powershell -NoProfile -Command "[math]::Round(((Get-CimInstance Win32_PhysicalMemory -ErrorAction Stop|Measure-Object Capacity -Sum).Sum)/1GB,0)" 2^>nul') do if not "%%A"=="" set "RAM_GB=%%A"
+REM  La RAM est deja mesuree au demarrage dans HW_RAM, par le meme calcul : elle
+REM  n'est relue que si cette valeur n'est pas un nombre.
+for /f "delims=0123456789" %%X in ("x!HW_RAM!") do if "%%X"=="x" if defined HW_RAM set "RAM_GB=!HW_RAM!"
+if "!RAM_GB!"=="0" for /f %%A in ('powershell -NoProfile -Command "[math]::Round(((Get-CimInstance Win32_PhysicalMemory -ErrorAction Stop|Measure-Object Capacity -Sum).Sum)/1GB,0)" 2^>nul') do if not "%%A"=="" set "RAM_GB=%%A"
 if "!RAM_GB!"=="0" set "MEMORY_POWER_ERROR=1"
 if "!PROFIL_POWER!"=="1" (
     powershell -NoProfile -Command "$ErrorActionPreference='Stop';Enable-MMAgent -MemoryCompression -ErrorAction Stop" >nul 2>&1
@@ -5398,12 +5434,15 @@ REM  ARP/NS Offload : OFF en Gaming+MaxPerf, ON en Normal et Eco. WakeOnPattern 
 REM  Toutes les modifications sont groupees avant un unique redemarrage de chaque carte.
 REM  Source unique de verite pour la section 5.7 et la convergence reseau manuelle de la section 7.
 :SET_NIC_PROFILE
+REM  La carte n'est redemarree que si sa configuration a reellement change :
+REM  l'empreinte des proprietes avancees est comparee avant et apres. Sans cela
+REM  chaque passage coupait la connexion, meme quand tout etait deja en place.
 REM Ne supprime pas de proprietes driver non gerees : elles peuvent etre stock OEM.
 REM  Realtek : conserver les overrides cibles InterruptModerationLevel=0 (Low)
 REM  et IntMitiInterval=0. Ne pas reutiliser l'ancien ITR=200 non declare par le pilote.
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';function NK($ad){$c='HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}';$id=('{0}'-f$ad.InterfaceGuid).ToUpper().Trim();if(-not$id-or$id-notmatch'^\{[0-9A-F\-]+\}$'){return $null};$k=(Get-ChildItem -Path $c -ErrorAction SilentlyContinue|Where-Object{$_.PSChildName-match'^\d{4}$'}|Where-Object{(Get-ItemPropertyValue -LiteralPath $_.PSPath -Name 'NetCfgInstanceId' -ErrorAction SilentlyContinue)-eq$id}|Select-Object -First 1).PSChildName;if(-not$k){return $null};return($c+'\'+$k)};$gaming=('%~1'-eq'0'-and'%~2'-eq'0');$adapters=@(Get-NetAdapter -Physical|Where-Object{$_.AdminStatus-eq'Up'-and$_.PnPDeviceID-match'^PCI\\VEN_10EC&'});foreach($a in $adapters){$r=NK $a;if(-not$r){continue};if($gaming){Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay' -ErrorAction SilentlyContinue;New-ItemProperty -LiteralPath $r -Name 'IntMitiInterval' -PropertyType DWord -Value 0 -Force|Out-Null;New-ItemProperty -LiteralPath $r -Name 'InterruptModerationLevel' -PropertyType String -Value '0' -Force|Out-Null}else{Remove-ItemProperty -LiteralPath $r -Name 'ITR','TxIntDelay','IntMitiInterval','InterruptModerationLevel' -ErrorAction SilentlyContinue}};exit 0" >nul 2>&1
 if !errorlevel! NEQ 0 exit /b 1
-powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue';function NK($ad){$c='HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}';$id=('{0}'-f$ad.InterfaceGuid).ToUpper().Trim();if(-not$id-or$id-notmatch'^\{[0-9A-F\-]+\}$'){return $null};$k=(Get-ChildItem -Path $c -ErrorAction SilentlyContinue|Where-Object{$_.PSChildName-match'^\d{4}$'}|Where-Object{(Get-ItemPropertyValue -LiteralPath $_.PSPath -Name 'NetCfgInstanceId' -ErrorAction SilentlyContinue)-eq$id}|Select-Object -First 1).PSChildName;if(-not$k){return $null};return($c+'\'+$k)};$eco=('%~1'-eq'1');$gaming=('%~1'-eq'0'-and'%~2'-eq'0');$script:failed=$false;$managed=@('*FlowControl','*GreenGbe','*RscIPv6','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver','TxIntDelay','MIMOPowerSaveMode','uAPSDSupport','FatChannelIntolerant','*ReceiveBuffers','*TransmitBuffers','PendingReceives','PendingTransmits','ITR','*InterruptModeration');function SetP($a,$kw,$vals,$cache){if(-not $cache.ContainsKey($kw)){return};$p=$cache[$kw];$ok=$false;foreach($v in $vals){$valid=@($p.ValidRegistryValues);if($null-ne$p.ValidRegistryValues-and $valid.Count-gt 0-and $valid-notcontains[string]$v){continue};try{Set-NetAdapterAdvancedProperty -Name $a -RegistryKeyword $kw -RegistryValue $v -AllProperties -NoRestart -ErrorAction Stop;$script:changed=$true;$ok=$true;break}catch{}};if(-not $ok){$script:failed=$true}};function SetMinP($a,$kw,$cache){$p=$cache[$kw];if(-not $p){return};$nums=@();if($null-ne$p.NumericParameterMinValue-and $p.NumericParameterMaxValue-gt 0){$nums+=[int]$p.NumericParameterMinValue};$nums+=@($p.ValidRegistryValues|Where-Object{[string]$_-match'^\d+$'}|ForEach-Object{[int]$_});if($nums.Count){$v=(($nums|Measure-Object -Minimum).Minimum).ToString();SetP $a $kw @($v) $cache}};function ResetP($a,$kw,$cache){$p=$cache[$kw];if(-not $p){return};try{if($p.DisplayName){$p|Reset-NetAdapterAdvancedProperty -NoRestart -ErrorAction Stop}else{$d=@($p.DefaultRegistryValue);if($d.Count-eq 0-or $null-eq $d[0]){return};Set-NetAdapterAdvancedProperty -Name $a -RegistryKeyword $kw -RegistryValue $d -AllProperties -NoRestart -ErrorAction Stop};$script:changed=$true}catch{$script:failed=$true}};function SetF($get,$set,$n){$f=& $get -Name $n -ErrorAction SilentlyContinue;if($null-eq$f){return};try{& $set -Name $n -NoRestart -ErrorAction Stop;$script:changed=$true}catch{$script:failed=$true}};function SetPMFlags($n,$r,$cache,$ecoMode,$gamingMode){$pm=$null;try{$pm=Get-NetAdapterPowerManagement -Name $n -ErrorAction Stop}catch{};$map=[ordered]@{'ArpOffload'='*PMARPOffload';'NSOffload'='*PMNSOffload';'WakeOnPattern'='*WakeOnPattern';'SelectiveSuspend'='*SelectiveSuspend'};foreach($item in $map.GetEnumerator()){$param=$item.Key;$kw=$item.Value;$ndi=$null;if($r){$ndi=$r+'\Ndi\Params\'+$kw};$state=$null;if($pm){$state=$pm.PSObject.Properties[$param].Value};$supported=$cache.ContainsKey($kw)-or($ndi-and(Test-Path -LiteralPath $ndi))-or($state-and([string]$state-ne'Unsupported'));if(-not $supported){continue};$desired=if($gamingMode){'Disabled'}elseif($ecoMode-and $param-eq'WakeOnPattern'){'Disabled'}else{'Enabled'};$target=if($desired-eq'Enabled'){'1'}else{'0'};$ok=$false;$args=@{Name=$n;NoRestart=$true;ErrorAction='Stop'};$args[$param]=$desired;try{Set-NetAdapterPowerManagement @args;$ok=$true;$script:changed=$true}catch{};if($ndi-and(Test-Path -LiteralPath $ndi)){$v=$null;try{$v=Get-ItemPropertyValue -LiteralPath $r -Name $kw -ErrorAction Stop}catch{};if([string]$v-ne$target){try{New-ItemProperty -LiteralPath $r -Name $kw -PropertyType String -Value $target -Force -ErrorAction Stop|Out-Null;$v=Get-ItemPropertyValue -LiteralPath $r -Name $kw -ErrorAction Stop;$ok=([string]$v-eq$target);$script:changed=$true}catch{$ok=$false}}else{$ok=$true}};if(-not $ok){$script:failed=$true}}};try{$adapters=@(Get-NetAdapter -Physical -ErrorAction Stop|Where-Object{$_.AdminStatus-eq'Up'})}catch{exit 1};foreach($adapter in $adapters){$script:changed=$false;$n=$adapter.Name;$props=@{};try{Get-NetAdapterAdvancedProperty -Name $n -AllProperties -ErrorAction Stop|ForEach-Object{if($_.RegistryKeyword){$props[$_.RegistryKeyword]=$_}}}catch{$script:failed=$true};$r=NK $adapter;if($eco){foreach($kw in $managed){ResetP $n $kw $props}}elseif(-not $gaming){foreach($kw in @('*RscIPv6','ITR','TxIntDelay','*InterruptModeration')){ResetP $n $kw $props}};if(($eco-or(-not $gaming))-and $r){Remove-ItemProperty -Path $r -Name 'ITR','TxIntDelay' -ErrorAction SilentlyContinue;$script:changed=$true};SetF 'Get-NetAdapterRss' 'Enable-NetAdapterRss' $n;if($eco-or(-not $gaming)){SetF 'Get-NetAdapterRsc' 'Enable-NetAdapterRsc' $n;SetF 'Get-NetAdapterLso' 'Enable-NetAdapterLso' $n}else{SetF 'Get-NetAdapterRsc' 'Disable-NetAdapterRsc' $n;SetF 'Get-NetAdapterLso' 'Disable-NetAdapterLso' $n};foreach($kw in @('*IPChecksumOffloadIPv4','*TCPChecksumOffloadIPv4','*TCPChecksumOffloadIPv6','*UDPChecksumOffloadIPv4','*UDPChecksumOffloadIPv6')){SetP $n $kw @('3') $props};if($eco){SetF 'Get-NetAdapterPowerManagement' 'Enable-NetAdapterPowerManagement' $n}elseif($gaming){SetF 'Get-NetAdapterPowerManagement' 'Disable-NetAdapterPowerManagement' $n;foreach($kw in @('*FlowControl','*GreenGbe','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver')){SetP $n $kw @('0') $props};SetP $n '*RscIPv6' @('0') $props;SetP $n '*InterruptModeration' @('1') $props;if($r){foreach($kw in @('ITR','TxIntDelay')){if(-not(Test-Path -LiteralPath ($r+'\Ndi\Params\'+$kw))){Remove-ItemProperty -LiteralPath $r -Name $kw -ErrorAction SilentlyContinue;$props.Remove($kw)|Out-Null;$script:changed=$true}}};foreach($kw in @('ITR','*InterruptModerationRate','InterruptModerationRate','RxIntDelay','TxIntDelay')){SetMinP $n $kw $props};if($adapter.InterfaceDescription-match'Intel|Wireless|Wi-Fi|802\.11'){SetP $n 'MIMOPowerSaveMode' @('3') $props;SetP $n 'uAPSDSupport' @('0') $props;SetP $n 'FatChannelIntolerant' @('0') $props};foreach($kw in @('*ReceiveBuffers','*TransmitBuffers')){$p=$props[$kw];if($p-and $p.NumericParameterMaxValue-gt 0){$v=[math]::Min([int]$p.NumericParameterMaxValue,2048).ToString();SetP $n $kw @($v) $props}};foreach($kw in @('PendingReceives','PendingTransmits')){$p=$props[$kw];if($p-and $p.NumericParameterMaxValue-gt 0){$v=[math]::Min([int]$p.NumericParameterMaxValue,64).ToString();SetP $n $kw @($v) $props}}}else{foreach($kw in @('*FlowControl','*GreenGbe','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver')){ResetP $n $kw $props}};SetP $n '*InterruptModeration' @('1') $props;SetPMFlags $n $r $props $eco $gaming;if($script:changed){try{Restart-NetAdapter -Name $n -Confirm:$false -ErrorAction Stop}catch{$script:failed=$true}}};if($script:failed){exit 1};exit 0" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue';function NK($ad){$c='HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002bE10318}';$id=('{0}'-f$ad.InterfaceGuid).ToUpper().Trim();if(-not$id-or$id-notmatch'^\{[0-9A-F\-]+\}$'){return $null};$k=(Get-ChildItem -Path $c -ErrorAction SilentlyContinue|Where-Object{$_.PSChildName-match'^\d{4}$'}|Where-Object{(Get-ItemPropertyValue -LiteralPath $_.PSPath -Name 'NetCfgInstanceId' -ErrorAction SilentlyContinue)-eq$id}|Select-Object -First 1).PSChildName;if(-not$k){return $null};return($c+'\'+$k)};$eco=('%~1'-eq'1');$gaming=('%~1'-eq'0'-and'%~2'-eq'0');$script:failed=$false;function FP($a){(@(Get-NetAdapterAdvancedProperty -Name $a -AllProperties -ErrorAction SilentlyContinue|Sort-Object RegistryKeyword|ForEach-Object{$_.RegistryKeyword+'='+(@($_.RegistryValue)-join',')})-join';')};$managed=@('*FlowControl','*GreenGbe','*RscIPv6','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver','TxIntDelay','MIMOPowerSaveMode','uAPSDSupport','FatChannelIntolerant','*ReceiveBuffers','*TransmitBuffers','PendingReceives','PendingTransmits','ITR','*InterruptModeration');function SetP($a,$kw,$vals,$cache){if(-not $cache.ContainsKey($kw)){return};$p=$cache[$kw];$ok=$false;foreach($v in $vals){$valid=@($p.ValidRegistryValues);if($null-ne$p.ValidRegistryValues-and $valid.Count-gt 0-and $valid-notcontains[string]$v){continue};try{Set-NetAdapterAdvancedProperty -Name $a -RegistryKeyword $kw -RegistryValue $v -AllProperties -NoRestart -ErrorAction Stop;$script:changed=$true;$ok=$true;break}catch{}};if(-not $ok){$script:failed=$true}};function SetMinP($a,$kw,$cache){$p=$cache[$kw];if(-not $p){return};$nums=@();if($null-ne$p.NumericParameterMinValue-and $p.NumericParameterMaxValue-gt 0){$nums+=[int]$p.NumericParameterMinValue};$nums+=@($p.ValidRegistryValues|Where-Object{[string]$_-match'^\d+$'}|ForEach-Object{[int]$_});if($nums.Count){$v=(($nums|Measure-Object -Minimum).Minimum).ToString();SetP $a $kw @($v) $cache}};function ResetP($a,$kw,$cache){$p=$cache[$kw];if(-not $p){return};try{if($p.DisplayName){$p|Reset-NetAdapterAdvancedProperty -NoRestart -ErrorAction Stop}else{$d=@($p.DefaultRegistryValue);if($d.Count-eq 0-or $null-eq $d[0]){return};Set-NetAdapterAdvancedProperty -Name $a -RegistryKeyword $kw -RegistryValue $d -AllProperties -NoRestart -ErrorAction Stop};$script:changed=$true}catch{$script:failed=$true}};function SetF($get,$set,$n){$f=& $get -Name $n -ErrorAction SilentlyContinue;if($null-eq$f){return};try{& $set -Name $n -NoRestart -ErrorAction Stop;$script:changed=$true}catch{$script:failed=$true}};function SetPMFlags($n,$r,$cache,$ecoMode,$gamingMode){$pm=$null;try{$pm=Get-NetAdapterPowerManagement -Name $n -ErrorAction Stop}catch{};$map=[ordered]@{'ArpOffload'='*PMARPOffload';'NSOffload'='*PMNSOffload';'WakeOnPattern'='*WakeOnPattern';'SelectiveSuspend'='*SelectiveSuspend'};foreach($item in $map.GetEnumerator()){$param=$item.Key;$kw=$item.Value;$ndi=$null;if($r){$ndi=$r+'\Ndi\Params\'+$kw};$state=$null;if($pm){$state=$pm.PSObject.Properties[$param].Value};$supported=$cache.ContainsKey($kw)-or($ndi-and(Test-Path -LiteralPath $ndi))-or($state-and([string]$state-ne'Unsupported'));if(-not $supported){continue};$desired=if($gamingMode){'Disabled'}elseif($ecoMode-and $param-eq'WakeOnPattern'){'Disabled'}else{'Enabled'};$target=if($desired-eq'Enabled'){'1'}else{'0'};$ok=$false;$args=@{Name=$n;NoRestart=$true;ErrorAction='Stop'};$args[$param]=$desired;try{Set-NetAdapterPowerManagement @args;$ok=$true;$script:changed=$true}catch{};if($ndi-and(Test-Path -LiteralPath $ndi)){$v=$null;try{$v=Get-ItemPropertyValue -LiteralPath $r -Name $kw -ErrorAction Stop}catch{};if([string]$v-ne$target){try{New-ItemProperty -LiteralPath $r -Name $kw -PropertyType String -Value $target -Force -ErrorAction Stop|Out-Null;$v=Get-ItemPropertyValue -LiteralPath $r -Name $kw -ErrorAction Stop;$ok=([string]$v-eq$target);$script:changed=$true}catch{$ok=$false}}else{$ok=$true}};if(-not $ok){$script:failed=$true}}};try{$adapters=@(Get-NetAdapter -Physical -ErrorAction Stop|Where-Object{$_.AdminStatus-eq'Up'})}catch{exit 1};foreach($adapter in $adapters){$script:changed=$false;$n=$adapter.Name;$fp0=FP $n;$props=@{};try{Get-NetAdapterAdvancedProperty -Name $n -AllProperties -ErrorAction Stop|ForEach-Object{if($_.RegistryKeyword){$props[$_.RegistryKeyword]=$_}}}catch{$script:failed=$true};$r=NK $adapter;if($eco){foreach($kw in $managed){ResetP $n $kw $props}}elseif(-not $gaming){foreach($kw in @('*RscIPv6','ITR','TxIntDelay','*InterruptModeration')){ResetP $n $kw $props}};if(($eco-or(-not $gaming))-and $r){Remove-ItemProperty -Path $r -Name 'ITR','TxIntDelay' -ErrorAction SilentlyContinue;$script:changed=$true};SetF 'Get-NetAdapterRss' 'Enable-NetAdapterRss' $n;if($eco-or(-not $gaming)){SetF 'Get-NetAdapterRsc' 'Enable-NetAdapterRsc' $n;SetF 'Get-NetAdapterLso' 'Enable-NetAdapterLso' $n}else{SetF 'Get-NetAdapterRsc' 'Disable-NetAdapterRsc' $n;SetF 'Get-NetAdapterLso' 'Disable-NetAdapterLso' $n};foreach($kw in @('*IPChecksumOffloadIPv4','*TCPChecksumOffloadIPv4','*TCPChecksumOffloadIPv6','*UDPChecksumOffloadIPv4','*UDPChecksumOffloadIPv6')){SetP $n $kw @('3') $props};if($eco){SetF 'Get-NetAdapterPowerManagement' 'Enable-NetAdapterPowerManagement' $n}elseif($gaming){SetF 'Get-NetAdapterPowerManagement' 'Disable-NetAdapterPowerManagement' $n;foreach($kw in @('*FlowControl','*GreenGbe','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver')){SetP $n $kw @('0') $props};SetP $n '*RscIPv6' @('0') $props;SetP $n '*InterruptModeration' @('1') $props;if($r){foreach($kw in @('ITR','TxIntDelay')){if(-not(Test-Path -LiteralPath ($r+'\Ndi\Params\'+$kw))){Remove-ItemProperty -LiteralPath $r -Name $kw -ErrorAction SilentlyContinue;$props.Remove($kw)|Out-Null;$script:changed=$true}}};foreach($kw in @('ITR','*InterruptModerationRate','InterruptModerationRate','RxIntDelay','TxIntDelay')){SetMinP $n $kw $props};if($adapter.InterfaceDescription-match'Intel|Wireless|Wi-Fi|802\.11'){SetP $n 'MIMOPowerSaveMode' @('3') $props;SetP $n 'uAPSDSupport' @('0') $props;SetP $n 'FatChannelIntolerant' @('0') $props};foreach($kw in @('*ReceiveBuffers','*TransmitBuffers')){$p=$props[$kw];if($p-and $p.NumericParameterMaxValue-gt 0){$v=[math]::Min([int]$p.NumericParameterMaxValue,2048).ToString();SetP $n $kw @($v) $props}};foreach($kw in @('PendingReceives','PendingTransmits')){$p=$props[$kw];if($p-and $p.NumericParameterMaxValue-gt 0){$v=[math]::Min([int]$p.NumericParameterMaxValue,64).ToString();SetP $n $kw @($v) $props}}}else{foreach($kw in @('*FlowControl','*GreenGbe','*PacketCoalescing','EnableExtraPowerSaving','*EEE','AdvancedEEE','EnableGreenEthernet','PowerSavingMode','GigaLite','ReduceSpeedOnPowerDown','*WakeOnMagicPacket','S5WakeOnLan','*ShutdownLinkSpeed','S3S4WolLinkSpeed','EnableDynamicPowerGating','AutoPowerSaveModeEnabled','EnableConnectedPowerGating','*NicAutoPowerSaver')){ResetP $n $kw $props}};SetP $n '*InterruptModeration' @('1') $props;SetPMFlags $n $r $props $eco $gaming;if($script:changed-and((FP $n)-ne$fp0)){try{Restart-NetAdapter -Name $n -Confirm:$false -ErrorAction Stop}catch{$script:failed=$true}}};if($script:failed){exit 1};exit 0" >nul 2>&1
 exit /b !errorlevel!
 
 :SET_NIC_PROFILE_CONVERGENCE
