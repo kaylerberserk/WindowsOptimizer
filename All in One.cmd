@@ -4326,11 +4326,15 @@ REM  Le dossier Diagnosis et les racines WER sont conserves pour garder leurs AC
 REM  ETAPE 6 - Cache Windows Update et Delivery Optimization
 set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Cache Windows Update et Delivery Optimization"
-for %%S in (wuauserv bits cryptsvc dosvc) do (
+REM  cryptsvc n'est pas arrete : les deux dossiers vides ici ne lui appartiennent
+REM  pas, et "net stop cryptsvc" demande une confirmation au clavier des qu'un
+REM  service dependant tourne (applockerfltr, mesure en VM). Sortie masquee, le
+REM  nettoyage restait alors fige sans fin sur cette etape. /y interdit toute question.
+for %%S in (wuauserv bits dosvc) do (
     set "CLEAN_WAS_RUNNING_%%S=0"
     powershell -NoProfile -Command "try { if((Get-Service -Name '%%S' -ErrorAction Stop).Status -eq 'Running'){exit 0}else{exit 1} } catch { exit 2 }" >nul 2>&1
     if !errorlevel! EQU 0 set "CLEAN_WAS_RUNNING_%%S=1"
-    net stop %%S >nul 2>&1
+    net stop %%S /y >nul 2>&1
 )
 ping -n 3 127.0.0.1 >nul
 rd /s /q "%SystemRoot%\SoftwareDistribution\Download" >nul 2>&1
@@ -4340,7 +4344,7 @@ if exist "%ProgramData%\Microsoft\Windows\DeliveryOptimization\Cache" (
     rd /s /q "%ProgramData%\Microsoft\Windows\DeliveryOptimization\Cache" >nul 2>&1
     md "%ProgramData%\Microsoft\Windows\DeliveryOptimization\Cache" >nul 2>&1
 )
-for %%S in (wuauserv bits cryptsvc dosvc) do (
+for %%S in (wuauserv bits dosvc) do (
     if "!CLEAN_WAS_RUNNING_%%S!"=="1" net start %%S >nul 2>&1
     set "CLEAN_WAS_RUNNING_%%S="
 )
@@ -4364,7 +4368,7 @@ call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Cache de polices"
 set "CLEAN_FONTCACHE_WAS_RUNNING=0"
 powershell -NoProfile -Command "try{if((Get-Service FontCache -ErrorAction Stop).Status -eq 'Running'){exit 0};exit 1}catch{exit 2}" >nul 2>&1
 if !errorlevel! EQU 0 set "CLEAN_FONTCACHE_WAS_RUNNING=1"
-net stop FontCache >nul 2>&1
+net stop FontCache /y >nul 2>&1
 ping -n 2 127.0.0.1 >nul
 del /s /q /f "%SystemRoot%\ServiceProfiles\LocalService\AppData\Local\FontCache\*.*" >nul 2>&1
 del /q /f "%SystemRoot%\System32\FNTCACHE.DAT" >nul 2>&1
@@ -4512,7 +4516,7 @@ call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Optimisation indexation recherche
 set "CLEAN_WSEARCH_WAS_RUNNING=0"
 powershell -NoProfile -Command "try{if((Get-Service WSearch -ErrorAction Stop).Status -eq 'Running'){exit 0};exit 1}catch{exit 2}" >nul 2>&1
 if !errorlevel! EQU 0 set "CLEAN_WSEARCH_WAS_RUNNING=1"
-net stop WSearch >nul 2>&1
+net stop WSearch /y >nul 2>&1
 ping -n 2 127.0.0.1 >nul
 if exist "%ProgramData%\Microsoft\Search\Data\Applications\Windows\*.log" del /s /q /f "%ProgramData%\Microsoft\Search\Data\Applications\Windows\*.log" >nul 2>&1
 if "!CLEAN_WSEARCH_WAS_RUNNING!"=="1" net start WSearch >nul 2>&1
@@ -4790,11 +4794,14 @@ set "APPX_REMOVED=0"
 set "APPX_MISSING=0"
 set "APPX_FAILED=0"
 set "APPX_RESULT_OK=0"
+REM  Le resultat se lit sur l'etat final : une des deux commandes de suppression
+REM  leve une erreur alors que le paquet a bien disparu (mesure en VM : cinq
+REM  applications supprimees, cinq annoncees "incompletes").
 REM  Get-AppxPackage -Name est une correspondance exacte : un nom approximatif
 REM  ne supprime rien et compte comme "deja absente". Noms releves sur 25H2 :
 REM  Microsoft.WindowsFeedbackHub, MicrosoftCorporationII.QuickAssist et
 REM  MicrosoftCorporationII.MicrosoftFamily ; king.com.* est le nom du Store.
-powershell -NoProfile -Command "$apps=@('Microsoft.BingNews','Microsoft.MicrosoftOfficeHub','Microsoft.MicrosoftSolitaireCollection','Microsoft.SkypeApp','Microsoft.WindowsFeedbackHub','Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.OneConnect','Microsoft.WindowsMaps','Microsoft.MixedReality.Portal','Microsoft.People','MicrosoftCorporationII.MicrosoftFamily','king.com.CandyCrushSaga','king.com.CandyCrushSodaSaga','MicrosoftCorporationII.QuickAssist');$removed=0;$missing=0;$failed=0;$prov=@(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue);foreach($app in $apps){$packages=@(Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue);$provisioned=@($prov|Where-Object{$_.DisplayName-eq$app-or$_.PackageName-like($app+'_*')});if($packages.Count-eq0-and$provisioned.Count-eq0){$missing++;Write-Host \"   [IGNORE] Non installe : $app\" -ForegroundColor DarkGray;continue};Write-Host \"   [INFO] Suppression de : $app ...\" -ForegroundColor Cyan;$appFailed=$false;foreach($package in $packages){try{$package|Remove-AppxPackage -AllUsers -ErrorAction Stop}catch{$appFailed=$true}};foreach($package in $provisioned){try{Remove-AppxProvisionedPackage -Online -PackageName $package.PackageName -ErrorAction Stop|Out-Null}catch{$appFailed=$true}};if($appFailed){$failed++;Write-Host \"   [AVERTISSEMENT] Suppression incomplete : $app\" -ForegroundColor Yellow}else{$removed++}};[IO.File]::WriteAllText($env:APPX_RESULT_FILE,($removed.ToString()+'|'+$missing.ToString()+'|'+$failed.ToString()),[Text.Encoding]::ASCII);if($failed-gt0){exit 1};exit 0"
+powershell -NoProfile -Command "$apps=@('Microsoft.BingNews','Microsoft.MicrosoftOfficeHub','Microsoft.MicrosoftSolitaireCollection','Microsoft.SkypeApp','Microsoft.WindowsFeedbackHub','Microsoft.GetHelp','Microsoft.Getstarted','Microsoft.OneConnect','Microsoft.WindowsMaps','Microsoft.MixedReality.Portal','Microsoft.People','MicrosoftCorporationII.MicrosoftFamily','king.com.CandyCrushSaga','king.com.CandyCrushSodaSaga','MicrosoftCorporationII.QuickAssist');$removed=0;$missing=0;$failed=0;$prov=@(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue);foreach($app in $apps){$packages=@(Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue);$provisioned=@($prov|Where-Object{$_.DisplayName-eq$app-or$_.PackageName-like($app+'_*')});if($packages.Count-eq0-and$provisioned.Count-eq0){$missing++;Write-Host \"   [IGNORE] Non installe : $app\" -ForegroundColor DarkGray;continue};Write-Host \"   [INFO] Suppression de : $app ...\" -ForegroundColor Cyan;$appFailed=$false;foreach($package in $packages){try{$package|Remove-AppxPackage -AllUsers -ErrorAction Stop}catch{$appFailed=$true}};foreach($package in $provisioned){try{Remove-AppxProvisionedPackage -Online -PackageName $package.PackageName -ErrorAction Stop|Out-Null}catch{$appFailed=$true}};$appFailed=(@(Get-AppxPackage -Name $app -AllUsers -ErrorAction SilentlyContinue).Count-gt 0)-or(@(Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue|Where-Object{$_.DisplayName-eq$app}).Count-gt 0);if($appFailed){$failed++;Write-Host \"   [AVERTISSEMENT] Suppression incomplete : $app\" -ForegroundColor Yellow}else{$removed++}};[IO.File]::WriteAllText($env:APPX_RESULT_FILE,($removed.ToString()+'|'+$missing.ToString()+'|'+$failed.ToString()),[Text.Encoding]::ASCII);if($failed-gt0){exit 1};exit 0"
 set "APPX_RC=!errorlevel!"
 if exist "!APPX_RESULT_FILE!" for /f "usebackq tokens=1-3 delims=^|" %%A in ("!APPX_RESULT_FILE!") do (
     set "APPX_REMOVED=%%A"
@@ -4807,10 +4814,10 @@ echo.
 if "!APPX_RESULT_OK!"=="0" (
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Le bilan de suppression n'a pas pu etre etabli.%COLOR_RESET%
 ) else if "!APPX_RC!"=="0" (
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%!APPX_REMOVED! application traitee ; !APPX_MISSING! deja absente.%COLOR_RESET%
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Applications supprimees : !APPX_REMOVED! ; deja absentes : !APPX_MISSING!.%COLOR_RESET%
 ) else (
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%!APPX_FAILED! application non supprimee completement.%COLOR_RESET%
-    echo %COLOR_WHITE%!APPX_REMOVED! traitee ; !APPX_MISSING! deja absente.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Applications non supprimees completement : !APPX_FAILED!.%COLOR_RESET%
+    echo %COLOR_WHITE%Supprimees : !APPX_REMOVED! ; deja absentes : !APPX_MISSING!.%COLOR_RESET%
 )
 set "APPX_RESULT_FILE="
 set "APPX_REMOVED="
