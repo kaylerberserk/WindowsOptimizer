@@ -3102,7 +3102,7 @@ echo %COLOR_WHITE%    Conserve les protections utiles aux anti-cheats modernes.%
 echo.
 echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_RED%PERFORMANCE MAX%COLOR_RESET%  %COLOR_RED%DECONSEILLE%COLOR_RESET%
 echo %COLOR_WHITE%    Reduit davantage la securite et peut bloquer des anti-cheats.%COLOR_RESET%
-call :SUBMENU_CHOICE "Gestion Windows" "Choisissez une option [1-3, M] : " 123M
+call :SUBMENU_CHOICE "principal" "Choisissez une option [1-3, M] : " 123M
 if !errorlevel! EQU 4 goto :PROTECTIONS_RETURN
 if !errorlevel! EQU 3 goto :PROTECTIONS_PERF_MAX
 if !errorlevel! EQU 2 goto :PROTECTIONS_GAMING
