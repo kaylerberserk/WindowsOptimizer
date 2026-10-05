@@ -165,8 +165,10 @@ set /a "LOAD_STEP=0"
 :: Etape 1 : Privileges
 set /a "LOAD_STEP+=1"
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Verification des privileges administrateur"
-:: Verification des privileges via le jeton UAC (independante du service Serveur utilise par net session)
-powershell -NoProfile -Command "if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) { exit 1 }" >nul 2>&1
+:: Verification des privileges par le niveau d'integrite du jeton : Eleve (S-1-16-12288)
+:: ou Systeme (S-1-16-16384). Independante du service Serveur utilise par net session,
+:: et sans lancer PowerShell (0,1 s au lieu de 2 s, mesure en VM).
+whoami /groups 2>nul | findstr /c:"S-1-16-12288" /c:"S-1-16-16384" >nul 2>&1
 if !errorlevel! NEQ 0 (
     echo.
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Le script n'est pas execute avec une elevation suffisante.%COLOR_RESET%
@@ -283,7 +285,7 @@ REM  Le fichier est ecrit dans la page de codes de la console : cmd le relit ain
 REM  En UTF-8, "Carte video de base" ou une edition accentuee s'affichaient en
 REM  caracteres casses. L'apostrophe typographique n'existe pas en OEM : remplacee.
 set "WINOPT_HW_FILE=%TEMP%\hw_info_%RANDOM%_%RANDOM%.tmp"
-powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem; $c=Get-CimInstance Win32_Processor; $v=Get-CimInstance Win32_VideoController; $m=Get-CimInstance Win32_PhysicalMemory; if(-not $m){$m=Get-CimInstance Win32_ComputerSystem}; $b=0; $lc=8,9,10,11,14,30,31,32; $enc=Get-CimInstance Win32_SystemEnclosure -EA SilentlyContinue; if($enc -and $enc.ChassisTypes){foreach($t in $enc.ChassisTypes){if($lc -contains $t){$b=1;break}}}; if(-not $b -and (Get-CimInstance Win32_Battery -EA SilentlyContinue)){$b=1}; $res=@(); $cap=$o.Caption; if(-not $cap){$pn=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName; if($pn){$cap=$pn}else{$cap='Windows'}}; $res+='OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Name.Trim()}; if($v){$gn=@($v|Where-Object{$_.Name -and $_.Name -notmatch 'Parsec|Virtual Display|Microsoft Basic|Remote|Indirect|Mirror'}|ForEach-Object{$_.Name.Trim()}|Select-Object -Unique); if(-not $gn.Count){$gn=@($v|ForEach-Object{$_.Name.Trim()})}; $res+='GPU:'+($gn -join ' / ')}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}elseif($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}; $res+='LAPTOP:'+$b; $res=@($res|ForEach-Object{$_ -replace [string][char]0x2019,[string][char]39}); [System.IO.File]::WriteAllLines($env:WINOPT_HW_FILE, $res, [Console]::OutputEncoding)" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem; $c=Get-CimInstance Win32_Processor; $v=Get-CimInstance Win32_VideoController; $m=Get-CimInstance Win32_PhysicalMemory; if(-not $m){$m=Get-CimInstance Win32_ComputerSystem}; $b=0; $lc=8,9,10,11,14,30,31,32; $enc=Get-CimInstance Win32_SystemEnclosure -EA SilentlyContinue; if($enc -and $enc.ChassisTypes){foreach($t in $enc.ChassisTypes){if($lc -contains $t){$b=1;break}}}; if(-not $b -and (Get-CimInstance Win32_Battery -EA SilentlyContinue)){$b=1}; $res=@(); $cap=$o.Caption; if(-not $cap){$pn=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName; if($pn){$cap=$pn}else{$cap='Windows'}}; $res+='OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Name.Trim()}; if($v){$gn=@($v|Where-Object{$_.Name -and $_.Name -notmatch 'Parsec|Virtual Display|Microsoft Basic|Remote|Indirect|Mirror'}|ForEach-Object{$_.Name.Trim()}|Select-Object -Unique); if(-not $gn.Count){$gn=@($v|ForEach-Object{$_.Name.Trim()})}; $res+='GPU:'+($gn -join ' / ')}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}elseif($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}; $res+='LAPTOP:'+$b; $nv=0; if(@($v|Where-Object{$_.Name -match 'NVIDIA' -and $_.Name -notmatch 'Virtual|Parsec|Remote|Indirect|Mirror|Microsoft Basic'}).Count -gt 0){$cs=Get-CimInstance Win32_ComputerSystem; if($cs.Model -notmatch 'Virtual|VMware|VirtualBox|KVM|QEMU|Xen|Parallels'){$nv=1}}; $res+='NVIDIA:'+$nv; $res=@($res|ForEach-Object{$_ -replace [string][char]0x2019,[string][char]39}); [System.IO.File]::WriteAllLines($env:WINOPT_HW_FILE, $res, [Console]::OutputEncoding)" >nul 2>&1
 if !errorlevel! NEQ 0 (
     echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Detection du materiel impossible.%COLOR_RESET%
     echo %COLOR_WHITE%Les valeurs par defaut seront utilisees.%COLOR_RESET%
@@ -294,6 +296,7 @@ if exist "%WINOPT_HW_FILE%" (
         if /i "%%a"=="CPU" set "HW_CPU=%%b"
         if /i "%%a"=="GPU" set "HW_GPU=%%b"
         if /i "%%a"=="RAM" set "HW_RAM=%%b"
+        if /i "%%a"=="NVIDIA" set "HAS_NVIDIA=%%b"
         if /i "%%a"=="LAPTOP" (
             if not "%~1"=="1" (
                 if "%%b"=="1" set "PROFIL_POWER=1"
@@ -304,13 +307,9 @@ if exist "%WINOPT_HW_FILE%" (
     del "%WINOPT_HW_FILE%" >nul 2>&1
 )
 set "WINOPT_HW_FILE="
-:: Detection intelligente NVIDIA : verifie que le GPU est physique (pas un GPU virtuel de VM)
-set "HAS_NVIDIA=0"
-echo !HW_GPU! | findstr /i "NVIDIA" >nul && (
-    for /f "usebackq delims=" %%V in (`powershell -NoProfile -Command "try { $v=Get-CimInstance Win32_VideoController | Where-Object { $_.Name -match 'NVIDIA' -and $_.Name -notmatch 'Virtual|Parsec|Remote|Indirect|Mirror|Microsoft Basic' }; if(-not $v){ '0'; exit }; $m=Get-CimInstance Win32_ComputerSystem; if($m.Model -match 'Virtual|VMware|VirtualBox|KVM|QEMU|Xen|Parallels'){ '0'; exit }; '1' } catch { '0' }" 2^>nul`) do set "HAS_NVIDIA=%%V"
-    if not defined HAS_NVIDIA set "HAS_NVIDIA=0"
-    if not "!HAS_NVIDIA!"=="1" set "HAS_NVIDIA=0"
-)
+:: Detection NVIDIA : GPU physique uniquement, pas un GPU virtuel de VM. Le calcul
+:: est fait dans l'appel materiel ci-dessus, ce qui evite un second PowerShell.
+if not "!HAS_NVIDIA!"=="1" set "HAS_NVIDIA=0"
 if /i "%HW_OS%"=="Windows" for /f "tokens=2 delims=[]" %%i in ('ver') do set "HW_OS=%%i"
 exit /b
 
@@ -463,6 +462,13 @@ if !errorlevel! EQU 0 (
     exit /b
 )
 :: Repli si ICMP est bloque (entreprise, pare-feu) : test HTTP leger (service Microsoft)
+:: curl.exe est present depuis Windows 10 1803 : 0,4 s contre 15 s pour PowerShell (mesure en VM).
+where curl.exe >nul 2>&1
+if !errorlevel! NEQ 0 goto :REFRESH_INTERNET_PS
+curl.exe -fs --max-time 5 http://www.msftconnecttest.com/connecttest.txt 2>nul | findstr /c:"Microsoft" >nul 2>&1
+if !errorlevel! EQU 0 set "HAS_INTERNET=1"
+exit /b
+:REFRESH_INTERNET_PS
 powershell -NoProfile -Command "try { $c=(Invoke-WebRequest -Uri 'http://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 5).Content; if ($c -match 'Microsoft') { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
 if !errorlevel! EQU 0 set "HAS_INTERNET=1"
 exit /b
@@ -2587,7 +2593,7 @@ if exist "%STR_EXE%" (
     if "!STR_START_RC!"=="0" (
         echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Lancement de SetTimerResolution demande avec une resolution de 5070.%COLOR_RESET%
         ping -n 2 127.0.0.1 >nul
-        powershell -NoProfile -Command "if (@(Get-Process -Name SetTimerResolution -ErrorAction SilentlyContinue).Count -gt 0) { exit 0 } else { exit 1 }" >nul 2>&1
+        tasklist /fi "IMAGENAME eq SetTimerResolution.exe" 2>nul | findstr /i /c:"SetTimerResolution.exe" >nul 2>&1
         if !errorlevel! NEQ 0 (
             set "STR_TIMER_ERROR=1"
             echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%SetTimerResolution ne tourne pas apres le lancement.%COLOR_RESET%
@@ -4346,7 +4352,8 @@ REM  service dependant tourne (applockerfltr, mesure en VM). Sortie masquee, le
 REM  nettoyage restait alors fige sans fin sur cette etape. /y interdit toute question.
 for %%S in (wuauserv bits dosvc) do (
     set "CLEAN_WAS_RUNNING_%%S=0"
-    powershell -NoProfile -Command "try { if((Get-Service -Name '%%S' -ErrorAction Stop).Status -eq 'Running'){exit 0}else{exit 1} } catch { exit 2 }" >nul 2>&1
+    REM  sc query affiche RUNNING dans toutes les langues ; un PowerShell par service coutait une seconde chacun.
+    sc query %%S 2>nul | findstr /c:"RUNNING" >nul 2>&1
     if !errorlevel! EQU 0 set "CLEAN_WAS_RUNNING_%%S=1"
     net stop %%S /y >nul 2>&1
 )
@@ -4380,7 +4387,7 @@ REM  ETAPE 9 - Cache de polices
 set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Cache de polices"
 set "CLEAN_FONTCACHE_WAS_RUNNING=0"
-powershell -NoProfile -Command "try{if((Get-Service FontCache -ErrorAction Stop).Status -eq 'Running'){exit 0};exit 1}catch{exit 2}" >nul 2>&1
+sc query FontCache 2>nul | findstr /c:"RUNNING" >nul 2>&1
 if !errorlevel! EQU 0 set "CLEAN_FONTCACHE_WAS_RUNNING=1"
 net stop FontCache /y >nul 2>&1
 ping -n 2 127.0.0.1 >nul
@@ -4528,7 +4535,7 @@ REM  ETAPE 23 - Optimisation indexation Windows Search (compacte uniquement)
 set /a "CLEAN_STEP+=1"
 call :PROGRESS_BAR %CLEAN_STEP% %CLEAN_TOTAL% "Optimisation indexation recherche"
 set "CLEAN_WSEARCH_WAS_RUNNING=0"
-powershell -NoProfile -Command "try{if((Get-Service WSearch -ErrorAction Stop).Status -eq 'Running'){exit 0};exit 1}catch{exit 2}" >nul 2>&1
+sc query WSearch 2>nul | findstr /c:"RUNNING" >nul 2>&1
 if !errorlevel! EQU 0 set "CLEAN_WSEARCH_WAS_RUNNING=1"
 net stop WSearch /y >nul 2>&1
 ping -n 2 127.0.0.1 >nul
