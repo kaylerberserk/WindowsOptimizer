@@ -129,7 +129,11 @@ set "HW_RAM=Detection..."
 :: GUID powercfg - utilises en hardcode pour simplifier le code
 :: 54533251-82be-4824-96c1-47b60b740d00 = SUB_PROCESSOR
 :: 381b4222-f694-41f0-9685-ff5bb260df2e = Plan d'alimentation Equilibre Windows
-:: (SUB_ENERGYSAVER de830923-a562-41af-a086-e3a2c6bad2da n'existe plus dans Windows 10/11 moderne)
+:: de830923-a562-41af-a086-e3a2c6bad2da = SUB_ENERGYSAVER : sous-groupe documente par
+::    Microsoft (energy-saver-settings), masque par defaut dans powercfg. Aucune commande
+::    ici ne le lit ni ne l'ecrit : les appels supprimes y melangeaient ee12f906 (ASPM,
+::    du sous-groupe PCI Express). L'economie d'energie se regle par EA:EnergySaverEngaged,
+::    sections 7.11 et 7.8.
 :: 0cc5b647-c1df-4637-891a-dec35c318584 = Core Parking (P-cores class 1)
 :: 0cc5b647-c1df-4637-891a-dec35c318583 = Core Parking (E-cores class 0)
 :: 93b8b6dc-0698-4d1c-9ee4-0644e900c85d = Heterogeneous thread scheduling
