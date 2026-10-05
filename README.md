@@ -137,7 +137,7 @@ Exceptions réseau :
 
 > ### 💡 Vue d'ensemble des 3 modes
 >
-> * **Gaming (Recommandé ★)** : Conserve **VBS / HVCI** et **LSA Protection** (`RunAsPPL=2`, c'est-à-dire PPL actif **sans** écriture de variable UEFI — valeur que Microsoft n'applique qu'à partir du build 22H2) pour limiter les conflits avec les anti-cheats modernes, laisse **CFG** à `NOTSET` (défaut Windows), désactive **SEHOP**, réduit les mitigations CPU et demande la désactivation de la blocklist.
+> * **Gaming (Recommandé ★)** : **Active** VBS / HVCI — y compris sur une machine où ils étaient coupés — et conserve **LSA Protection** (`RunAsPPL=2`, c'est-à-dire PPL actif **sans** écriture de variable UEFI — valeur que Microsoft n'applique qu'à partir du build 22H2) pour limiter les conflits avec les anti-cheats modernes, laisse **CFG** à `NOTSET` (défaut Windows), désactive **SEHOP**, réduit les mitigations CPU et demande la désactivation de la blocklist.
 > * **Défaut Windows** : restaure le snapshot capturé avant un profil de sécurité. Sans snapshot, il applique la base stock mesurée (FeatureSettings=0, `RunAsPPL=2`, `RunAsPPLBoot` supprimé, blocklist de pilotes=1) et retire les overrides de l'outil.
 > * **Performance Max ⚠️ (Déconseillé)** : Désactive VBS, HVCI et SEHOP, conserve CFG et **LSA Protection** (`RunAsPPL=2`, PPL actif sans écriture de variable UEFI), réduit les mitigations CPU et demande la désactivation de la blocklist.
 
@@ -197,7 +197,7 @@ R : Le gain varie selon le matériel et la charge. Il peut surtout se manifester
 R : Tous les profils suppriment les overrides BCD `useplatformclock`/`useplatformtick`/`tscsyncpolicy`. Performance Max ajoute `disabledynamictick=yes` et lance `SetTimerResolution` via un raccourci du dossier de démarrage, tandis qu'Eco supprime aussi cet override, retire le raccourci et réactive HPET s'il avait été désactivé par une ancienne version du script. Microsoft classe ces options comme des réglages de débogage : le preset reste expérimental et aucun gain universel n'est garanti. Un redémarrage est nécessaire après le changement.
 
 **Q : Pourquoi modifier les mitigations Spectre/Meltdown (Option 8) ?**
-R : Certaines protections ajoutent une charge selon le processeur et la charge de travail. Gaming conserve VBS/HVCI, laisse CFG au défaut Windows, désactive SEHOP, réduit les mitigations CPU et demande la désactivation de la blocklist. HVCI peut néanmoins maintenir cette blocklist active. Performance Max désactive VBS/HVCI/SEHOP, laisse CFG au défaut Windows, réduit les mitigations CPU et demande aussi la désactivation de la blocklist. Défaut Windows restaure le snapshot de sécurité ou applique la base stock 25H2 mesurée sans snapshot. Les trois modes suppriment la surcharge BCD `hypervisorlaunchtype` lorsqu'ils la gèrent ; les stratégies et verrous externes restent prioritaires.
+R : Certaines protections ajoutent une charge selon le processeur et la charge de travail. Gaming active VBS/HVCI (même s'ils étaient coupés), laisse CFG au défaut Windows, désactive SEHOP, réduit les mitigations CPU et demande la désactivation de la blocklist. HVCI peut néanmoins maintenir cette blocklist active. Performance Max désactive VBS/HVCI/SEHOP, laisse CFG au défaut Windows, réduit les mitigations CPU et demande aussi la désactivation de la blocklist. Défaut Windows restaure le snapshot de sécurité ou applique la base stock 25H2 mesurée sans snapshot. Les trois modes suppriment la surcharge BCD `hypervisorlaunchtype` lorsqu'ils la gèrent ; les stratégies et verrous externes restent prioritaires.
 
 **Q : Changer plusieurs fois de mode de sécurité laisse-t-il les anciens réglages actifs ?**
 R : Le premier passage Gaming ou Performance Max capture les valeurs ciblées et la valeur BCD avant modification. Défaut Windows réimporte ensuite ce snapshot de façon ciblée ; sans snapshot, il retire les overrides connus puis applique les quelques valeurs stock mesurées et explicitement gérées (`FeatureSettings=0`, `RunAsPPL=2`, `RunAsPPLBoot` supprimé, blocklist=1). Une stratégie d'entreprise peut cependant réimposer une valeur extérieure au script.
@@ -206,10 +206,10 @@ R : Le premier passage Gaming ou Performance Max capture les valeurs ciblées et
 R : Non. Performance Max désactive VBS, HVCI, SEHOP et Credential Guard local/policy, laisse CFG à `NOTSET` (dont le défaut Windows effectif est ON), demande la désactivation de la blocklist, réduit les mitigations CPU, mais conserve LSA Protection avec `RunAsPPL=2` (PPL actif sans écriture de variable UEFI) et laisse les Kernel Shadow Stacks inchangées. Smart App Control, le mode S ou une stratégie peuvent maintenir la blocklist active. La valeur BCD `hypervisorlaunchtype` est supprimée (`deletevalue`). Une ancienne configuration Credential Guard verrouillée en UEFI peut nécessiter une procédure avec confirmation physique pour retirer ce verrou.
 
 **Q : Quelle différence entre Gaming et Performance Max pour les anti-cheats ?**
-R : Gaming conserve VBS/HVCI et laisse CFG au défaut Windows afin de limiter les incompatibilités. Performance Max désactive VBS/HVCI ; sa compatibilité dépend donc du jeu, de l'anti-cheat et de leur version. Certains exigent aussi TPM, Secure Boot, la virtualisation ou IOMMU.
+R : Gaming active VBS/HVCI et laisse CFG au défaut Windows afin de limiter les incompatibilités. Performance Max désactive VBS/HVCI ; sa compatibilité dépend donc du jeu, de l'anti-cheat et de leur version. Certains exigent aussi TPM, Secure Boot, la virtualisation ou IOMMU.
 
 **Q : Est-ce compatible avec tous les jeux en ligne ?**
-R : Aucune compatibilité universelle ne peut être garantie. Le mode Gaming conserve VBS/HVCI/CFG pour limiter les conflits avec les anti-cheats modernes, mais désactive SEHOP — sans garantir les exigences futures de chaque jeu ou anti-cheat.
+R : Aucune compatibilité universelle ne peut être garantie. Le mode Gaming active VBS/HVCI et conserve CFG pour limiter les conflits avec les anti-cheats modernes, mais désactive SEHOP — sans garantir les exigences futures de chaque jeu ou anti-cheat.
 
 ### 🌐 Maintenance & Divers
 
