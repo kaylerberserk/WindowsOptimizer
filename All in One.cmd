@@ -762,7 +762,7 @@ call :AIO_QUESTION_HEADER 1 "PROTECTIONS WINDOWS"
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_WHITE% Vous avez choisi GAMING pour privilegier les jeux et la reactivite.%COLOR_RESET%
     echo %COLOR_WHITE% Le script peut adapter les protections Windows a cet usage :%COLOR_RESET%
-    echo %COLOR_WHITE% il garde celles utiles aux anti-cheats modernes et reduit%COLOR_RESET%
+    echo %COLOR_WHITE% il active VBS et HVCI, utiles aux anti-cheats modernes, et reduit%COLOR_RESET%
     echo %COLOR_WHITE% certaines protections avancees couteuses en performances.%COLOR_RESET%
     echo.
     echo %COLOR_GREEN% [RECOMMANDE]%COLOR_RESET% %COLOR_WHITE%Reglage conseille pour tous types de jeux.%COLOR_RESET%
