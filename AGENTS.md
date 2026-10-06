@@ -56,7 +56,7 @@ Mesurees le 2026-10-05 sur `bb1ff75`. Les commandes se lancent depuis la racine 
 ## Gardes
 
 - **Ne pas lancer `All in One.cmd` sur une vraie machine** pour le tester : il applique de vrais reglages systeme. Les executions completes se font dans les VM de test de hp-dev, `~/vms/win11/` et `~/vms/win10/`, jamais les deux a la fois. Outils communs dans `~/vms/winopt-lab/`, VM choisie par `VM=win10` (defaut `win11`) : `vm.sh start|stop|status`, `lab.sh reset|prep|state|snapshot`, `suite.sh <nom> "<motif=>touche | ...>" [reset] [reboot]`, `cmp.py <tagA> <tagB>`, et `check.sh` qui rejoue tous les controles ci-dessus, y compris dans la VM si elle tourne), qui revient a un instantane neuf. `-VerifyOnly` et les controles ci-dessus sont sans effet de bord.
-- Demander une confirmation explicite avant toute action difficile a reverser ou visible ailleurs : `git push`, `commit --amend` sur un commit publie, `reset --hard`, suppression de fichier, et toute operation touchant `main` ou une ressource distante. `main` est la branche de publication.
+- Demander une confirmation explicite, si l'action n'est pas deja autorisee dans le perimetre courant, avant toute action difficile a reverser ou visible ailleurs : `git push`, `commit --amend` sur un commit publie, `reset --hard`, suppression de fichier, et toute operation touchant `main` ou une ressource distante. `main` est la branche de publication.
 - Ne pas contourner un controle de securite pour aller plus vite, et ne pas ecarter un fichier inconnu : c'est peut-etre un travail en cours.
 - Ne pas changer une valeur ni un axe de l'auteur sans le lui signaler, meme quand la logique interne du script plaide pour l'autre choix.
 - Ne pas annoncer un travail termine sans tests qui l'ont ete.
