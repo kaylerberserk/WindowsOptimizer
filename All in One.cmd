@@ -1448,11 +1448,10 @@ reg add "HKCU\Software\Policies\Microsoft\Edge" /v HardwareAccelerationModeEnabl
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v UserFeedbackAllowed /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v BackgroundModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v EdgeCollectionsEnabled /t REG_DWORD /d 0 /f >nul 2>&1
-REM  NetworkPredictionOptions n'est plus impose. La valeur 0 forcait ce qu'Edge
-REM  fait deja sans strategie - prediction activee - et retirait seulement a
-REM  l'utilisateur le droit de la couper. La strategie posee par les anciennes
-REM  versions est retiree.
-reg delete "HKCU\Software\Policies\Microsoft\Edge" /v NetworkPredictionOptions /f >nul 2>&1
+REM  NetworkPredictionOptions active "Precharger les pages" dans Edge.
+REM  0 = toujours predire, 2 = jamais. Cette strategie verrouille le choix.
+REM  NewTabPagePrerenderEnabled ne concerne que le prechargement du nouvel onglet.
+reg add "HKCU\Software\Policies\Microsoft\Edge" /v NetworkPredictionOptions /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v NewTabPagePrerenderEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 
 REM  Google Chrome
