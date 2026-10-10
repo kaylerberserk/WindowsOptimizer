@@ -214,7 +214,6 @@ call :DETECT_HARDWARE
 :: Etape 5 : Finalisation
 set /a "LOAD_STEP+=1"
 call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Preparation de l'interface"
-ping -n 2 127.0.0.1 >nul
 set "LOAD_STEP="
 set "LOAD_TOTAL="
 
@@ -2631,12 +2630,13 @@ REM  ARRETE le script sur place, sans message ni recapitulatif. Mesure sur
 REM  Windows 11 25H2 : la ligne suivante et tout le reste de la section
 REM  7.13 etaient sautes. FOR_STORAGE_CLASS redirige deja vers nul en interne,
 REM  et le chemin de restauration l'appelle sans pipe. Aucun pipe ici.
-call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -PropertyType DWord -Value 0 -Force
+REM  New-ItemProperty -Name n'accepte qu'une chaine en PowerShell 5.1 : un tableau
+REM  echouait sans rien ecrire (mesure en VM). Boucle par nom, sans ';' ni '|'.
+REM  Un seul lancement PowerShell couvre aussi IoLatencyCap (7.14).
+call :FOR_STORAGE_CLASS foreach($n in @('EnableHIPM','EnableDIPM','EnableHDDParking','IoLatencyCap')){New-ItemProperty -Path $p -Name $n -PropertyType DWord -Value 0 -Force}
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie du stockage reglee pour les performances.%COLOR_RESET%
 
-REM  7.14 - Optimisations avancees des services
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des limites de latence du stockage...%COLOR_RESET%
-call :FOR_STORAGE_CLASS New-ItemProperty -Path $p -Name 'IoLatencyCap' -PropertyType DWord -Value 0 -Force
+REM  7.14 - Optimisations avancees des services : IoLatencyCap, ecrit ci-dessus
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Limites de latence stockage supprimees%COLOR_RESET%
 
 REM  7.15 - GPU PreferMaxPerf
@@ -2863,12 +2863,11 @@ REM  7.14 - Mise en veille des disques et stockage
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des parametres de stockage...%COLOR_RESET%
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /f >nul 2>&1
 REM  Supprimer HIPM/DIPM/HDDParking pour revenir aux valeurs par defaut systeme
-call :FOR_STORAGE_CLASS Remove-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking' -ErrorAction SilentlyContinue
+REM  Un seul lancement PowerShell couvre aussi IoLatencyCap (7.15).
+call :FOR_STORAGE_CLASS Remove-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking','IoLatencyCap' -ErrorAction SilentlyContinue
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Parametres de stockage restaures%COLOR_RESET%
 
-REM  7.15 - Limites de latence I/O
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des limites de latence I/O...%COLOR_RESET%
-call :FOR_STORAGE_CLASS Remove-ItemProperty -Path $p -Name 'IoLatencyCap' -ErrorAction SilentlyContinue
+REM  7.15 - Limites de latence I/O : IoLatencyCap, retire ci-dessus
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Limites de latence I/O restaurees%COLOR_RESET%
 
 REM  7.16 - Gestion d'energie GPU
@@ -3183,12 +3182,15 @@ set "SKIP_PAUSE=1"
 call :INIT_PROFILS
 set "SECURITY_FORCE_PERF_MAX=1"
 call :APPLIQUER_PROFIL_SECURITE
+set "SECURITY_APPLY_RC=!errorlevel!"
 set "SECURITY_FORCE_PERF_MAX="
 set "PROFIL_USAGE=!PROFIL_USAGE_TMP!"
 set "PROFIL_USAGE_TMP="
 set "SKIP_PAUSE=!SKIP_PAUSE_TMP!"
 set "SKIP_PAUSE_TMP="
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages Performance max demandes : protections reduites.%COLOR_RESET%
+REM  Le helper a deja affiche l'erreur : ne pas annoncer un succes apres un refus.
+if "!SECURITY_APPLY_RC!"=="0" echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages Performance max demandes : protections reduites.%COLOR_RESET%
+set "SECURITY_APPLY_RC="
 
 call :FINISH_ACTION "Mode Performance max"
 goto :TOGGLE_PROTECTIONS_NOYAU
@@ -3641,7 +3643,11 @@ echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_DESACTIVER_RECALL
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Recall appliquees.%COLOR_RESET%
+if !errorlevel! EQU 0 (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Recall appliquees.%COLOR_RESET%
+) else (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Restrictions Recall non confirmees par relecture.%COLOR_RESET%
+)
 call :FINISH_ACTION "Reglages Recall"
 goto :MENU_IA_WIDGETS_RECALL
 
@@ -3690,7 +3696,11 @@ echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_DESACTIVER_WIDGETS
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Widgets appliquees.%COLOR_RESET%
+if !errorlevel! EQU 0 (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Widgets appliquees.%COLOR_RESET%
+) else (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Strategie Widgets non confirmee par relecture.%COLOR_RESET%
+)
 call :FINISH_ACTION "Reglages Widgets"
 goto :MENU_IA_WIDGETS_RECALL
 
@@ -3724,7 +3734,11 @@ echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_DESACTIVER_COPILOT
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Copilot appliquees.%COLOR_RESET%
+if !errorlevel! EQU 0 (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Restrictions Copilot appliquees.%COLOR_RESET%
+) else (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Strategie Copilot non confirmee par relecture.%COLOR_RESET%
+)
 call :FINISH_ACTION "Reglages Copilot"
 goto :MENU_IA_WIDGETS_RECALL
 
@@ -5093,8 +5107,9 @@ REM  Lecture/ecriture en Latin-1 (28591) : la table est une bijection octet<->ca
 REM  donc chaque octet est reecrit a l'identique. ASCII remplacerait au contraire tout
 REM  octet > 0x7F par '?' et detruirait irreversiblement les commentaires accentues
 REM  ou CP1252 d'un fichier hosts reel.
+REM  Detection par findstr : le marqueur est ASCII, aucun PowerShell sur le cas courant.
 set "COPILOT_HOSTS_PRESENT=0"
-powershell -NoProfile -Command "$h=Join-Path $env:SystemRoot 'System32\drivers\etc\hosts';if(Test-Path -LiteralPath $h){$c=[IO.File]::ReadAllText($h,[Text.Encoding]::GetEncoding(28591));if($c -match '# Copilot Block Start'){exit 0}};exit 1" >nul 2>&1
+findstr /c:"# Copilot Block Start" "%SystemRoot%\System32\drivers\etc\hosts" >nul 2>&1
 if !errorlevel! EQU 0 set "COPILOT_HOSTS_PRESENT=1"
 if "!COPILOT_HOSTS_PRESENT!"=="0" exit /b 0
 call :BACKUP_HOSTS_BEFORE_CHANGE "%SystemRoot%\System32\drivers\etc\hosts"
@@ -5103,8 +5118,10 @@ if !errorlevel! NEQ 0 (
     exit /b 1
 )
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';$h=Join-Path $env:SystemRoot 'System32\drivers\etc\hosts';$item=$null;$attrs=$null;$enc=[Text.Encoding]::GetEncoding(28591);try{if(Test-Path -LiteralPath $h){$item=Get-Item -LiteralPath $h -Force -ErrorAction Stop;$attrs=$item.Attributes;$item.IsReadOnly=$false;$c=[IO.File]::ReadAllText($h,$enc);$s='# Copilot Block Start';$e='# Copilot Block End';$n=$c -replace ('(?s)\r?\n?'+[regex]::Escape($s)+'.*?'+[regex]::Escape($e)),'';if($n-ne$c){[IO.File]::WriteAllText($h,$n,$enc)}};exit 0}catch{exit 1}finally{if($item-ne$null-and $attrs-ne$null){try{$item.Attributes=$attrs}catch{}}}" >nul 2>&1
+REM  En .cmd, un set reussi remet ERRORLEVEL a 0 : lire le code avant.
+set "COPILOT_HOSTS_RC=!errorlevel!"
 set "COPILOT_HOSTS_PRESENT="
-exit /b !errorlevel!
+exit /b !COPILOT_HOSTS_RC!
 
 :DELETE_REG_VALUE_IF_PRESENT
 REM Suppression best-effort sans query : une valeur absente est deja dans l'etat voulu.
@@ -5554,7 +5571,7 @@ set "REMOTE_PS_FILE=%REMOTE_PS_DIR%\outil.ps1"
 REM  Confiance : la liste blanche ci-dessus est la seule barriere. Ni MAS ni WinUtil
 REM  ne sont signes Authenticode, donc le controle de signature ne rejetterait rien
 REM  d'utile ; il est conserve uniquement pour refuser un eventuel certificat invalide.
-powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%~1' -OutFile $env:REMOTE_PS_FILE -UseBasicParsing -ErrorAction Stop; if((Get-Item -LiteralPath $env:REMOTE_PS_FILE).Length -lt 500){exit 2}; $sig=Get-AuthenticodeSignature -LiteralPath $env:REMOTE_PS_FILE; if($sig.SignerCertificate -and $sig.Status.ToString() -ne 'Valid'){exit 4}; $fs=[IO.File]::OpenRead($env:REMOTE_PS_FILE); $b=New-Object byte[] 256; $n=$fs.Read($b,0,256); $fs.Close(); $head=([Text.Encoding]::ASCII.GetString($b,0,$n)).TrimStart(); if($head.StartsWith('<html') -or $head.StartsWith('<?xml') -or ($head.Length -gt 1 -and $head[0] -eq [char]60 -and $head[1] -eq [char]33)){exit 3}; exit 0 } catch { exit 1 }" >nul 2>&1
+powershell -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol=[Net.SecurityProtocolType]::Tls12; try { Invoke-WebRequest -Uri '%~1' -OutFile $env:REMOTE_PS_FILE -UseBasicParsing -TimeoutSec 60 -ErrorAction Stop; if((Get-Item -LiteralPath $env:REMOTE_PS_FILE).Length -lt 500){exit 2}; $sig=Get-AuthenticodeSignature -LiteralPath $env:REMOTE_PS_FILE; if($sig.SignerCertificate -and $sig.Status.ToString() -ne 'Valid'){exit 4}; $fs=[IO.File]::OpenRead($env:REMOTE_PS_FILE); $b=New-Object byte[] 256; $n=$fs.Read($b,0,256); $fs.Close(); $head=([Text.Encoding]::ASCII.GetString($b,0,$n)).TrimStart(); if($head.StartsWith('<html') -or $head.StartsWith('<?xml') -or ($head.Length -gt 1 -and $head[0] -eq [char]60 -and $head[1] -eq [char]33)){exit 3}; exit 0 } catch { exit 1 }" >nul 2>&1
 if !errorlevel! NEQ 0 (
     rd /s /q "%REMOTE_PS_DIR%" >nul 2>&1
     set "REMOTE_PS_FILE="
