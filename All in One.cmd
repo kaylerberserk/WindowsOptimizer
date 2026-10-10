@@ -4654,12 +4654,18 @@ if !errorlevel! NEQ 0 (
 REM  Visual C++ v14 actuel x86
 set /a "VC_STEP+=1"
 call :PROGRESS_BAR %VC_STEP% %VC_TOTAL% "Visual C++ v14 actuel x86"
-if "%VC2015X86%"=="0" if exist "%VCREDIST_DIR%\vc2015x86.exe" call :INSTALL_VC14_FILE x86 "vc2015x86.exe"
+if "%VC2015X86%"=="0" if exist "%VCREDIST_DIR%\vc2015x86.exe" (
+    call :INSTALL_VC14_FILE x86 "vc2015x86.exe"
+    if !errorlevel! NEQ 0 set "VC_SECTION_RESULT=1"
+)
 
 REM  Visual C++ v14 actuel x64
 set /a "VC_STEP+=1"
 call :PROGRESS_BAR %VC_STEP% %VC_TOTAL% "Visual C++ v14 actuel x64"
-if "%VC2015X64%"=="0" if exist "%VCREDIST_DIR%\vc2015x64.exe" call :INSTALL_VC14_FILE x64 "vc2015x64.exe"
+if "%VC2015X64%"=="0" if exist "%VCREDIST_DIR%\vc2015x64.exe" (
+    call :INSTALL_VC14_FILE x64 "vc2015x64.exe"
+    if !errorlevel! NEQ 0 set "VC_SECTION_RESULT=1"
+)
 echo.
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification des installations...%COLOR_RESET%
 
@@ -4668,15 +4674,15 @@ call :DETECT_VC14_RUNTIME
 set /a "VCINSTALL=VC2015X86+VC2015X64" 2>nul
 
 echo.
-if "%VCINSTALL%"=="2" (
+if "%VCINSTALL%:%VC_SECTION_RESULT%"=="2:0" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification reelle : %COLOR_GREEN%%VCINSTALL%/2%COLOR_RESET% %COLOR_WHITE%versions presentes.%COLOR_RESET%
 ) else (
     set "VC_SECTION_RESULT=1"
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Verification reelle : %COLOR_RED%%VCINSTALL%/2%COLOR_RESET% %COLOR_WHITE%versions presentes.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Verification : %VCINSTALL%/2 versions presentes ; installation non validee.%COLOR_RESET%
 )
 if "!SKIP_PAUSE!"=="0" ping -n 4 127.0.0.1 >nul
 
-REM  Nettoyage des fichiers temporaires
+REM  Nettoyage des fichiers temporaires ; les journaux sont conserves hors de ce dossier.
 if exist "%VCREDIST_DIR%" rd /s /q "%VCREDIST_DIR%" >nul 2>&1
 set "VC_STEP="
 set "VC_TOTAL="
@@ -5228,16 +5234,28 @@ if "%VC2015X86%"=="0" if "%VC2015X64%"=="0" (
     )
 )
 
-if "%VC2015X86%"=="0" (
-    call :VALIDATE_MICROSOFT_SIGNED_EXE "%VC_X86_FILE%" 5000000
-    if !errorlevel! NEQ 0 call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://aka.ms/vc14/vc_redist.x86.exe" "%VC_X86_FILE%" 5000000
+REM Un seul lancement PowerShell valide les deux signatures, sans relancer pour un fichier absent.
+REM Le masque retourne identifie les fichiers refuses : bit 1=x86, bit 2=x64.
+set "VC_VALIDATE_MASK=0"
+if "%VC2015X86%"=="0" set /a "VC_VALIDATE_MASK|=1"
+if "%VC2015X64%"=="0" set /a "VC_VALIDATE_MASK|=2"
+if exist "%VC_X86_FILE%" (
+    call :VALIDATE_VC14_DOWNLOADS
+) else if exist "%VC_X64_FILE%" (
+    call :VALIDATE_VC14_DOWNLOADS
+)
+set /a "VC_X86_INVALID=VC_VALIDATE_MASK & 1", "VC_X64_INVALID=VC_VALIDATE_MASK & 2"
+if "%VC2015X86%"=="0" if "!VC_X86_INVALID!" NEQ "0" (
+    call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://aka.ms/vc14/vc_redist.x86.exe" "%VC_X86_FILE%" 5000000
     if !errorlevel! NEQ 0 set "VC_DOWNLOAD_FAILED=1"
 )
-if "%VC2015X64%"=="0" (
-    call :VALIDATE_MICROSOFT_SIGNED_EXE "%VC_X64_FILE%" 5000000
-    if !errorlevel! NEQ 0 call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://aka.ms/vc14/vc_redist.x64.exe" "%VC_X64_FILE%" 5000000
+if "%VC2015X64%"=="0" if "!VC_X64_INVALID!" NEQ "0" (
+    call :DOWNLOAD_MICROSOFT_SIGNED_EXE "https://aka.ms/vc14/vc_redist.x64.exe" "%VC_X64_FILE%" 5000000
     if !errorlevel! NEQ 0 set "VC_DOWNLOAD_FAILED=1"
 )
+set "VC_VALIDATE_MASK="
+set "VC_X86_INVALID="
+set "VC_X64_INVALID="
 
 set "VC_X86_FILE="
 set "VC_X64_FILE="
@@ -5248,10 +5266,21 @@ if "!VC_DOWNLOAD_FAILED!"=="0" (
 set "VC_DOWNLOAD_FAILED="
 exit /b 1
 
+:VALIDATE_VC14_DOWNLOADS
+REM Aucun resultat exploitable de PowerShell : refuser les deux fichiers.
+set "VC_VALIDATE_MASK=3"
+set "VC_VALIDATE_RESULT="
+for /f "delims=" %%M in ('powershell -NoProfile -Command "$ErrorActionPreference='Stop';$mask=0;foreach($a in @('X86','X64')){if([Environment]::GetEnvironmentVariable('VC2015'+$a)-ne'0'){continue};$bit=if($a-eq'X86'){1}else{2};try{$p=[Environment]::GetEnvironmentVariable('VC_'+$a+'_FILE');$f=Get-Item -LiteralPath $p;if($f.Length-lt5000000){throw 'size'};$s=Get-AuthenticodeSignature -LiteralPath $p;if($s.Status-ne'Valid'-or$s.SignerCertificate.Subject-notmatch'Microsoft'){throw 'signature'}}catch{$mask=$mask-bor$bit}};[Console]::WriteLine($mask)" 2^>nul') do set "VC_VALIDATE_RESULT=%%M"
+for %%M in (0 1 2 3) do if "!VC_VALIDATE_RESULT!"=="%%M" set "VC_VALIDATE_MASK=%%M"
+set "VC_VALIDATE_RESULT="
+exit /b 0
+
 :INSTALL_VC14_FILE
 set "VC_ARCH=%~1"
 set "VC_FILE=%~2"
-start /wait "" "%VCREDIST_DIR%\%VC_FILE%" /q /norestart >nul 2>&1
+REM Journaux hors du dossier nettoye, utiles notamment si le cache MSI ancien manque.
+set "VC_LOG=%TEMP%\WinOpt_VC14_%VC_ARCH%_%RANDOM%_%RANDOM%.log"
+start /wait "" "%VCREDIST_DIR%\%VC_FILE%" /install /quiet /norestart /log "%VC_LOG%" >nul 2>&1
 set "VC_EXIT=!errorlevel!"
 if "!VC_EXIT!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! installe.%COLOR_RESET%
@@ -5263,9 +5292,16 @@ if "!VC_EXIT!"=="0" (
     echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : une version compatible est deja presente.%COLOR_RESET%
 ) else (
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : code installateur !VC_EXIT!.%COLOR_RESET%
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Journal : !VC_LOG!%COLOR_RESET%
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Si un ancien MSI manque, restaurer le paquet Microsoft de cette version puis reessayer.%COLOR_RESET%
+    set "VC_ARCH="
+    set "VC_FILE="
+    set "VC_LOG="
+    exit /b 1
 )
 set "VC_ARCH="
 set "VC_FILE="
+set "VC_LOG="
 exit /b 0
 
 :DOWNLOAD_MICROSOFT_SIGNED_EXE
