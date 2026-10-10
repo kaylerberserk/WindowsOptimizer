@@ -93,67 +93,114 @@ Dans **Tout optimiser**, activer l'option Protections Windows applique **Gaming*
 
 ## ❓ Questions fréquentes
 
-**Avec quelles versions de Windows est-il compatible ?**
+Cliquez sur une question pour afficher sa réponse.
+
+<details>
+<summary><strong>Avec quelles versions de Windows est-il compatible ?</strong></summary>
 
 Windows 10 et 11. Certaines options dépendent de la version de Windows, du matériel et des pilotes. Sur un PC professionnel ou géré par une organisation, des règles peuvent empêcher les modifications.
 
-**Quel profil choisir ?**
+</details>
+
+<details>
+<summary><strong>Quel profil choisir ?</strong></summary>
 
 En cas de doute, choisissez **Normal + Eco**. Pour jouer, choisissez **Gaming**, puis Eco pour limiter la consommation ou Performance Max pour privilégier les performances. Sur portable, Performance Max peut augmenter la chauffe et réduire l'autonomie. Le mode de sécurité Performance Max est un choix séparé et déconseillé pour un usage courant.
 
-**Quel gain de FPS attendre ?**
+</details>
+
+<details>
+<summary><strong>Quel gain de FPS attendre ?</strong></summary>
 
 Le résultat dépend du matériel, des pilotes, des logiciels et de la charge. Aucun gain de FPS n'est garanti : comparez vos jeux avant et après avec les mêmes réglages.
 
-**Est-ce sans risque pour mon PC ?**
+</details>
+
+<details>
+<summary><strong>Est-ce sans risque pour mon PC ?</strong></summary>
 
 Des incompatibilités sont possibles après des changements de services, de réseau ou de sécurité. Créez un point de restauration et sauvegardez vos fichiers avant de commencer. Vous pouvez appliquer les sections séparément et éviter les désinstallations ou les options sensibles dont vous n'avez pas besoin.
 
-**Est-ce compatible avec Valorant, FACEIT et les autres anti-cheats ?**
+</details>
+
+<details>
+<summary><strong>Est-ce compatible avec Valorant, FACEIT et les autres anti-cheats ?</strong></summary>
 
 La compatibilité dépend du jeu et des exigences de son anti-cheat. Le mode de sécurité Gaming active VBS et l'intégrité de la mémoire ; Performance Max les désactive et peut empêcher certains jeux de démarrer. Aucun mode ne garantit la compatibilité avec tous les jeux.
 
-**Faut-il désactiver Defender ou l'UAC ?**
+</details>
+
+<details>
+<summary><strong>Faut-il désactiver Defender ou l'UAC ?</strong></summary>
 
 Non, ces choix sont facultatifs. Gardez l'antivirus et les confirmations administrateur actifs pour un usage courant : les désactiver réduit la protection du PC.
 
-**Puis-je relancer le script ou changer de profil ?**
+</details>
+
+<details>
+<summary><strong>Puis-je relancer le script ou changer de profil ?</strong></summary>
 
 Oui. Les profils remplacent leurs réglages exclusifs pris en charge. Relancer le script ne restaure toutefois pas les fichiers ou applications supprimés et réapplique les actions automatiques décrites ci-dessous.
 
-**Dois-je redémarrer ?**
+</details>
+
+<details>
+<summary><strong>Dois-je redémarrer ?</strong></summary>
 
 Un redémarrage est recommandé après un parcours complet et nécessaire quand le script, Windows ou un installateur le demande. Certains changements ne prennent effet qu'après le redémarrage.
 
-**Le nettoyage supprime-t-il mes documents ?**
+</details>
+
+<details>
+<summary><strong>Le nettoyage supprime-t-il mes documents ?</strong></summary>
 
 Il ne cible pas les dossiers Documents, Images ou Vidéos actuels, mais vide la corbeille et supprime des caches et fichiers de diagnostic. La suppression de `Windows.old`, proposée séparément, peut effacer d'anciennes données et retire la possibilité de revenir à la précédente installation de Windows par ce dossier.
 
-**Quelles applications sont supprimées ?**
+</details>
+
+<details>
+<summary><strong>Quelles applications sont supprimées ?</strong></summary>
 
 L'option Bloatwares cible une liste d'applications préinstallées, notamment Actualités, Solitaire, Skype, Cartes et Candy Crush si elles sont présentes. Edge et OneDrive ont leurs propres options de désinstallation. Windows Update, le Microsoft Store et WebView2 ne sont pas volontairement supprimés.
 
-**Quels outils se lancent automatiquement ?**
+</details>
+
+<details>
+<summary><strong>Quels outils se lancent automatiquement ?</strong></summary>
 
 Le profil Valorant s'applique au lancement, jeu fermé, sans changer la résolution. En Gaming, NVIDIA Profile Inspector et son profil peuvent être exécutés sur un GPU NVIDIA compatible. Avec le profil d'énergie Performance Max, SetTimerResolution peut être installé, lancé et ajouté au démarrage ; Eco retire ce démarrage automatique. Les ressources O&O, Fortnite et les autres outils Timer & Interrupt ne sont pas exécutés automatiquement.
 
-**Puis-je revenir en arrière ?**
+</details>
+
+<details>
+<summary><strong>Puis-je revenir en arrière ?</strong></summary>
 
 Les profils Normal/Eco et Défaut Windows restaurent les réglages qu'ils prennent en charge. Ils ne remettent pas tout Windows à zéro. Un point de restauration peut aider pour les changements système ; les fichiers supprimés, la corbeille vidée et les données retirées lors d'une désinstallation nécessitent une sauvegarde pour être récupérés.
 
-**Puis-je réinstaller OneDrive ou Edge ?**
+</details>
+
+<details>
+<summary><strong>Puis-je réinstaller OneDrive ou Edge ?</strong></summary>
 
 Oui, depuis Microsoft. Les politiques de mise à jour posées lors de la suppression d'Edge peuvent devoir être retirées avant sa réinstallation. Réinstaller ne récupère pas les données supprimées.
 
-**Pourquoi la commande de lancement ne fonctionne-t-elle pas ?**
+</details>
+
+<details>
+<summary><strong>Pourquoi la commande de lancement ne fonctionne-t-elle pas ?</strong></summary>
 
 Exécutez-la dans PowerShell, pas dans l'invite de commandes. Vérifiez la connexion Internet, acceptez la demande d'administration et consultez le message d'erreur. Vous pouvez aussi télécharger le script et le lancer en tant qu'administrateur.
 
 Pour vérifier uniquement le téléchargement depuis une copie de `launcher.ps1`, utilisez `.\launcher.ps1 -VerifyOnly` dans PowerShell. Ce mode ne lance pas l'optimiseur et affiche la source ainsi qu'un SHA-256 informatif. Le lanceur utilise toujours le script publié, même si un `All in One.cmd` se trouve à côté de lui.
 
-**Pourquoi mon antivirus affiche-t-il une alerte ?**
+</details>
+
+<details>
+<summary><strong>Pourquoi mon antivirus affiche-t-il une alerte ?</strong></summary>
 
 Les commandes d'administration et les modifications de sécurité peuvent déclencher une alerte. Ne supposez pas qu'il s'agit d'un faux positif : examinez le code et les fichiers téléchargés avant de poursuivre.
+
+</details>
 
 ---
 
