@@ -131,10 +131,6 @@ Depuis une copie de `launcher.ps1`, vous pouvez vérifier le téléchargement pu
 
 Ce mode affiche la source et un SHA-256 informatif. Le launcher utilise toujours le batch publié, même si un `All in One.cmd` se trouve à côté de lui.
 
-**Visual C++ demande un ancien fichier MSI introuvable ?**
-
-Réparez l'installation avec le redistribuable Microsoft de la version demandée, puis réessayez. Les journaux sont conservés dans `%TEMP%\WinOpt_VC14_<architecture>_*.log`. Si nécessaire, consultez [l'outil de dépannage Microsoft](https://support.microsoft.com/help/17588). Ne supprimez pas l'ensemble du cache d'installation ni les autres versions de Visual C++.
-
 ---
 
 <div align="center">
