@@ -28,16 +28,6 @@ Le lanceur télécharge la version publiée du script et l'ouvre dans une fenêt
 
 > Le script modifie réellement Windows. Les options de sécurité réduisent certaines protections ; les désinstallations et le nettoyage peuvent supprimer des données. Un point de restauration ne remplace pas une sauvegarde de vos fichiers.
 
-### Valorant au lancement
-
-**À chaque lancement**, si Valorant possède des fichiers de configuration, le profil de performance est appliqué à tous les comptes déjà présents pour l'utilisateur Windows courant, ainsi qu'au fichier commun. Le jeu doit être fermé.
-
-Les réglages du profil passent notamment en plein écran, sans synchronisation verticale (VSync) et en qualité minimale. **La résolution, l'échelle de rendu, les options de résolution dynamique et les réglages du moniteur sont conservés**, comme les paramètres extérieurs au profil.
-
-Chaque fichier reçoit une sauvegarde initiale `.winopt-backup` dans `%LOCALAPPDATA%\VALORANT\Saved\Config`. Pour restaurer un fichier, remplacez `GameUserSettings.ini` par une copie de `GameUserSettings.ini.winopt-backup`, jeu fermé. Relancer l'optimiseur réapplique le profil : pour conserver vos réglages restaurés, évitez de le relancer.
-
-Pour un nouveau compte, connectez-vous une première fois, fermez le jeu et relancez WindowsOptimizer. Aucun service en arrière-plan n'est installé. Le gain de FPS et la prise en compte de chaque réglage par Valorant ne sont pas garantis.
-
 ## 🛠️ Profils et fonctionnalités
 
 ### Usage et énergie
