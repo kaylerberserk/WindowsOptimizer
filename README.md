@@ -18,12 +18,12 @@ Collez cette commande dans **PowerShell**, puis acceptez la demande d'administra
 irm https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/main/launcher.ps1 | iex
 ```
 
-Le launcher télécharge le script publié sur `main` et l'ouvre dans une fenêtre administrateur. Vous pouvez aussi [télécharger All in One.cmd](https://github.com/kaylerberserk/WindowsOptimizer/blob/main/All%20in%20One.cmd) et l'exécuter en tant qu'administrateur.
+Le lanceur télécharge la version publiée du script et l'ouvre dans une fenêtre administrateur. Vous pouvez aussi [télécharger All in One.cmd](https://github.com/kaylerberserk/WindowsOptimizer/blob/main/All%20in%20One.cmd) et l'exécuter en tant qu'administrateur.
 
 1. Appuyez sur **[R]** pour créer un point de restauration.
 2. Appuyez sur **[O]** pour **Tout optimiser**, ou choisissez une section du menu.
-3. Choisissez votre usage et votre profil d'énergie, puis les options proposées pour les protections Windows, Defender, les animations, l'IA et l'UAC.
-4. Le parcours complet installe automatiquement les runtimes Visual C++ et DirectX manquants depuis Microsoft, puis applique les sections.
+3. Choisissez votre usage et votre profil d'énergie, puis les options proposées pour les protections Windows, Microsoft Defender (antivirus), les animations, les fonctions IA et les confirmations administrateur (UAC).
+4. Le parcours complet installe automatiquement les composants Visual C++ et DirectX manquants depuis Microsoft, puis applique les sections.
 5. Redémarrez après le parcours, notamment si le script ou un installateur le demande.
 
 > Le script modifie réellement Windows. Les options de sécurité réduisent certaines protections ; les désinstallations et le nettoyage peuvent supprimer des données. Un point de restauration ne remplace pas une sauvegarde de vos fichiers.
@@ -32,9 +32,9 @@ Le launcher télécharge le script publié sur `main` et l'ouvre dans une fenêt
 
 **À chaque lancement**, si Valorant possède des fichiers de configuration, le profil de performance est appliqué à tous les comptes déjà présents pour l'utilisateur Windows courant, ainsi qu'au fichier commun. Le jeu doit être fermé.
 
-Les réglages du profil passent notamment en plein écran, sans VSync et en qualité minimale. **La résolution, l'échelle de rendu, les options de résolution dynamique et les réglages du moniteur sont conservés**, comme les paramètres extérieurs au profil.
+Les réglages du profil passent notamment en plein écran, sans synchronisation verticale (VSync) et en qualité minimale. **La résolution, l'échelle de rendu, les options de résolution dynamique et les réglages du moniteur sont conservés**, comme les paramètres extérieurs au profil.
 
-Chaque fichier reçoit une sauvegarde initiale `.winopt-backup` dans `%LOCALAPPDATA%\VALORANT\Saved\Config`. Pour restaurer un fichier, recopiez sa sauvegarde sur le `.ini` correspondant, jeu fermé. Relancer l'optimiseur réapplique le profil : pour conserver vos réglages restaurés, évitez de le relancer.
+Chaque fichier reçoit une sauvegarde initiale `.winopt-backup` dans `%LOCALAPPDATA%\VALORANT\Saved\Config`. Pour restaurer un fichier, remplacez `GameUserSettings.ini` par une copie de `GameUserSettings.ini.winopt-backup`, jeu fermé. Relancer l'optimiseur réapplique le profil : pour conserver vos réglages restaurés, évitez de le relancer.
 
 Pour un nouveau compte, connectez-vous une première fois, fermez le jeu et relancez WindowsOptimizer. Aucun service en arrière-plan n'est installé. Le gain de FPS et la prise en compte de chaque réglage par Valorant ne sont pas garantis.
 
@@ -46,10 +46,10 @@ Les deux choix sont indépendants et disponibles sur PC fixe comme portable.
 
 | Choix | Rôle |
 |---|---|
-| **Gaming** | Applique les réglages orientés jeu et latence pour le GPU, les entrées et le réseau. |
+| **Gaming** | Applique les réglages orientés jeu et latence pour la carte graphique, le clavier, la souris et le réseau. |
 | **Normal** | Restaure les réglages exclusifs gérés par le profil Gaming. |
 | **Eco** | Utilise le plan Équilibré et privilégie les économies d'énergie. |
-| **Performance Max** | Privilégie les performances, avec davantage de consommation et de chaleur possibles. Le preset timer est expérimental. |
+| **Performance Max** | Privilégie les performances, avec davantage de consommation et de chaleur possibles. Le réglage des minuteries système reste expérimental. |
 
 Vous pouvez combiner Gaming avec Eco, ou Normal avec Performance Max. **Normal + Eco** est le choix le plus conservateur. Changer de profil restaure les réglages exclusifs pris en charge, mais ne remet pas tout Windows à zéro et ne réinstalle pas les applications supprimées.
 
@@ -60,9 +60,9 @@ Vous pouvez combiner Gaming avec Eco, ou Normal avec Performance Max. **Normal +
 | **[O]** | Tout optimiser | Enchaîne les sections avec les choix du parcours. |
 | **[1]** | Système | Réglages système, confidentialité, services et suggestions Windows. |
 | **[2]** | Mémoire | Gestion de la RAM et de la compression mémoire selon les profils. |
-| **[3]** | Disques | Réglages de stockage ; TRIM et maintenance Windows conservés. |
+| **[3]** | Disques | Réglages de stockage ; entretien des SSD et maintenance Windows conservés. |
 | **[4]** | GPU | Réglages graphiques et de latence compatibles avec le matériel. |
-| **[5]** | Réseau | Réglages TCP et de la carte réseau selon l'usage et l'énergie. |
+| **[5]** | Réseau | Réglages de connexion et de la carte réseau selon l'usage et l'énergie. |
 | **[6]** | Input | Réglages clavier, souris et contrôleurs compatibles. |
 | **[7]** | Énergie | Plans d'alimentation et économies d'énergie. |
 | **[8]** | Sécurité | Choix du mode de protections Windows décrit ci-dessous. |
@@ -80,10 +80,10 @@ Le profil d'énergie **Performance Max** et le mode de sécurité du même nom s
 | Mode | Effet |
 |---|---|
 | **Défaut Windows** | Restaure les paramètres de sécurité capturés ; sans capture, applique les valeurs de repli prévues par le script. |
-| **Gaming** | Active VBS et l'intégrité de la mémoire (HVCI), même si ces protections étaient coupées, tout en réduisant certaines autres protections. |
+| **Gaming** | Active la sécurité basée sur la virtualisation (VBS) et l'intégrité de la mémoire (HVCI), même si ces protections étaient coupées, tout en réduisant certaines autres protections. |
 | **Performance Max** | Désactive notamment VBS et HVCI et réduit d'autres protections. Ce mode est déconseillé pour un usage courant. |
 
-La compatibilité dépend du jeu et de l'anti-cheat : certains exigent VBS/HVCI, TPM ou Secure Boot. Les stratégies d'entreprise et les verrous du firmware peuvent empêcher certains changements.
+La compatibilité dépend du jeu et de l'anti-cheat : certains exigent VBS/HVCI, TPM ou Secure Boot. L'application dépend aussi du matériel et de Windows ; les règles d'entreprise et certains verrouillages peuvent empêcher des changements.
 
 Dans **Tout optimiser**, activer l'option Protections Windows applique **Gaming** pour l'usage Gaming ou **Défaut Windows** pour l'usage Normal. Le mode de sécurité Performance Max se choisit séparément dans le menu [8].
 
@@ -97,7 +97,7 @@ Dans **Tout optimiser**, activer l'option Protections Windows applique **Gaming*
 | **[4]** | IA et Widgets | Gère Copilot, l'IA du Bloc-notes, les Widgets et Recall selon la version de Windows. Désactiver Recall supprime ses instantanés enregistrés. |
 | **[5]** | OneDrive | Désinstalle OneDrive et arrête la synchronisation. Le dossier local OneDrive est supprimé, sauf si Bureau, Documents ou Images y sont rangés. |
 | **[6]** | Microsoft Edge | Désinstalle Edge en conservant WebView2. Certaines fonctions Windows et applications web peuvent être affectées. |
-| **[7]** | Runtimes | Installe les runtimes Visual C++ et DirectX manquants. |
+| **[7]** | Runtimes | Installe les composants Visual C++ et DirectX manquants. |
 | **[8]** | Bloatwares | Supprime une liste d'applications préinstallées, dont Actualités, Solitaire et Skype si elles sont présentes. |
 | **[M]** | Retour | Revient au menu principal. |
 
@@ -129,7 +129,7 @@ Depuis une copie de `launcher.ps1`, vous pouvez vérifier le téléchargement pu
 .\launcher.ps1 -VerifyOnly
 ```
 
-Ce mode affiche la source et un SHA-256 informatif. Le launcher utilise toujours le batch publié, même si un `All in One.cmd` se trouve à côté de lui.
+Ce mode affiche la source et un SHA-256 informatif. Le lanceur utilise toujours le script publié, même si un `All in One.cmd` se trouve à côté de lui.
 
 ---
 
