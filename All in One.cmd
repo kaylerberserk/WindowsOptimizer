@@ -284,11 +284,13 @@ if not "%~1"=="1" (
     set "DETECTE_PORTABLE=0"
 )
 :: Detection materiel en une seule commande pour eviter les scripts temporaires fragiles en CMD.
+REM  Nom du processeur lu dans le registre, source de Win32_Processor.Name :
+REM  cette classe WMI coutait 3,8 s a chaud en VM, le reste de la detection 0,8 s.
 REM  Le fichier est ecrit dans la page de codes de la console : cmd le relit ainsi.
 REM  En UTF-8, "Carte video de base" ou une edition accentuee s'affichaient en
 REM  caracteres casses. L'apostrophe typographique n'existe pas en OEM : remplacee.
 set "WINOPT_HW_FILE=%TEMP%\hw_info_%RANDOM%_%RANDOM%.tmp"
-powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem; $c=Get-CimInstance Win32_Processor; $v=Get-CimInstance Win32_VideoController; $m=Get-CimInstance Win32_PhysicalMemory; if(-not $m){$m=Get-CimInstance Win32_ComputerSystem}; $b=0; $lc=8,9,10,11,14,30,31,32; $enc=Get-CimInstance Win32_SystemEnclosure -EA SilentlyContinue; if($enc -and $enc.ChassisTypes){foreach($t in $enc.ChassisTypes){if($lc -contains $t){$b=1;break}}}; if(-not $b -and (Get-CimInstance Win32_Battery -EA SilentlyContinue)){$b=1}; $res=@(); $cap=$o.Caption; if(-not $cap){$pn=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName; if($pn){$cap=$pn}else{$cap='Windows'}}; $res+='OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Name.Trim()}; if($v){$gn=@($v|Where-Object{$_.Name -and $_.Name -notmatch 'Parsec|Virtual Display|Microsoft Basic|Remote|Indirect|Mirror'}|ForEach-Object{$_.Name.Trim()}|Select-Object -Unique); if(-not $gn.Count){$gn=@($v|ForEach-Object{$_.Name.Trim()})}; $res+='GPU:'+($gn -join ' / ')}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}elseif($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}; $res+='LAPTOP:'+$b; $nv=0; if(@($v|Where-Object{$_.Name -match 'NVIDIA' -and $_.Name -notmatch 'Virtual|Parsec|Remote|Indirect|Mirror|Microsoft Basic'}).Count -gt 0){$cs=Get-CimInstance Win32_ComputerSystem; if($cs.Model -notmatch 'Virtual|VMware|VirtualBox|KVM|QEMU|Xen|Parallels'){$nv=1}}; $res+='NVIDIA:'+$nv; $res=@($res|ForEach-Object{$_ -replace [string][char]0x2019,[string][char]39}); [System.IO.File]::WriteAllLines($env:WINOPT_HW_FILE, $res, [Console]::OutputEncoding)" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem; $c=(Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0' -EA SilentlyContinue).ProcessorNameString; if(-not $c){$c=@(Get-CimInstance Win32_Processor)[0].Name}; $v=Get-CimInstance Win32_VideoController; $m=Get-CimInstance Win32_PhysicalMemory; if(-not $m){$m=Get-CimInstance Win32_ComputerSystem}; $b=0; $lc=8,9,10,11,14,30,31,32; $enc=Get-CimInstance Win32_SystemEnclosure -EA SilentlyContinue; if($enc -and $enc.ChassisTypes){foreach($t in $enc.ChassisTypes){if($lc -contains $t){$b=1;break}}}; if(-not $b -and (Get-CimInstance Win32_Battery -EA SilentlyContinue)){$b=1}; $res=@(); $cap=$o.Caption; if(-not $cap){$pn=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName; if($pn){$cap=$pn}else{$cap='Windows'}}; $res+='OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Trim()}; if($v){$gn=@($v|Where-Object{$_.Name -and $_.Name -notmatch 'Parsec|Virtual Display|Microsoft Basic|Remote|Indirect|Mirror'}|ForEach-Object{$_.Name.Trim()}|Select-Object -Unique); if(-not $gn.Count){$gn=@($v|ForEach-Object{$_.Name.Trim()})}; $res+='GPU:'+($gn -join ' / ')}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}elseif($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}; $res+='LAPTOP:'+$b; $nv=0; if(@($v|Where-Object{$_.Name -match 'NVIDIA' -and $_.Name -notmatch 'Virtual|Parsec|Remote|Indirect|Mirror|Microsoft Basic'}).Count -gt 0){$cs=Get-CimInstance Win32_ComputerSystem; if($cs.Model -notmatch 'Virtual|VMware|VirtualBox|KVM|QEMU|Xen|Parallels'){$nv=1}}; $res+='NVIDIA:'+$nv; $res=@($res|ForEach-Object{$_ -replace [string][char]0x2019,[string][char]39}); [System.IO.File]::WriteAllLines($env:WINOPT_HW_FILE, $res, [Console]::OutputEncoding)" >nul 2>&1
 if !errorlevel! NEQ 0 (
     echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Detection du materiel impossible.%COLOR_RESET%
     echo %COLOR_WHITE%Les valeurs par defaut seront utilisees.%COLOR_RESET%
@@ -4773,27 +4775,8 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Installation silencieuse
 if "!DX_RESULT!"=="0" (
     if exist "%DX_TEMP%\DXSETUP.exe" (
         start /wait "" "%DX_TEMP%\DXSETUP.exe" /silent >nul 2>&1
+        call :DX_SETUP_RESULT !errorlevel!
         set "DX_RESULT=!errorlevel!"
-        if "!DX_RESULT!"=="3010" (
-            set "DX_REBOOT=1"
-            set "DX_RESULT=0"
-        )
-        if "!DX_RESULT!"=="1641" (
-            set "DX_REBOOT=1"
-            set "DX_RESULT=0"
-        )
-        if "!DX_RESULT!"=="0" (
-            call :DETECT_DIRECTX_JUNE2010
-            if "!DX_INSTALLED!"=="1" (
-                echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification : DirectX June 2010 est installe.%COLOR_RESET%
-                if defined DX_REBOOT echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est requis par l'installateur DirectX.%COLOR_RESET%
-            ) else (
-                set "DX_RESULT=1"
-                echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%DXSETUP a termine, mais les runtimes restent incomplets.%COLOR_RESET%
-            )
-        ) else (
-            echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%DXSETUP a retourne le code !DX_RESULT!.%COLOR_RESET%
-        )
     ) else (
         set "DX_RESULT=1"
         echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%DXSETUP.exe est introuvable apres extraction.%COLOR_RESET%
@@ -4816,6 +4799,29 @@ if "!DX_RESULT!"=="0" (
 )
 set "DX_RESULT="
 exit /b 1
+
+:DX_SETUP_RESULT
+REM  %~1 = code de DXSETUP. Affiche le resultat verifie ; retour 0 si DirectX est complet.
+set "DX_SETUP_RC=%~1"
+set "DX_REBOOT="
+if "!DX_SETUP_RC!"=="3010" (set "DX_REBOOT=1" & set "DX_SETUP_RC=0")
+if "!DX_SETUP_RC!"=="1641" (set "DX_REBOOT=1" & set "DX_SETUP_RC=0")
+if not "!DX_SETUP_RC!"=="0" (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%DXSETUP a retourne le code !DX_SETUP_RC!.%COLOR_RESET%
+    set "DX_SETUP_RC="
+    exit /b 1
+)
+set "DX_SETUP_RC="
+call :DETECT_DIRECTX_JUNE2010
+if not "!DX_INSTALLED!"=="1" (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%DXSETUP a termine, mais les runtimes restent incomplets.%COLOR_RESET%
+    set "DX_REBOOT="
+    exit /b 1
+)
+echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification : DirectX June 2010 est installe.%COLOR_RESET%
+if defined DX_REBOOT echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est requis par l'installateur DirectX.%COLOR_RESET%
+set "DX_REBOOT="
+exit /b 0
 
 :SUPPRIMER_BLOATWARES
 call :SCREEN_HEADER " SUPPRESSION DES APPLICATIONS PREINSTALLEES"
@@ -5220,18 +5226,32 @@ REM /reg:32 vise le package x86 et /reg:64 le package x64 sur Windows 64 bits.
 REM Attention : Installed=1 peut persister apres desinstallation si Visual Studio
 REM avec composant C++ est installe (StackOverflow #67493523). On verifie donc aussi
 REM la presence de la DLL principale comme filet de securite.
+REM Version minimale 14.40 : les programmes compiles avec VS 17.10+ exigent ce runtime
+REM (changement de std::mutex) ; une version plus ancienne etait jugee installee et
+REM n'etait jamais mise a jour. Le paquet actuel la met alors a niveau.
 if defined ProgramFiles(x86) (
-    reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v Installed /reg:32 2>nul | findstr /R /I "Installed.*REG_DWORD.*0x1" >nul
+    call :VC14_REG_OK x86 /reg:32
     if !errorlevel! EQU 0 if exist "%SystemRoot%\SysWOW64\vcruntime140.dll" set "VC2015X86=1"
-    reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64" /v Installed /reg:64 2>nul | findstr /R /I "Installed.*REG_DWORD.*0x1" >nul
+    call :VC14_REG_OK x64 /reg:64
     if !errorlevel! EQU 0 if exist "%SystemRoot%\System32\vcruntime140.dll" set "VC2015X64=1"
 ) else (
-    reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x86" /v Installed 2>nul | findstr /R /I "Installed.*REG_DWORD.*0x1" >nul
+    call :VC14_REG_OK x86
     if !errorlevel! EQU 0 if exist "%SystemRoot%\System32\vcruntime140.dll" set "VC2015X86=1"
     REM Aucun package x64 n'est attendu sur un Windows 32 bits.
     set "VC2015X64=1"
 )
 exit /b 0
+
+:VC14_REG_OK
+REM %~1 = x86 ou x64 ; %~2 = /reg:32, /reg:64 ou vide. Retour 0 si Installed=1 et version >= 14.40.
+set "VC_REG_MINOR=0"
+reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\%~1" /v Installed %~2 2>nul | findstr /R /I "Installed.*REG_DWORD.*0x1" >nul
+if !errorlevel! NEQ 0 exit /b 1
+for /f "tokens=3" %%M in ('reg query "HKLM\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\%~1" /v Minor %~2 2^>nul ^| findstr /i "Minor"') do set /a "VC_REG_MINOR=%%M" 2>nul
+set "VC_REG_RC=0"
+if !VC_REG_MINOR! LSS 40 set "VC_REG_RC=1"
+set "VC_REG_MINOR="
+exit /b !VC_REG_RC!
 
 :DOWNLOAD_VC14_REDISTS
 set "VC_DOWNLOAD_FAILED=0"
@@ -5377,22 +5397,33 @@ set "VALIDATE_MS_FILE="
 exit /b 1
 
 :DETECT_DIRECTX_JUNE2010
-set "DX_INSTALLED=0"
-REM XAudio2_7 seul ne prouve pas que le redist June 2010 est complet.
-REM Tester un noyau de DLL side-by-side dans chaque architecture permet au moins
-REM d'eviter de court-circuiter DXSETUP apres une installation manifestement partielle.
-set "DX_LEGACY_FILES=XAudio2_7.dll X3DAudio1_7.dll XAPOFX1_5.dll xactengine3_7.dll xinput1_3.dll D3DCompiler_43.dll D3DX9_43.dll D3DX10_43.dll D3DX11_43.dll"
-if defined ProgramFiles(x86) (
-    set "DX_INSTALLED=1"
-    for %%F in (!DX_LEGACY_FILES!) do (
-        if not exist "%SystemRoot%\System32\%%F" set "DX_INSTALLED=0"
-        if not exist "%SystemRoot%\SysWOW64\%%F" set "DX_INSTALLED=0"
+REM Les 90 DLL du redistribuable June 2010, dans chaque architecture (releve en VM
+REM apres DXSETUP). Un jeu peut n'avoir pose que les plus recentes : n'en tester
+REM qu'une par famille sautait DXSETUP alors que d3dx9_30 manquait encore.
+REM Exclues : d3dcompiler_47, xaudio2_8/9 et xinput1_4 viennent de Windows.
+set "DX_INSTALLED=1"
+set "DX_DIRS=System32"
+if defined ProgramFiles(x86) set "DX_DIRS=System32 SysWOW64"
+for %%D in (!DX_DIRS!) do (
+    for /l %%N in (24,1,43) do if not exist "%SystemRoot%\%%D\d3dx9_%%N.dll" set "DX_INSTALLED=0"
+    for /l %%N in (33,1,43) do (
+        if not exist "%SystemRoot%\%%D\d3dx10_%%N.dll" set "DX_INSTALLED=0"
+        if not exist "%SystemRoot%\%%D\D3DCompiler_%%N.dll" set "DX_INSTALLED=0"
     )
-) else (
-    set "DX_INSTALLED=1"
-    for %%F in (!DX_LEGACY_FILES!) do if not exist "%SystemRoot%\System32\%%F" set "DX_INSTALLED=0"
+    for %%N in (42 43) do (
+        if not exist "%SystemRoot%\%%D\d3dx11_%%N.dll" set "DX_INSTALLED=0"
+        if not exist "%SystemRoot%\%%D\d3dcsx_%%N.dll" set "DX_INSTALLED=0"
+    )
+    for /l %%N in (0,1,7) do (
+        if not exist "%SystemRoot%\%%D\XAudio2_%%N.dll" set "DX_INSTALLED=0"
+        if not exist "%SystemRoot%\%%D\X3DAudio1_%%N.dll" set "DX_INSTALLED=0"
+        if not exist "%SystemRoot%\%%D\xactengine3_%%N.dll" set "DX_INSTALLED=0"
+    )
+    for /l %%N in (0,1,5) do if not exist "%SystemRoot%\%%D\XAPOFX1_%%N.dll" set "DX_INSTALLED=0"
+    for /l %%N in (0,1,10) do if not exist "%SystemRoot%\%%D\xactengine2_%%N.dll" set "DX_INSTALLED=0"
+    for /l %%N in (1,1,3) do if not exist "%SystemRoot%\%%D\xinput1_%%N.dll" set "DX_INSTALLED=0"
 )
-set "DX_LEGACY_FILES="
+set "DX_DIRS="
 exit /b 0
 
 :INSTALL_STR_BINARY
@@ -5443,7 +5474,8 @@ exit /b !errorlevel!
 
 :REMOVE_STR_AUTOSTART_TASK
 set "STR_TASK_NAME=WindowsOptimizer SetTimerResolution"
-powershell -NoProfile -Command "Unregister-ScheduledTask -TaskName $env:STR_TASK_NAME -Confirm:$false -ErrorAction SilentlyContinue" >nul 2>&1
+REM  schtasks evite de charger le module ScheduledTasks (7,6 s mesurees en VM).
+schtasks /delete /tn "%STR_TASK_NAME%" /f >nul 2>&1
 set "STR_TASK_NAME="
 exit /b 0
 

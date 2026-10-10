@@ -53,7 +53,7 @@ Depuis un clone local, cette commande vérifie le batch publié sans demander l'
 2. Appuyez sur **[O]** pour le parcours complet.
 3. Choisissez l'usage, l'énergie, puis les cinq choix complémentaires proposés : protections Windows, Defender, animations, fonctions IA et UAC.
 4. Les sections sont ensuite exécutées une fois, sans nouvelle question hors contrôles et confirmations dédiés.
-5. **Le parcours installe aussi les runtimes manquants** : Visual C++ v14 x86 (6,6 Mo) et x64 (17,9 Mo), puis DirectX de juin 2010 (95,6 Mo), soit **~120 Mo** téléchargés depuis Microsoft, sans question préalable. Chaque fichier est vérifié avant exécution (taille minimale, et signature Microsoft valide pour DirectX et VC). Ce n'est pas une option du parcours : c'est la première étape, parce que les jeux et les outils installent leurs runtimes à la demande.
+5. **Le parcours installe aussi les runtimes manquants** : Visual C++ v14 x86 (6,6 Mo) et x64 (17,9 Mo), puis DirectX de juin 2010 (95,6 Mo), soit **~120 Mo** téléchargés depuis Microsoft, sans question préalable. Chaque fichier est vérifié avant exécution (taille minimale, et signature Microsoft valide pour DirectX et VC). Ce n'est pas une option du parcours : c'est la première étape, parce que les jeux et les outils installent leurs runtimes à la demande. Un runtime Visual C++ antérieur à 14.40 est mis à jour, et DirectX n'est considéré comme présent que si ses 90 DLL le sont dans chaque architecture.
 6. Un redémarrage est **recommandé** après un parcours complet et devient nécessaire lorsque Windows, un réglage de sécurité/pilote ou un installateur le signale.
 7. La durée dépend du PC, des options choisies et de la connexion.
 
