@@ -219,6 +219,9 @@ set "LOAD_TOTAL="
 
 :: Ecran d'information (1 fois par session)
 call :SCREEN_HEADER "                         WINDOWS OPTIMIZER"
+:: Profil Valorant fourni : tous les comptes de cet utilisateur, a chaque lancement.
+call :APPLIQUER_VALORANT
+echo.
 echo %STYLE_BOLD%%COLOR_BLUE% FONCTIONNEMENT%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%  [1]%COLOR_RESET% %COLOR_WHITE%Choisissez votre usage : %COLOR_GREEN%GAMING%COLOR_RESET% pour les jeux ou %COLOR_CYAN%NORMAL%COLOR_RESET% pour le quotidien%COLOR_RESET%
@@ -5644,3 +5647,115 @@ if "!REMOTE_PS_RC!"=="0" (
 set "REMOTE_PS_RC="
 set "REMOTE_PS_PROVIDER="
 exit /b 1
+
+:APPLIQUER_VALORANT
+if not exist "%LOCALAPPDATA%\VALORANT\Saved\Config\" exit /b 0
+setlocal
+set "WINOPT_VAL_SOURCE=%~f0"
+echo [EN COURS] Valorant : profil performances sur tous les comptes, resolution conservee.
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; try{$lines=[IO.File]::ReadAllLines($env:WINOPT_VAL_SOURCE); $code=@($lines | Where-Object { $_.StartsWith('::VALPS ') } | ForEach-Object { $_.Substring(8) }); if($code.Count -lt 50){throw 'Helper Valorant incomplet'}; & ([scriptblock]::Create($code -join [Environment]::NewLine))}catch{Write-Host ('[ERREUR] '+$_.Exception.Message); exit 1}"
+set "WINOPT_VAL_RC=!errorlevel!"
+if not "!WINOPT_VAL_RC!"=="0" echo [AVERTISSEMENT] Valorant : profil incomplet ou non applique. Fermez le jeu et relancez WindowsOptimizer.
+endlocal & exit /b %WINOPT_VAL_RC%
+
+:: Helper Valorant embarque, extrait uniquement par APPLIQUER_VALORANT.
+::VALPS $ErrorActionPreference='Stop'
+::VALPS # Never write while the game can save its own settings. No forced termination.
+::VALPS if(Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping' -ErrorAction SilentlyContinue) {
+::VALPS     throw 'Fermez Valorant avant d appliquer le profil.'
+::VALPS }
+::VALPS $profile=@'
+::VALPS [/Script/ShooterGame.ShooterGameUserSettings]
+::VALPS LastConfirmedDefaultMonitorIndex=0
+::VALPS bShouldLetterbox=True
+::VALPS bLastConfirmedShouldLetterbox=True
+::VALPS bUseVSync=False
+::VALPS WindowPosX=0
+::VALPS WindowPosY=0
+::VALPS LastConfirmedFullscreenMode=0
+::VALPS PreferredFullscreenMode=0
+::VALPS AudioQualityLevel=0
+::VALPS LastConfirmedAudioQualityLevel=0
+::VALPS FrameRateLimit=0.000000
+::VALPS LastCPUBenchmarkResult=-1.000000
+::VALPS LastGPUBenchmarkResult=-1.000000
+::VALPS LastGPUBenchmarkMultiplier=1.000000
+::VALPS bUseHDRDisplayOutput=False
+::VALPS HDRDisplayOutputNits=0
+::VALPS [/Script/Engine.GameUserSettings]
+::VALPS FullscreenMode=0
+::VALPS MaxFPS=999
+::VALPS bDisablePhysXHardwareSupport=True
+::VALPS FocusMode=0
+::VALPS OverallGraphicsQuality=0
+::VALPS [ScalabilityGroups]
+::VALPS sg.ViewDistanceQuality=0
+::VALPS sg.AntiAliasingQuality=0
+::VALPS sg.ShadowQuality=0
+::VALPS sg.PostProcessQuality=0
+::VALPS sg.TextureQuality=0
+::VALPS sg.EffectsQuality=0
+::VALPS sg.FoliageQuality=0
+::VALPS sg.ShadingQuality=0
+::VALPS sg.GlobalIlluminationQuality=0
+::VALPS sg.ReflectionQuality=0
+::VALPS '@
+::VALPS $sections=[ordered]@{}
+::VALPS $section=$null
+::VALPS foreach($line in ($profile -split '\r?\n')) {
+::VALPS     if($line -match '^\[(.+)\]$'){$section=$Matches[1]; $sections[$section]=[ordered]@{}}
+::VALPS     elseif($line -match '^([^=]+)=(.*)$'){$sections[$section][$Matches[1]]=$Matches[2]}
+::VALPS }
+::VALPS function Merge-Profile([string[]]$lines) {
+::VALPS     $out=New-Object 'System.Collections.Generic.List[string]'
+::VALPS     $seenSections=@{}; $seenKeys=@{}; $current=''
+::VALPS     foreach($line in $lines) {
+::VALPS         if($line -match '^\s*\[(.+?)\]\s*$') {
+::VALPS             if($sections.Contains($current)) {
+::VALPS                 foreach($key in $sections[$current].Keys){if(-not $seenKeys.ContainsKey($key)){$out.Add($key+'='+$sections[$current][$key])}}
+::VALPS             }
+::VALPS             $current=$Matches[1]; $seenKeys=@{}; $seenSections[$current]=$true
+::VALPS             $out.Add($line)
+::VALPS         } elseif($sections.Contains($current) -and $line -match '^\s*([^;#=][^=]*?)\s*=(.*)$' -and $sections[$current].Contains($Matches[1])) {
+::VALPS             $key=$Matches[1]; $out.Add($key+'='+$sections[$current][$key]); $seenKeys[$key]=$true
+::VALPS         } else {$out.Add($line)}
+::VALPS     }
+::VALPS     if($sections.Contains($current)) {
+::VALPS         foreach($key in $sections[$current].Keys){if(-not $seenKeys.ContainsKey($key)){$out.Add($key+'='+$sections[$current][$key])}}
+::VALPS     }
+::VALPS     foreach($name in $sections.Keys) {
+::VALPS         if(-not $seenSections.ContainsKey($name)) {
+::VALPS             $out.Add(''); $out.Add('['+$name+']')
+::VALPS             foreach($key in $sections[$name].Keys){$out.Add($key+'='+$sections[$name][$key])}
+::VALPS         }
+::VALPS     }
+::VALPS     return ,$out.ToArray()
+::VALPS }
+::VALPS $root=Join-Path $env:LOCALAPPDATA 'VALORANT\Saved\Config'
+::VALPS $files=@()
+::VALPS if(Test-Path -LiteralPath $root){$files=@(Get-ChildItem -LiteralPath $root -Filter GameUserSettings.ini -File -Recurse)}
+::VALPS $done=0; $failed=0
+::VALPS foreach($file in $files) {
+::VALPS     $backup=$file.FullName+'.winopt-backup'
+::VALPS     try {
+::VALPS         if($file.IsReadOnly){throw 'Fichier en lecture seule : attribut conserve'}
+::VALPS         $reader=New-Object IO.StreamReader($file.FullName, [Text.Encoding]::UTF8, $true)
+::VALPS         try{$text=$reader.ReadToEnd(); $encoding=$reader.CurrentEncoding}finally{$reader.Dispose()}
+::VALPS         $lines=$text -split '\r?\n'
+::VALPS         if($lines.Count -eq 1 -and $lines[0] -eq ''){$lines=@()}
+::VALPS         elseif($lines[-1] -eq ''){$lines=$lines[0..($lines.Count-2)]}
+::VALPS         $output=(Merge-Profile $lines) -join "`r`n"
+::VALPS         $output+="`r`n"
+::VALPS         if(-not (Test-Path -LiteralPath $backup)){[IO.File]::Copy($file.FullName,$backup,$false)}
+::VALPS         [IO.File]::WriteAllText($file.FullName,$output,$encoding)
+::VALPS         if([IO.File]::ReadAllText($file.FullName) -cne $output){throw 'Verification apres ecriture en echec'}
+::VALPS         $done++
+::VALPS     } catch {
+::VALPS         $failed++
+::VALPS         Write-Warning ($file.FullName+' : '+$_.Exception.Message)
+::VALPS     }
+::VALPS }
+::VALPS Write-Host ('[INFO] Fichiers appliques : '+$done+' ; echecs : '+$failed+'. Sauvegarde initiale : .winopt-backup')
+::VALPS if($files.Count -eq 0){Write-Host '[INFO] Aucun fichier : connectez un compte, fermez le jeu puis relancez cette option.'}
+::VALPS if($failed -gt 0){exit 1}
+::VALPS exit 0

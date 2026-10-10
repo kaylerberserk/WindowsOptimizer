@@ -47,6 +47,8 @@ Depuis un clone local, cette commande vérifie le batch publié sans demander l'
 
 > Le launcher n'utilise pas un `All in One.cmd` placé à côté de lui : la commande `irm` et `.\launcher.ps1` utilisent le même batch publié. Pour tester la copie locale, ouvrez directement `All in One.cmd` en administrateur. Le mode `-VerifyOnly` affiche la source et le SHA-256 contrôlés.
 
+À chaque lancement, si Valorant possède des fichiers de configuration, WindowsOptimizer applique le profil fourni à tous les `GameUserSettings.ini` présents sous `%LOCALAPPDATA%\VALORANT\Saved\Config` de l’utilisateur Windows courant, y compris le fichier commun : plein écran, VSync désactivée et qualité minimale. Seules les clés du profil sont fusionnées ; les identifiants et l’index du moniteur, la résolution actuelle et mémorisée, l’échelle de rendu et les options de résolution dynamique ainsi que les autres réglages sont conservés. Le jeu doit être fermé. Chaque fichier reçoit une sauvegarde initiale `.winopt-backup` ; pour restaurer, recopiez-la sur son fichier `.ini`, jeu fermé. Après la première connexion d’un nouveau compte, fermez Valorant et relancez WindowsOptimizer. Aucun service ni tâche en arrière-plan n’est installé. Les gains de FPS et la prise en compte de chaque clé par Valorant ne sont pas garantis.
+
 ### Premier parcours
 
 1. Appuyez sur **[R]** pour créer un point de restauration.

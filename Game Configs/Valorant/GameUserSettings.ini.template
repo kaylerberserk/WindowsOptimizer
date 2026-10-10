@@ -1,37 +1,40 @@
-; =============================================================================
-; GameUserSettings.ini - TEMPLATE pour Valorant (PERFORMANCES UNIQUEMENT)
-; =============================================================================
-; Ce fichier est un MODELE. Copier dans :
-;   %LOCALAPPDATA%\VALORANT\Saved\Config\WindowsClient\GameUserSettings.ini
-; Puis redemarrer le jeu.
-;
-; Le DefaultMonitorDeviceID a ete retire car il contient l'EDID unique de
-; votre moniteur (modele + identifiant). A regenerer au premier lancement
-; du jeu.
-; =============================================================================
+; Profil fourni par kayler : fusionner ces cles, ne pas remplacer le fichier complet.
+; Cible : %LOCALAPPDATA%\VALORANT\Saved\Config\<compte>\Windows\GameUserSettings.ini
+; Le sous-dossier peut varier : WindowsOptimizer recherche tous les GameUserSettings.ini.
+; Moniteur et resolution conserves ; plein ecran, qualite minimale.
+; All in One.cmd applique ce profil au lancement, sur tous les comptes presents avec sauvegarde.
 
 [/Script/ShooterGame.ShooterGameUserSettings]
-DefaultMonitorIndex=0
 LastConfirmedDefaultMonitorIndex=0
 bShouldLetterbox=True
 bLastConfirmedShouldLetterbox=True
 bUseVSync=False
-bUseDynamicResolution=False
-ResolutionSizeX=1920
-ResolutionSizeY=1080
-LastUserConfirmedResolutionSizeX=1920
-LastUserConfirmedResolutionSizeY=1080
+WindowPosX=0
+WindowPosY=0
 LastConfirmedFullscreenMode=0
-PreferredFullscreenMode=1
+PreferredFullscreenMode=0
 AudioQualityLevel=0
 LastConfirmedAudioQualityLevel=0
 FrameRateLimit=0.000000
-DesiredScreenWidth=1920
-DesiredScreenHeight=1080
-LastUserConfirmedDesiredScreenWidth=1920
-LastUserConfirmedDesiredScreenHeight=1080
+LastCPUBenchmarkResult=-1.000000
+LastGPUBenchmarkResult=-1.000000
+LastGPUBenchmarkMultiplier=1.000000
 bUseHDRDisplayOutput=False
-HDRDisplayOutputNits=1000
-
+HDRDisplayOutputNits=0
 [/Script/Engine.GameUserSettings]
-bUseDesiredScreenHeight=False
+FullscreenMode=0
+MaxFPS=999
+bDisablePhysXHardwareSupport=True
+FocusMode=0
+OverallGraphicsQuality=0
+[ScalabilityGroups]
+sg.ViewDistanceQuality=0
+sg.AntiAliasingQuality=0
+sg.ShadowQuality=0
+sg.PostProcessQuality=0
+sg.TextureQuality=0
+sg.EffectsQuality=0
+sg.FoliageQuality=0
+sg.ShadingQuality=0
+sg.GlobalIlluminationQuality=0
+sg.ReflectionQuality=0
