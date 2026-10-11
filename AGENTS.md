@@ -65,7 +65,7 @@ Mesurees le 2026-10-05 sur `bb1ff75`. Les commandes se lancent depuis la racine 
 
 ## Methodes
 
-Verifiees sur ce depot. Revalider avant de les conserver : une regle qui ne s'est pas reproduite deux fois est un candidat a la suppression.
+Verifiees sur ce depot. Revalider leur utilite : corroborer les conseils issus de sessions independantes ; un defaut reproductible ou une limite couteuse a manquer n'attend pas deux incidents. Supprimer sur preuve de nuisance, remplacement fiable ou absence d'utilite.
 
 - **Executer plutot que relire.** Syntaxe, parentheses, encodage et logique se controlent par un programme, jamais a l'oeil. Un helper teste sur une cle scratch revele ce qu'un test de syntaxe laisse passer.
 - **Le script se pilote dans une vraie console, touche par touche.** Fournir les touches par fichier fausse le test : les programmes lances avalent les touches en attente. Par SSH, `choice.exe` refuse les chiffres et le script meurt au redemarrage de la carte reseau. `drive.py` ecrit chaque touche dans la console par un agent, invite par invite.
