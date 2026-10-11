@@ -39,6 +39,8 @@ set "WINOPT_PS_MISSING="
 set "WINOPT_FORMAT_RC="
 set "WINOPT_RELAUNCH_RC="
 setlocal EnableDelayedExpansion
+REM Le worker herite du contexte initialise du parent, sans rejouer le demarrage.
+if /i "%~1"=="--runtime-worker" if defined AIO_RUNTIME_JOB goto :AIO_RUNTIME_WORKER
 cls
 :: IMPORTANT : textes SANS ACCENTS (ASCII) pour affichage fiable en console cmd.exe
 :: Ne pas utiliser chcp 65001 (UTF-8 casse l'affichage des .cmd sous Windows)
@@ -928,12 +930,14 @@ if !errorlevel! NEQ 0 (
     goto :MENU_PRINCIPAL
 )
 set "AIO_POWER_PRESELECTED=1"
-call :INSTALLER_VISUAL_REDIST
-set "AIO_RUNTIME_RC=!errorlevel!"
+call :START_AIO_RUNTIMES
 call :OPTIMISATIONS_SYSTEME
 call :OPTIMISATIONS_MEMOIRE
 call :OPTIMISATIONS_DISQUES
 call :OPTIMISATIONS_GPU
+REM Attendre avant le reseau : son redemarrage peut interrompre les telechargements.
+call :WAIT_AIO_RUNTIMES
+set "AIO_RUNTIME_RC=!errorlevel!"
 call :OPTIMISATIONS_RESEAU
 call :OPTIMISATIONS_PERIPHERIQUES
 if "!PROFIL_POWER!"=="0" (
@@ -966,6 +970,7 @@ set "DESACTIVER_ANIMATIONS="
 set "DESACTIVER_IA="
 set "DESACTIVER_UAC="
 set "AIO_RUNTIME_RC="
+set "AIO_RUNTIME_LOG="
 goto :MENU_PRINCIPAL
 
 :AFFICHER_RESUME_OPTIMISATION
@@ -992,6 +997,7 @@ if "!AIO_RUNTIME_RC!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Runtimes Visual C++ et DirectX verifies.%COLOR_RESET%
 ) else (
     echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Visual C++ ou DirectX n'a pas pu etre installe/verifie completement.%COLOR_RESET%
+    if defined AIO_RUNTIME_LOG echo %COLOR_WHITE%Journal : !AIO_RUNTIME_LOG!%COLOR_RESET%
 )
 if "!PROFIL_POWER!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Energie Performance max demandee.%COLOR_RESET%
@@ -4637,6 +4643,74 @@ set "SPACE_FREED_GB="
 set "SPACE_MEASURE_OK="
 set "CLEAN_WARNINGS="
 goto :MENU_PRINCIPAL
+
+
+:START_AIO_RUNTIMES
+set "AIO_RUNTIME_LOG="
+set "AIO_RUNTIME_JOB=%TEMP%\WinOpt_Runtimes_%RANDOM%_%RANDOM%"
+set "AIO_RUNTIME_SCRIPT=%~f0"
+set "AIO_RUNTIME_PID="
+mkdir "%AIO_RUNTIME_JOB%" >nul 2>&1
+if not exist "%AIO_RUNTIME_JOB%\" goto :AIO_RUNTIME_FOREGROUND
+REM Fenetre masquee et sorties dans un journal : le worker ne partage pas la console.
+for /f "delims=" %%P in ('powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$q=[char]34;$a='/d /e:on /v:off /s /c '+$q+$q+$env:AIO_RUNTIME_SCRIPT+$q+' --runtime-worker > '+$q+$env:AIO_RUNTIME_JOB+'\runtime.log'+$q+' 2>&1'+$q;$p=Start-Process -FilePath $env:ComSpec -ArgumentList $a -WindowStyle Hidden -PassThru;[Console]::WriteLine($p.Id)}catch{exit 1}" 2^>nul') do set "AIO_RUNTIME_PID=%%P"
+if not defined AIO_RUNTIME_PID goto :AIO_RUNTIME_FOREGROUND
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Visual C++ et DirectX en arriere-plan pendant les optimisations.%COLOR_RESET%
+exit /b 0
+
+:AIO_RUNTIME_FOREGROUND
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Arriere-plan indisponible : installation des runtimes au premier plan.%COLOR_RESET%
+call :INSTALLER_VISUAL_REDIST
+set "AIO_RUNTIME_FALLBACK_RC=!errorlevel!"
+exit /b 0
+
+:WAIT_AIO_RUNTIMES
+if not defined AIO_RUNTIME_PID goto :AIO_RUNTIME_FALLBACK_DONE
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification de la fin des runtimes avant les reglages reseau...%COLOR_RESET%
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$p=Get-Process -Id ([int]$env:AIO_RUNTIME_PID) -ErrorAction SilentlyContinue;if($p){$p.WaitForExit()};exit 0}catch{exit 1}" >nul 2>&1
+if errorlevel 1 (
+    ping -n 3 127.0.0.1 >nul
+    goto :WAIT_AIO_RUNTIMES
+)
+set "AIO_RUNTIME_RESULT=1"
+if exist "%AIO_RUNTIME_JOB%\result.txt" set /p AIO_RUNTIME_RESULT=<"%AIO_RUNTIME_JOB%\result.txt"
+if not "!AIO_RUNTIME_RESULT!"=="0" goto :AIO_RUNTIME_BACKGROUND_FAILED
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Visual C++ et DirectX verifies en arriere-plan.%COLOR_RESET%
+rd /s /q "%AIO_RUNTIME_JOB%" >nul 2>&1
+set "AIO_RUNTIME_JOB="
+set "AIO_RUNTIME_SCRIPT="
+set "AIO_RUNTIME_PID="
+set "AIO_RUNTIME_RESULT="
+exit /b 0
+
+:AIO_RUNTIME_BACKGROUND_FAILED
+set "AIO_RUNTIME_LOG=!AIO_RUNTIME_JOB!\runtime.log"
+echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Installation des runtimes non validee. Journal : !AIO_RUNTIME_JOB!\runtime.log%COLOR_RESET%
+set "AIO_RUNTIME_JOB="
+set "AIO_RUNTIME_SCRIPT="
+set "AIO_RUNTIME_PID="
+set "AIO_RUNTIME_RESULT="
+exit /b 1
+
+:AIO_RUNTIME_FALLBACK_DONE
+if exist "%AIO_RUNTIME_JOB%\" rd /s /q "%AIO_RUNTIME_JOB%" >nul 2>&1
+set "AIO_RUNTIME_JOB="
+set "AIO_RUNTIME_SCRIPT="
+if "!AIO_RUNTIME_FALLBACK_RC!"=="0" (
+    set "AIO_RUNTIME_FALLBACK_RC="
+    exit /b 0
+)
+set "AIO_RUNTIME_FALLBACK_RC="
+exit /b 1
+
+:AIO_RUNTIME_WORKER
+REM Journal texte lisible, sans sequences de couleur ANSI.
+for %%V in (COLOR_GREEN COLOR_YELLOW COLOR_RED COLOR_CYAN COLOR_WHITE COLOR_BLUE COLOR_MAGENTA COLOR_RESET STYLE_BOLD) do set "%%V="
+set "SKIP_PAUSE=1"
+call :INSTALLER_VISUAL_REDIST
+set "AIO_RUNTIME_RESULT=!errorlevel!"
+>"%AIO_RUNTIME_JOB%\result.txt" echo !AIO_RUNTIME_RESULT!
+exit /b !AIO_RUNTIME_RESULT!
 
 
 :INSTALLER_VISUAL_REDIST

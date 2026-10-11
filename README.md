@@ -23,8 +23,10 @@ Le lanceur télécharge la version publiée du script et l'ouvre dans une fenêt
 1. Appuyez sur **[R]** pour créer un point de restauration.
 2. Appuyez sur **[O]** pour **Tout optimiser**, ou choisissez une section du menu.
 3. Choisissez votre usage et votre profil d'énergie, puis les options proposées pour les protections Windows, Microsoft Defender (antivirus), les animations, les fonctions IA et les confirmations administrateur (UAC).
-4. Le parcours complet installe automatiquement les composants Visual C++ et DirectX manquants depuis Microsoft, puis applique les sections.
+4. Le parcours complet télécharge et installe automatiquement les composants Visual C++ et DirectX manquants depuis Microsoft, en arrière-plan pendant les sections système, mémoire, disques et GPU. Il attend leur fin avant les réglages réseau et affiche leur résultat dans le résumé.
 5. Redémarrez après le parcours, notamment si le script ou un installateur le demande.
+
+Si les composants ne peuvent pas être installés en arrière-plan, le script reprend au premier plan. Les contrôles de signature et d’installation restent actifs ; en cas d’échec, le résumé indique le journal conservé dans `%TEMP%\WinOpt_Runtimes_*\runtime.log`. Le menu **[7] Runtimes** conserve son affichage détaillé au premier plan.
 
 > Le script modifie réellement Windows. Les options de sécurité réduisent certaines protections ; les désinstallations et le nettoyage peuvent supprimer des données. Un point de restauration ne remplace pas une sauvegarde de vos fichiers.
 
