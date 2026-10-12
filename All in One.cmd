@@ -1935,6 +1935,33 @@ if "!HAS_NVIDIA!"=="1" (
     echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%NVIDIA Profile Inspector ignore. Aucun GPU NVIDIA detecte.%COLOR_RESET%
 )
 
+REM  4.9 - Pilote NVIDIA : PhysX, chemin GR535 et compteurs de performance
+if "!HAS_NVIDIA!"=="1" (
+    if "!PROFIL_USAGE!"=="0" (
+        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA...%COLOR_RESET%
+        REM  PhysX traite sur le GPU au lieu du processeur.
+        reg add "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v NvCplPhysxAuto /t REG_DWORD /d 0 /f >nul 2>&1
+        REM  Chemin de mise a l'echelle GR535 : 0 le retire, 1 le remet.
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v EnableGR535 /t REG_DWORD /d 0 /f >nul 2>&1
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v EnableGR535 /t REG_DWORD /d 0 /f >nul 2>&1
+        REM  Compteurs de performance GPU lisibles sans elevation : la cle globale et
+        REM  la cle de classe par carte, que le pilote consulte tous les deux.
+        reg add "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v RmProfilingAdminOnly /t REG_DWORD /d 0 /f >nul 2>&1
+        for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do reg add "%%K" /v RmProfilingAdminOnly /t REG_DWORD /d 0 /f >nul 2>&1
+        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA appliques.%COLOR_RESET%
+    ) else (
+        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des reglages du pilote NVIDIA...%COLOR_RESET%
+        reg delete "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v NvCplPhysxAuto /f >nul 2>&1
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v EnableGR535 /t REG_DWORD /d 1 /f >nul 2>&1
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v EnableGR535 /t REG_DWORD /d 1 /f >nul 2>&1
+        reg delete "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v RmProfilingAdminOnly /f >nul 2>&1
+        for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do reg delete "%%K" /v RmProfilingAdminOnly /f >nul 2>&1
+        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA rendus au comportement natif.%COLOR_RESET%
+    )
+) else (
+    echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA ignores. Aucun GPU NVIDIA detecte.%COLOR_RESET%
+)
+
 call :FINISH_ACTION "Reglages GPU"
 exit /b 0
 
@@ -3324,6 +3351,17 @@ reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender\Real-Time Protection" /v Di
 for %%V in (DisableAntiSpyware DisableAntiVirus DisableBlockAtFirstSeen DisableRoutinelyTakingAction) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v "%%V" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v VerifiedAndReputableTrustModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v SmartLockerMode /t REG_DWORD /d 1 /f >nul 2>&1
+
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des protections systeme associees...%COLOR_RESET%
+REM  Smart App Control et la protection contre les rancongiciels reviennent au choix
+REM  de Windows par suppression, puisque leur valeur par defaut n'est pas garantie.
+REM  Une modification de CFA ou de LSA-PPL faite a la main n'est donc pas retrouvee.
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v "VerifiedAndReputablePolicyState" /f >nul 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender\Windows Defender Exploit Guard\Controlled Folder Access" /v "EnableControlledFolderAccess" /f >nul 2>&1
+REM  RunAsPPL : 2 est le defaut mesure d'une installation neuve Windows 11 22H2+,
+REM  actif sans verrou UEFI.
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v "RunAsPPL" /t REG_DWORD /d 2 /f >nul 2>&1
+
 call :RESTORE_SMARTSCREEN_DEFAULT_EXTRA
 call :RESTORE_DEFENDER_NOTIFICATIONS_DEFAULT
 
@@ -3405,6 +3443,17 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableBlockAtFi
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableRoutinelyTakingAction" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v "VerifiedAndReputableTrustModeEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v "SmartLockerMode" /t REG_DWORD /d 0 /f >nul 2>&1
+
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des protections systeme associees...%COLOR_RESET%
+REM  Smart App Control : c'est cette valeur d'etat que le noyau consulte, les deux
+REM  precedentes ne suffisent pas a le couper.
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v "VerifiedAndReputablePolicyState" /t REG_DWORD /d 0 /f >nul 2>&1
+REM  Protection contre les rancongiciels : elle ajoute un cout d'ecriture sur les
+REM  dossiers proteges.
+reg add "HKLM\SOFTWARE\Microsoft\Windows Defender\Windows Defender Exploit Guard\Controlled Folder Access" /v "EnableControlledFolderAccess" /t REG_DWORD /d 0 /f >nul 2>&1
+REM  LSA-PPL. La modification demande un redemarrage, et une valeur 1 signifie un
+REM  verrou UEFI que Windows refusera de lever.
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v "RunAsPPL" /t REG_DWORD /d 0 /f >nul 2>&1
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des taches planifiees de Defender et ExploitGuard...%COLOR_RESET%
 schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cleanup" /Disable >nul 2>&1
