@@ -3235,7 +3235,12 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /t RE
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "TyposquattingCheckerEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%SmartScreen desactive sur les principales surfaces Windows.%COLOR_RESET%
+REM  Hameconnage renforce : meme page que SmartScreen dans Securite Windows. La
+REM  surface documentee est la branche Policies, pas CurrentVersion, et l'ADMX
+REM  range la suppression dans le choix "non configure", donc la restauration
+REM  supprime au lieu de poser un 1.
+for %%V in (CaptureThreatWindow NotifyMalicious NotifyPasswordReuse NotifyUnsafeApp ServiceEnabled) do reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WTDS\Components" /v "%%V" /t REG_DWORD /d 0 /f >nul 2>&1
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%SmartScreen et protection anti-hameconnage desactives.%COLOR_RESET%
 exit /b
 
 :RESTORE_SMARTSCREEN_DEFAULT_EXTRA
@@ -3250,6 +3255,21 @@ reg delete "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /f
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "TyposquattingCheckerEnabled" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenEnabled" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /f >nul 2>&1
+for %%V in (CaptureThreatWindow NotifyMalicious NotifyPasswordReuse NotifyUnsafeApp ServiceEnabled) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WTDS\Components" /v "%%V" /f >nul 2>&1
+exit /b
+
+:APPLY_DEFENDER_NOTIFICATIONS_OFF
+REM  Une seule valeur documentee couvre toutes les notifications de Securite
+REM  Windows et rend sans effet celle qui ne masque que les non critiques. La
+REM  strategie non configuree laisse les notifications visibles, donc la
+REM  restauration supprime la valeur au lieu d'ecrire un 0.
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Masquage des notifications de Securite Windows...%COLOR_RESET%
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Notifications" /v "DisableNotifications" /t REG_DWORD /d 1 /f >nul 2>&1
+exit /b
+
+:RESTORE_DEFENDER_NOTIFICATIONS_DEFAULT
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des notifications de Securite Windows...%COLOR_RESET%
+reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Notifications" /v "DisableNotifications" /f >nul 2>&1
 exit /b
 
 :TOGGLE_DEFENDER
@@ -3305,6 +3325,7 @@ for %%V in (DisableAntiSpyware DisableAntiVirus DisableBlockAtFirstSeen DisableR
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v VerifiedAndReputableTrustModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v SmartLockerMode /t REG_DWORD /d 1 /f >nul 2>&1
 call :RESTORE_SMARTSCREEN_DEFAULT_EXTRA
+call :RESTORE_DEFENDER_NOTIFICATIONS_DEFAULT
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reactivation des protections principales...%COLOR_RESET%
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{Set-MpPreference -DisableRealtimeMonitoring $false -DisableBehaviorMonitoring $false -DisableBlockAtFirstSeen $false -DisableIOAVProtection $false -DisableScriptScanning $false -DisableArchiveScanning $false -DisableEmailScanning $false -DisableRemovableDriveScanning $false -PUAProtection Enabled -MAPSReporting Advanced -SubmitSamplesConsent SendSafeSamples -EnableNetworkProtection Enabled -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
@@ -3395,6 +3416,7 @@ schtasks /Change /TN "Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Ref
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de SmartScreen...%COLOR_RESET%
 call :APPLY_SMARTSCREEN_DISABLE_EXTRA
+call :APPLY_DEFENDER_NOTIFICATIONS_OFF
 REM  Verification symetrique de la reactivation : si Defender reste actif, la desactivation
 REM  n'a pas abouti et le script doit le dire plutot que d'annoncer un succes.
 powershell -NoProfile -Command "try{$s=Get-MpComputerStatus -ErrorAction Stop;if($s.AntivirusEnabled-and$s.RealTimeProtectionEnabled){exit 1};exit 0}catch{exit 1}" >nul 2>&1
