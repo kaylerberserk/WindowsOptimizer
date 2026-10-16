@@ -221,13 +221,12 @@ set "LOAD_TOTAL="
 
 :: Ecran d'information (1 fois par session)
 call :SCREEN_HEADER "                         WINDOWS OPTIMIZER"
-:: Profil Valorant fourni : tous les comptes de cet utilisateur, a chaque lancement.
-call :APPLIQUER_VALORANT
+:: Les profils de jeu sont des actions explicites du menu Gestion Windows.
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE% FONCTIONNEMENT%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%  [1]%COLOR_RESET% %COLOR_WHITE%Choisissez votre usage : %COLOR_GREEN%GAMING%COLOR_RESET% pour les jeux ou %COLOR_CYAN%NORMAL%COLOR_RESET% pour le quotidien%COLOR_RESET%
-echo %COLOR_YELLOW%  [2]%COLOR_RESET% %COLOR_WHITE%Choisissez le mode d'energie : %COLOR_GREEN%Performance max%COLOR_RESET% ou %COLOR_CYAN%ECO%COLOR_RESET%
+echo %COLOR_YELLOW%  [2]%COLOR_RESET% %COLOR_WHITE%Les profils Performance max et ECO sont dans le parcours avance : %COLOR_CYAN%choix explicite%COLOR_RESET%
 echo %COLOR_YELLOW%  [3]%COLOR_RESET% %COLOR_WHITE%Lancez une section ou choisissez %STYLE_BOLD%%COLOR_GREEN%[O] TOUT OPTIMISER%COLOR_RESET%
 echo.
 echo %COLOR_WHITE%  Les choix recommandes sont indiques pendant le parcours automatique.%COLOR_RESET%
@@ -623,7 +622,7 @@ if "%HAS_INTERNET%"=="1" (
 )
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_BLUE%--- OPTIMISATIONS GENERALES ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- SECTIONS AVANCEES - LIRE LES CONSEQUENCES ---%COLOR_RESET%
 echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Optimisations Systeme%COLOR_RESET%   %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Optimisations Memoire%COLOR_RESET%
 echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_GREEN%Optimisations Disques%COLOR_RESET%   %COLOR_YELLOW%[4]%COLOR_RESET% %COLOR_GREEN%Optimisations GPU%COLOR_RESET%
 echo %COLOR_YELLOW%[5]%COLOR_RESET% %COLOR_GREEN%Optimisations Reseau%COLOR_RESET%    %COLOR_YELLOW%[6]%COLOR_RESET% %COLOR_GREEN%Optimisations Clavier/Souris%COLOR_RESET%
@@ -634,7 +633,7 @@ echo %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Gerer les protections Windows%COL
 echo.
 
 echo %STYLE_BOLD%%COLOR_BLUE%--- OPTIMISATIONS ALL IN ONE ---%COLOR_RESET%
-echo %COLOR_YELLOW%[O]%COLOR_RESET% %COLOR_WHITE%Tout optimiser %COLOR_GREEN%: Repondez aux questions, le script gere le reste%COLOR_RESET%
+echo %COLOR_YELLOW%[O]%COLOR_RESET% %COLOR_WHITE%Tout optimiser %COLOR_GREEN%: Parcours recommande ou reglages avances%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- OUTILS ---%COLOR_RESET%
 echo %COLOR_YELLOW%[N]%COLOR_RESET% %COLOR_CYAN%Nettoyage Avance de Windows%COLOR_RESET%
@@ -673,36 +672,48 @@ if !errorlevel! GEQ 250 (
 goto :MENU_PRINCIPAL
 
 :DO_PERIPHERIQUES
+call :CONFIRMER_REGLAGES_AVANCES
+if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :CHOISIR_PROFILS "CONFIGURATION PROFILS : PERIPHERIQUES" "USAGE"
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :OPTIMISATIONS_PERIPHERIQUES
 goto :MENU_PRINCIPAL
 
 :DO_RESEAU
+call :CONFIRMER_REGLAGES_AVANCES
+if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :CHOISIR_PROFILS "CONFIGURATION PROFILS : RESEAU" "BOTH"
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :OPTIMISATIONS_RESEAU
 goto :MENU_PRINCIPAL
 
 :DO_GPU
+call :CONFIRMER_REGLAGES_AVANCES
+if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :CHOISIR_PROFILS "CONFIGURATION PROFILS : GPU" "USAGE"
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :OPTIMISATIONS_GPU
 goto :MENU_PRINCIPAL
 
 :DO_DISQUES
+call :CONFIRMER_REGLAGES_AVANCES
+if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :CHOISIR_PROFILS "CONFIGURATION PROFILS : DISQUES" "USAGE"
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :OPTIMISATIONS_DISQUES
 goto :MENU_PRINCIPAL
 
 :DO_MEMOIRE
+call :CONFIRMER_REGLAGES_AVANCES
+if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :CHOISIR_PROFILS "CONFIGURATION PROFILS : MEMOIRE" "BOTH"
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :OPTIMISATIONS_MEMOIRE
 goto :MENU_PRINCIPAL
 
 :DO_SYSTEME
+call :CONFIRMER_REGLAGES_AVANCES
+if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :CHOISIR_PROFILS "CONFIGURATION PROFILS : SYSTEME" "USAGE"
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :OPTIMISATIONS_SYSTEME
@@ -731,9 +742,14 @@ echo %COLOR_YELLOW%[7]%COLOR_RESET% %COLOR_GREEN%Installer les runtimes Visual C
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- APPLICATIONS ET NETTOYAGE ---%COLOR_RESET%
 echo %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Supprimer les applications Windows inutiles%COLOR_RESET%
-call :SUBMENU_CHOICE "principal" "Choisissez une option [1-8, M] : " 12345678M
+echo.
+echo [9] Sauvegardes, restauration et corrections des anciens reglages
+echo [V] Profil Valorant : appliquer ou restaurer
+call :SUBMENU_CHOICE "principal" "Choisissez une option [1-9, V, M] : " 123456789VM
 REM  Gestion des choix (EQU = egalite stricte, ordre sans importance)
-if !errorlevel! EQU 9 goto :MENU_PRINCIPAL
+if !errorlevel! EQU 11 goto :MENU_PRINCIPAL
+if !errorlevel! EQU 10 goto :MENU_VALORANT
+if !errorlevel! EQU 9 goto :MENU_RECUPERATION
 if !errorlevel! EQU 8  goto :SUPPRIMER_BLOATWARES
 if !errorlevel! EQU 7  goto :DO_INSTALLER_VISUAL_REDIST
 if !errorlevel! EQU 6  goto :DESINSTALLER_EDGE
@@ -752,7 +768,328 @@ goto :MENU_GESTION_WINDOWS
 call :INSTALLER_VISUAL_REDIST
 goto :MENU_GESTION_WINDOWS
 
+:CONFIRMER_REGLAGES_AVANCES
+call :SCREEN_HEADER " REGLAGES AVANCES - CONSEQUENCES"
+echo Ces anciens profils changent des valeurs globales Windows et pilotes.
+echo Ils peuvent interrompre le reseau, modifier VRR/HDR et les entrees,
+echo reduire la compatibilite applicative et augmenter chauffe/consommation.
+echo Les reductions de securite sont des choix distincts, deconseilles.
+echo Aucun gain universel de latence, de FPS ou de memoire n'est etabli.
+echo Normal/Eco applique des defauts ; ce n'est pas un retour arriere complet.
+echo Pour le jeu et le bureau au quotidien, choisissez le parcours recommande.
+echo.
+call :ASK_CONFIRM "Continuer avec les reglages avances ? [O=Continuer / N=Annuler] : "
+exit /b !errorlevel!
+
+:PARCOURS_RECOMMANDE
+call :SCREEN_HEADER " PARCOURS RECOMMANDE - GAMING ET BUREAU"
+echo Les valeurs modifiees sont sauvegardees avant ecriture et relues apres.
+echo Certains reglages de confidentialite, navigateurs et Widgets touchent tous les comptes.
+echo Compte cible des valeurs HKCU et de la sauvegarde :
+whoami
+echo Si l'UAC a utilise un autre compte, son profil est cible, pas celui de la session.
+echo Utilisez le compte dont le profil doit etre modifie.
+echo Elle conserve son premier etat capture ; la restauration touche aussi les autres comptes.
+echo Des captures creees par differents comptes peuvent donc se contredire.
+echo Sur un PC deja optimise, cet etat inclut les anciens reglages.
+echo Le menu Recuperation explique les corrections de ces anciens reglages.
+echo Aucun changement des protections, du reseau, des pilotes ou de la veille.
+echo.
+echo [1/4] Reduire diagnostics facultatifs, publicites et suggestions Windows ?
+echo Les diagnostics requis peuvent rester actifs selon l'edition Windows.
+call :COMMON_YES_NO "Confidentialite [O=Appliquer / N=Conserver / M=Annuler] : " SAFE_PRIVACY
+if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
+echo.
+echo [2/4] Limiter Edge et Chrome apres fermeture et les prechargements Edge ?
+echo Les extensions et notifications de ces navigateurs seront suspendues.
+echo Une prochaine ouverture peut etre plus lente. WebView2 reste disponible.
+call :COMMON_YES_NO "Navigateurs [O=Limiter / N=Conserver / M=Annuler] : " SAFE_BACKGROUND
+if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
+echo.
+echo [3/4] Desactiver les Widgets Windows ou Actualites sous Windows 10 ?
+echo Meteo/actualites du panneau seront indisponibles jusqu'a restauration.
+call :COMMON_YES_NO "Widgets [O=Desactiver / N=Conserver / M=Annuler] : " SAFE_WIDGETS
+if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
+echo.
+echo [4/4] Installer/verifier Visual C++ et DirectX pour les jeux ?
+echo Telechargements Microsoft signes ; les runtimes installes ne sont pas annules.
+call :COMMON_YES_NO "Runtimes [O=Verifier / N=Ignorer / M=Annuler] : " SAFE_RUNTIMES
+if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
+echo.
+echo Recapitulatif : 1=demande, 0=conserve
+echo Confidentialite=!SAFE_PRIVACY! Navigateurs=!SAFE_BACKGROUND! Widgets=!SAFE_WIDGETS!
+echo Runtimes=!SAFE_RUNTIMES!
+call :ASK_CONFIRM "Lancer ce parcours ? [O=Lancer / N=Annuler] : "
+if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
+set "WINOPT_SAFE_GROUPS="
+if "!SAFE_PRIVACY!"=="1" set "WINOPT_SAFE_GROUPS=!WINOPT_SAFE_GROUPS! privacy"
+if "!SAFE_BACKGROUND!"=="1" set "WINOPT_SAFE_GROUPS=!WINOPT_SAFE_GROUPS! background"
+if "!SAFE_WIDGETS!"=="1" set "WINOPT_SAFE_GROUPS=!WINOPT_SAFE_GROUPS! widgets"
+call :SAFE_SETTINGS apply
+set "SAFE_RC=!errorlevel!"
+if "!SAFE_RC!"=="0" (
+    echo [OK] Valeurs selectionnees sauvegardees et relues dans le registre.
+) else (
+    echo [AVERTISSEMENT] Reglages partiels ou sauvegarde impossible. Voir les erreurs.
+)
+set "SKIP_PAUSE=1"
+if "!SAFE_RUNTIMES!"=="1" call :INSTALLER_VISUAL_REDIST
+set "SKIP_PAUSE=0"
+echo.
+echo Fermez et rouvrez les navigateurs pour leur prise en compte.
+echo Une deconnexion/reconnexion ou un redemarrage peut etre requis pour Widgets.
+echo La relecture des valeurs ne prouve pas un gain de performances.
+echo Annuler ces reglages : Gestion Windows, Sauvegardes et restauration.
+pause
+goto :MENU_PRINCIPAL
+
+:MENU_RECUPERATION
+call :SCREEN_HEADER " SAUVEGARDES ET RECUPERATION"
+echo [1] Restaurer la capture du parcours recommande du compte administrateur courant
+echo     Certaines strategies et leur restauration touchent tous les comptes Windows.
+echo     Restaure valeurs ou absences capturees. Sauvegarde conservee pour reessai.
+echo [2] Corriger les anciens blocages Store et taches fonctionnelles
+echo     Retire le refus Everyone ajoute par l'ancien script sur store.db.
+echo     Reactive famille, synchro, licences et diagnostics fonctionnels presents.
+echo     Ce sont des corrections ciblees, pas la restauration de leur etat initial.
+echo [3] Protections noyau : restaurer la capture ou la base Windows documentee
+echo [4] Reactiver Defender et SmartScreen - action distincte de la restauration
+echo [5] Reactiver UAC - redemarrage requis
+echo [M] Retour
+call :SUBMENU_CHOICE "Gestion Windows" "Recuperation [1-5, M] : " 12345M
+if !errorlevel! EQU 6 goto :MENU_GESTION_WINDOWS
+if !errorlevel! EQU 5 goto :RECUPERATION_UAC
+if !errorlevel! EQU 4 goto :RECUPERATION_DEFENDER
+if !errorlevel! EQU 3 goto :TOGGLE_PROTECTIONS_NOYAU
+if !errorlevel! EQU 2 goto :RECUPERATION_LEGACY
+if !errorlevel! NEQ 1 goto :MENU_GESTION_WINDOWS
+call :ASK_CONFIRM "Restaurer les valeurs capturees du parcours recommande ? [O/N] : "
+if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
+call :SAFE_SETTINGS restore
+if !errorlevel! EQU 0 echo [OK] Valeurs capturees restaurees et relues.
+if !errorlevel! NEQ 0 echo [AVERTISSEMENT] Restauration incomplete ou aucune capture. Sauvegarde conservee.
+pause
+goto :MENU_RECUPERATION
+
+:RECUPERATION_UAC
+call :ASK_CONFIRM "Reactiver UAC ? [O/N] : "
+if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
+call :ACTIVER_UAC_SECTION
+goto :MENU_RECUPERATION
+
+:RECUPERATION_DEFENDER
+call :ASK_CONFIRM "Reactiver Defender et SmartScreen ? [O/N] : "
+if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
+call :ACTIVER_DEFENDER_SECTION
+goto :MENU_RECUPERATION
+
+:RECUPERATION_LEGACY
+echo L'etat d'avant l'ancien script n'a pas ete capture pour ces reglages.
+echo Des refus Everyone personnalises sur store.db seraient aussi retires.
+call :ASK_CONFIRM "Appliquer ces corrections ciblees ? [O/N] : "
+if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
+set "LEGACY_ERRORS=0"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsStore_8wekyb3d8bbwe\LocalState\store.db';if(Test-Path -LiteralPath $f){$a=Get-Acl -LiteralPath $f;$sid='S-1-1-0';foreach($r in @($a.Access)){if($r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value-eq$sid-and$r.AccessControlType-eq'Deny'-and-not$r.IsInherited){[void]$a.RemoveAccessRuleSpecific($r)}};Set-Acl -LiteralPath $f -AclObject $a;$a=Get-Acl -LiteralPath $f;if(@($a.Access|Where-Object{$_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value-eq$sid-and$_.AccessControlType-eq'Deny'-and-not$_.IsInherited}).Count){exit 1}};exit 0}catch{Write-Host $_.Exception.Message;exit 1}"
+if !errorlevel! NEQ 0 set /a "LEGACY_ERRORS+=1"
+for %%U in (
+    "Microsoft\Windows\CloudExperienceHost\CreateObjectTask"
+    "Microsoft\Windows\DiskFootprint\Diagnostics"
+    "Microsoft\Windows\NetTrace\GatherNetworkInfo"
+    "Microsoft\Windows\Shell\FamilySafetyMonitor"
+    "Microsoft\Windows\Shell\FamilySafetyRefreshTask"
+    "Microsoft\Windows\WDI\ResolutionHost"
+    "Microsoft\Windows\SettingSync\BackgroundUploadTask"
+    "Microsoft\Windows\SettingSync\NetworkStateChangeTask"
+    "Microsoft\Windows\SkyDrive\Idle Sync Maintenance Task"
+    "Microsoft\Windows\Work Folders\Work Folders Logon Synchronization"
+    "Microsoft\Windows\Work Folders\Work Folders Maintenance Work"
+    "Microsoft\Windows\PushToInstall\Registration"
+    "Microsoft\Windows\Subscription\EnableLicenseAcquisition"
+) do (
+    call :SET_TASK_ENABLED "%%~U" true
+    if !errorlevel! NEQ 0 set /a "LEGACY_ERRORS+=1"
+)
+if "!LEGACY_ERRORS!"=="0" (
+    echo [OK] Corrections verifiees pour les elements presents.
+) else (
+    echo [AVERTISSEMENT] Corrections incompletes : !LEGACY_ERRORS! refus ou erreurs.
+)
+echo Les autres anciens reglages ne sont pas annules par cette action.
+pause
+goto :MENU_RECUPERATION
+
+:MENU_VALORANT
+call :SCREEN_HEADER " PROFIL VALORANT - ACTION EXPLICITE"
+echo Compte Windows cible pour les configurations Valorant :
+whoami
+echo Si l'UAC a utilise un autre compte, ses fichiers sont cibles.
+echo Fermez le jeu. Tous les comptes Valorant de ce profil Windows sont concernes.
+echo [1] Appliquer le profil fourni - plein ecran, qualite minimale, VSync/HDR OFF
+echo [2] Restaurer les fichiers .winopt-backup - reglages ulterieurs remplaces
+echo [M] Retour
+call :SUBMENU_CHOICE "Gestion Windows" "Valorant [1=Appliquer / 2=Restaurer / M=Retour] : " 12M
+if !errorlevel! EQU 3 goto :MENU_GESTION_WINDOWS
+if !errorlevel! EQU 2 goto :RESTAURER_VALORANT
+if !errorlevel! NEQ 1 goto :MENU_GESTION_WINDOWS
+call :APPLIQUER_VALORANT
+pause
+goto :MENU_VALORANT
+
+:RESTAURER_VALORANT
+call :ASK_CONFIRM "Remplacer les configurations par leur sauvegarde initiale ? [O/N] : "
+if !errorlevel! NEQ 0 goto :MENU_VALORANT
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{if(Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping' -EA SilentlyContinue){throw 'Fermez Valorant avant restauration'};$d=Join-Path $env:LOCALAPPDATA 'VALORANT\Saved\Config';$fs=@(Get-ChildItem -LiteralPath $d -Filter 'GameUserSettings.ini.winopt-backup' -Recurse -File -EA Stop);if(-not$fs.Count){throw 'Aucune sauvegarde Valorant'};foreach($f in $fs){$t=$f.FullName.Substring(0,$f.FullName.Length-14);Copy-Item -LiteralPath $f.FullName -Destination $t -Force;if((Get-FileHash -LiteralPath $t).Hash-ne(Get-FileHash -LiteralPath $f.FullName).Hash){throw 'Verification de restauration echouee'}};Write-Host ('[OK] Configurations restaurees : '+$fs.Count);exit 0}catch{Write-Host ('[ERREUR] '+$_.Exception.Message);exit 1}"
+pause
+goto :MENU_VALORANT
+
+:SET_TASK_ENABLED
+setlocal
+REM Accept one name or a semicolon-separated list; enumerate only once per call.
+set "WINOPT_TASK_NAME=%~1"
+set "WINOPT_TASK_ENABLED=%~2"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$names=@($env:WINOPT_TASK_NAME.Split(';',[StringSplitOptions]::RemoveEmptyEntries));if(-not$names.Count){throw 'Liste de taches vide'};$all=@(Get-ScheduledTask -EA Stop);$want=$env:WINOPT_TASK_ENABLED-eq'true';$confirmed=0;$absent=0;$failed=0;foreach($n in $names){try{$p='\'+$n.Substring(0,$n.LastIndexOf('\')+1);$leaf=$n.Substring($n.LastIndexOf('\')+1);$ts=@($all|Where-Object{$_.TaskPath-eq$p-and$_.TaskName-eq$leaf});if(-not$ts.Count){$absent++;Write-Host ('[IGNORE] Tache absente : '+$n);continue};if($want){Enable-ScheduledTask -TaskPath $p -TaskName $leaf -EA Stop|Out-Null}else{Disable-ScheduledTask -TaskPath $p -TaskName $leaf -EA Stop|Out-Null};$t=Get-ScheduledTask -TaskPath $p -TaskName $leaf -EA Stop;if([bool]$t.Settings.Enabled-ne$want){throw 'Etat final different'};$confirmed++}catch{$failed++;Write-Host ('[ERREUR] Tache '+$n+' : '+$_.Exception.Message)}};Write-Host ('[INFO] Taches confirmees='+$confirmed+' absentes='+$absent+' en echec='+$failed);if($failed){exit 1};exit 0}catch{Write-Host ('[ERREUR] Taches : '+$_.Exception.Message);exit 1}"
+endlocal & exit /b %errorlevel%
+
+
+:SAFE_SETTINGS
+setlocal DisableDelayedExpansion
+set "WINOPT_SAFE_ACTION=%~1"
+set "WINOPT_SAFE_SOURCE=%~f0"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$c=@([IO.File]::ReadAllLines($env:WINOPT_SAFE_SOURCE)|Where-Object{$_.StartsWith('::SAFEPS ')}|ForEach-Object{$_.Substring(9)});if($c.Count-lt 50){throw 'Helper incomplet'};& ([scriptblock]::Create($c-join[Environment]::NewLine))}catch{Write-Host ('[ERREUR] '+$_.Exception.Message);exit 1}"
+endlocal & exit /b %errorlevel%
+
+::SAFEPS $ErrorActionPreference='Stop'
+::SAFEPS # Values with a documented scope. A stored value is not proof of runtime policy support.
+::SAFEPS $rows=@(
+::SAFEPS 'privacy|HKLM|SOFTWARE\Policies\Microsoft\Windows\DataCollection|AllowTelemetry|minimum'
+::SAFEPS 'privacy|HKLM|SOFTWARE\Policies\Microsoft\Windows\DataCollection|DoNotShowFeedbackNotifications|1'
+::SAFEPS 'privacy|HKLM|SOFTWARE\Policies\Microsoft\Windows\DataCollection|AllowDeviceNameInTelemetry|0'
+::SAFEPS 'privacy|HKLM|SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo|DisabledByGroupPolicy|1'
+::SAFEPS 'privacy|HKCU|Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo|Enabled|0'
+::SAFEPS 'privacy|HKCU|Software\Policies\Microsoft\Windows\CloudContent|DisableTailoredExperiencesWithDiagnosticData|1'
+::SAFEPS 'privacy|HKCU|Software\Microsoft\Windows\CurrentVersion\Privacy|TailoredExperiencesWithDiagnosticDataEnabled|0'
+::SAFEPS 'privacy|HKCU|Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced|ShowSyncProviderNotifications|0'
+::SAFEPS 'privacy|HKCU|Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement|ScoobeSystemSettingEnabled|0'
+::SAFEPS 'privacy|HKCU|Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager|SilentInstalledAppsEnabled|0'
+::SAFEPS 'privacy|HKCU|Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager|SystemPaneSuggestionsEnabled|0'
+::SAFEPS 'privacy|HKCU|Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager|SubscribedContent-338388Enabled|0'
+::SAFEPS 'privacy|HKCU|Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager|SubscribedContent-338389Enabled|0'
+::SAFEPS 'privacy|HKLM|SOFTWARE\Policies\Microsoft\Windows\Windows Search|EnableDynamicContentInWSB|0'
+::SAFEPS 'privacy|HKCU|Software\Microsoft\Windows\CurrentVersion\SearchSettings|IsDynamicSearchBoxEnabled|0'
+::SAFEPS 'privacy|HKLM|SOFTWARE\Policies\Microsoft\Edge|DiagnosticData|0'
+::SAFEPS 'privacy|HKLM|SOFTWARE\Policies\Microsoft\Edge|PersonalizationReportingEnabled|0'
+::SAFEPS 'privacy|HKCU|Software\Policies\Google\Chrome|MetricsReportingEnabled|0'
+::SAFEPS 'background|HKCU|Software\Policies\Microsoft\Edge|StartupBoostEnabled|0'
+::SAFEPS 'background|HKCU|Software\Policies\Microsoft\Edge|BackgroundModeEnabled|0'
+::SAFEPS 'background|HKCU|Software\Policies\Microsoft\Edge|NetworkPredictionOptions|2'
+::SAFEPS 'background|HKCU|Software\Policies\Microsoft\Edge|NewTabPagePrerenderEnabled|0'
+::SAFEPS 'background|HKCU|Software\Policies\Google\Chrome|BackgroundModeEnabled|0'
+::SAFEPS 'widgets|HKLM|SOFTWARE\Policies\Microsoft\Dsh|AllowNewsAndInterests|0'
+::SAFEPS 'feeds|HKLM|SOFTWARE\Policies\Microsoft\Windows\Windows Feeds|EnableFeeds|0'
+::SAFEPS )
+::SAFEPS $defs=@{}
+::SAFEPS foreach($line in $rows){$x=$line.Split('|');$id=$x[1]+'\'+$x[2]+'\'+$x[3];$defs[$id]=@{Group=$x[0];Hive=$x[1];Path=$x[2];Name=$x[3];Target=$x[4]}}
+::SAFEPS $action=$env:WINOPT_SAFE_ACTION
+::SAFEPS if($action-notin @('apply','restore')){throw 'Action invalide'}
+::SAFEPS $sid=[Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+::SAFEPS $machine=(Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Cryptography' -Name MachineGuid).MachineGuid
+::SAFEPS $dir=$env:WINOPT_BACKUP_DIR
+::SAFEPS if(-not$dir){throw 'Dossier de sauvegarde absent'}
+::SAFEPS [void][IO.Directory]::CreateDirectory($dir)
+::SAFEPS $file=Join-Path $dir ('recommended-'+$sid+'.json')
+::SAFEPS $lock=$null
+::SAFEPS $tmp=$null
+::SAFEPS try {
+::SAFEPS     $lock=[IO.File]::Open($file+'.lock',[IO.FileMode]::OpenOrCreate,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
+::SAFEPS     $records=@()
+::SAFEPS     if(Test-Path -LiteralPath $file){
+::SAFEPS         if((Get-Item -LiteralPath $file).Length-gt 1MB){throw 'Sauvegarde trop grande'}
+::SAFEPS         $b=Get-Content -LiteralPath $file -Raw|ConvertFrom-Json
+::SAFEPS         if($b.Schema-ne 1-or$b.Sid-ne$sid-or$b.Machine-ne$machine){throw 'Sauvegarde incompatible avec ce PC ou utilisateur'}
+::SAFEPS         if($b.Count-isnot[int]-and$b.Count-isnot[long]){throw 'Nombre de valeurs de sauvegarde invalide'}
+::SAFEPS         if($b.Count-le 0-or$b.Count-ne@($b.Values).Count){throw 'Sauvegarde vide ou incomplete'}
+::SAFEPS         $seen=@{}
+::SAFEPS         foreach($r in @($b.Values)){
+::SAFEPS             if(-not$defs.ContainsKey([string]$r.Id)-or$seen.ContainsKey([string]$r.Id)-or$r.Present-isnot[bool]){throw 'Entree de sauvegarde invalide'}
+::SAFEPS             if($r.Present-and(($r.Value-isnot[int]-and$r.Value-isnot[long])-or[long]$r.Value-lt[int]::MinValue-or[long]$r.Value-gt[int]::MaxValue)){throw 'DWORD sauvegarde invalide'}
+::SAFEPS             $seen[$r.Id]=$true
+::SAFEPS             $records+=$r
+::SAFEPS         }
+::SAFEPS     } elseif($action-eq'restore'){throw 'Aucune sauvegarde du parcours recommande pour cet utilisateur'}
+::SAFEPS     $bases=@{HKLM=[Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine','Registry64');HKCU=[Microsoft.Win32.RegistryKey]::OpenBaseKey('CurrentUser','Registry64')}
+::SAFEPS     function Read-Value($d){
+::SAFEPS         $k=$bases[$d.Hive].OpenSubKey($d.Path,$false)
+::SAFEPS         try {
+::SAFEPS             if($null-eq$k-or$k.GetValueNames()-notcontains$d.Name){return @{Present=$false;Value=$null}}
+::SAFEPS             if($k.GetValueKind($d.Name)-ne[Microsoft.Win32.RegistryValueKind]::DWord){throw ('Type non DWORD, valeur preservee : '+$d.Name)}
+::SAFEPS             return @{Present=$true;Value=[int]$k.GetValue($d.Name)}
+::SAFEPS         } finally {if($k){$k.Dispose()}}
+::SAFEPS     }
+::SAFEPS     if($action-eq'apply'){
+::SAFEPS         $groups=@(([string]$env:WINOPT_SAFE_GROUPS).Trim().Split(' ',[StringSplitOptions]::RemoveEmptyEntries))
+::SAFEPS         $build=[int](Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').CurrentBuildNumber
+::SAFEPS         if($build-lt 22000){$groups=@($groups|ForEach-Object{if($_-eq'widgets'){'feeds'}else{$_}})}
+::SAFEPS         $targets=@($defs.Keys|Where-Object{$defs[$_].Group-in$groups}|Sort-Object)
+::SAFEPS         if(-not$targets.Count){Write-Host '[IGNORE] Aucun reglage selectionne';exit 0}
+::SAFEPS         foreach($id in $targets){
+::SAFEPS             $d=$defs[$id];$v=Read-Value $d
+::SAFEPS             if(@($records|Where-Object{$_.Id-eq$id}).Count-eq 0){$records+=[pscustomobject]@{Id=$id;Present=$v.Present;Value=$v.Value}}
+::SAFEPS         }
+::SAFEPS         # Persist the entire initial state before any registry mutation. Never overwrite an entry.
+::SAFEPS         $b=[ordered]@{Schema=1;Sid=$sid;Machine=$machine;Count=$records.Count;Values=@($records)}
+::SAFEPS         $tmp=$file+'.'+[guid]::NewGuid().ToString('N')+'.tmp'
+::SAFEPS         [IO.File]::WriteAllText($tmp,($b|ConvertTo-Json -Depth 5),[Text.UTF8Encoding]::new($false))
+::SAFEPS         if(Test-Path -LiteralPath $file){[IO.File]::Replace($tmp,$file,[NullString]::Value)}else{[IO.File]::Move($tmp,$file)}
+::SAFEPS         $tmp=$null
+::SAFEPS         $edition=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').EditionID
+::SAFEPS         $minimum=1
+::SAFEPS         if($edition-match'Enterprise|Education'){$minimum=0}
+::SAFEPS         $work=@($targets|ForEach-Object{$d=$defs[$_];$v=$d.Target;if($v-eq'minimum'){$v=$minimum;$old=Read-Value $d;if($old.Present-and$old.Value-eq 0){$v=0}};[pscustomobject]@{Id=$_;Present=$true;Value=[int]$v}})
+::SAFEPS         Write-Host ('[INFO] Diagnostics : niveau minimal demande pour '+$edition+' ; pas une garantie de zero collecte.')
+::SAFEPS     } else {$work=@($records)}
+::SAFEPS     $errors=0
+::SAFEPS     foreach($r in $work){
+::SAFEPS         $d=$defs[$r.Id];$k=$null
+::SAFEPS         try {
+::SAFEPS             $before=Read-Value $d
+::SAFEPS             $same=$before.Present-eq$r.Present-and(-not$r.Present-or$before.Value-eq[int]$r.Value)
+::SAFEPS             if(-not$same){
+::SAFEPS                 if($r.Present){$k=$bases[$d.Hive].CreateSubKey($d.Path);$k.SetValue($d.Name,[int]$r.Value,[Microsoft.Win32.RegistryValueKind]::DWord)}
+::SAFEPS                 else {$k=$bases[$d.Hive].OpenSubKey($d.Path,$true);if($k){$k.DeleteValue($d.Name,$false)}}
+::SAFEPS             }
+::SAFEPS             if($k){$k.Dispose();$k=$null}
+::SAFEPS             $v=Read-Value $d
+::SAFEPS             if($v.Present-ne$r.Present-or($r.Present-and$v.Value-ne[int]$r.Value)){throw 'Relecture differente'}
+::SAFEPS             Write-Host ('[OK] '+$r.Id)
+::SAFEPS         } catch {$errors++;Write-Host ('[ERREUR] '+$r.Id+' : '+$_.Exception.Message)}
+::SAFEPS         finally {if($k){$k.Dispose()}}
+::SAFEPS     }
+::SAFEPS     Write-Host ('[INFO] Sauvegarde conservee : '+$file)
+::SAFEPS     if($errors){exit 1}
+::SAFEPS     exit 0
+::SAFEPS } finally {
+::SAFEPS     if($bases){foreach($k in $bases.Values){$k.Dispose()}}
+::SAFEPS     if($tmp-and(Test-Path -LiteralPath $tmp)){Remove-Item -LiteralPath $tmp -Force -EA SilentlyContinue}
+::SAFEPS     if($lock){$lock.Dispose()}
+::SAFEPS }
+
 :TOUT_OPTIMISER
+call :SCREEN_HEADER " TOUT OPTIMISER - CHOISIR LE PARCOURS"
+echo [1] RECOMMANDE - Gaming, bureau et usage general
+echo     Confidentialite et activite en arriere-plan, avec sauvegarde ciblee.
+echo     Preserve pilotes, reseau, veille, securite et preferences d'affichage.
+echo.
+echo [2] AVANCE - Anciens profils Gaming/Normal et Performance max/Eco
+echo     Modifie pilotes, reseau, memoire, energie et preferences Windows.
+echo     Risques de compatibilite ; aucun gain de FPS ou de latence garanti.
+echo     Eco/Normal ne restaure pas integralement votre etat precedent.
+echo.
+echo [M] Retour au menu
+call :SUBMENU_CHOICE "principal" "Parcours [1=Recommande / 2=Avance / M=Retour] : " 12M
+if !errorlevel! EQU 1 goto :PARCOURS_RECOMMANDE
+if !errorlevel! NEQ 2 goto :MENU_PRINCIPAL
+call :CONFIRMER_REGLAGES_AVANCES
+if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 call :CHOISIR_PROFILS "TOUT OPTIMISER : CONFIGURATION" "BOTH"
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 goto :TOUT_OPTIMISER_QUESTIONS
@@ -773,9 +1110,9 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_WHITE% Vous avez choisi GAMING pour privilegier les jeux et la reactivite.%COLOR_RESET%
     echo %COLOR_WHITE% Le script peut adapter les protections Windows a cet usage :%COLOR_RESET%
     echo %COLOR_WHITE% il active VBS et HVCI, utiles aux anti-cheats modernes, et reduit%COLOR_RESET%
-    echo %COLOR_WHITE% certaines protections avancees couteuses en performances.%COLOR_RESET%
+    echo %COLOR_WHITE% les mitigations CPU, SEHOP et la protection des pilotes.%COLOR_RESET%
     echo.
-    echo %COLOR_GREEN% [RECOMMANDE]%COLOR_RESET% %COLOR_WHITE%Reglage conseille pour tous types de jeux.%COLOR_RESET%
+    echo %COLOR_RED% [AVANCE]%COLOR_RESET% %COLOR_WHITE%Protection reduite ; compatibilite et gain non garantis.%COLOR_RESET%
     echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Modifiable ensuite depuis Gerer les protections Windows.%COLOR_RESET%
     echo.
     echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
@@ -791,7 +1128,7 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
     echo %COLOR_GREEN% [O] APPLIQUER%COLOR_RESET%        - Utiliser la base de protections Windows
 )
-echo %COLOR_CYAN% [N] NE PAS MODIFIER%COLOR_RESET%  - Garder les reglages actuels
+echo %COLOR_GREEN% [N] NE PAS MODIFIER%COLOR_RESET% - Garder les reglages actuels - conseille
 echo %COLOR_YELLOW% [M] ANNULER%COLOR_RESET%          - Retourner au menu principal
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
@@ -830,7 +1167,8 @@ call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW% Votre choix [O/N/M] : %COLOR_RES
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
 
 call :AIO_QUESTION_HEADER 4 "COPILOT, WIDGETS ET RECALL"
-echo %COLOR_WHITE% Cette option bloque Copilot, masque les Widgets et desactive Recall.%COLOR_RESET%
+echo %COLOR_WHITE% Cette option vise l'ancien Copilot, les Widgets et Recall.
+echo %COLOR_WHITE% L'application Copilot moderne demande un retrait separe via Gestion Windows.%COLOR_RESET%%COLOR_RESET%
 echo %COLOR_WHITE% Elle utilise les reglages disponibles sur votre version de Windows.%COLOR_RESET%
 echo.
 echo %COLOR_RED% [AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres seront SUPPRIMES du PC.%COLOR_RESET%
@@ -932,6 +1270,7 @@ if !errorlevel! NEQ 0 (
 set "AIO_POWER_PRESELECTED=1"
 call :START_AIO_RUNTIMES
 call :OPTIMISATIONS_SYSTEME
+set "AIO_SYSTEM_RC=!errorlevel!"
 call :OPTIMISATIONS_MEMOIRE
 call :OPTIMISATIONS_DISQUES
 call :OPTIMISATIONS_GPU
@@ -954,8 +1293,10 @@ if "!DESACTIVER_DEFENDER!"=="1" (
 if "!DESACTIVER_ANIMATIONS!"=="1" (
     call :DESACTIVER_ANIMATIONS_SECTION
 )
+set "AIO_IA_RC="
 if "!DESACTIVER_IA!"=="1" (
   call :DESACTIVER_IA_SECTION
+  set "AIO_IA_RC=!errorlevel!"
 )
 if "!DESACTIVER_UAC!"=="1" (
   call :DESACTIVER_UAC_SECTION
@@ -971,6 +1312,8 @@ set "DESACTIVER_IA="
 set "DESACTIVER_UAC="
 set "AIO_RUNTIME_RC="
 set "AIO_RUNTIME_LOG="
+set "AIO_IA_RC="
+set "AIO_SYSTEM_RC="
 goto :MENU_PRINCIPAL
 
 :AFFICHER_RESUME_OPTIMISATION
@@ -992,6 +1335,7 @@ echo.
 
 echo %STYLE_BOLD%%COLOR_BLUE%-- PARCOURS EFFECTUE ------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Systeme, Memoire, Disques et GPU executees.%COLOR_RESET%
+if not "!AIO_SYSTEM_RC!"=="0" echo [AVERTISSEMENT] Section Systeme partielle : voir les erreurs de taches.
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Reseau et Peripheriques executees.%COLOR_RESET%
 if "!AIO_RUNTIME_RC!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Runtimes Visual C++ et DirectX verifies.%COLOR_RESET%
@@ -1033,7 +1377,8 @@ if "!DESACTIVER_ANIMATIONS!"=="1" (
     echo %COLOR_CYAN%[INCHANGE]%COLOR_RESET% %COLOR_WHITE%Aucun changement des animations Windows.%COLOR_RESET%
 )
 if "!DESACTIVER_IA!"=="1" (
-    echo %COLOR_YELLOW%[DEMANDE]%COLOR_RESET% %COLOR_WHITE%Restrictions Copilot, Widgets et Recall demandees.%COLOR_RESET%
+    if "!AIO_IA_RC!"=="0" echo [OK] Controles de la section IA confirmes ; prise en compte selon Windows.
+    if not "!AIO_IA_RC!"=="0" echo [AVERTISSEMENT] Restrictions IA incompletes ou refusees : voir les erreurs.
 ) else (
     echo %COLOR_CYAN%[INCHANGE]%COLOR_RESET% %COLOR_WHITE%Aucun changement de Copilot, Widgets et Recall.%COLOR_RESET%
 )
@@ -1060,6 +1405,7 @@ if !errorlevel! EQU 1 (
 exit /b
 
 :OPTIMISATIONS_SYSTEME
+set "SYSTEM_SECTION_ERROR=0"
 cls
 call :INIT_PROFILS
 echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
@@ -1187,7 +1533,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v "DisableConsu
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v "DisableWindowsConsumerFeatures" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v "DisableConsumerAccountStateContent" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v "DisableSoftLanding" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v "DisableTailoredExperiences" /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKCU\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v "DisableTailoredExperiencesWithDiagnosticData" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Privacy" /v "TailoredExperiencesWithDiagnosticDataEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Privacy" /v "ActivityHistoryEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\SOFTWARE\Microsoft\Siuf\Rules" /v "NumberOfSIUFInPeriod" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1224,10 +1570,11 @@ REM  Activity History OFF
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableActivityFeed" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "PublishUserActivities" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "UploadUserActivities" /t REG_DWORD /d 0 /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Telemetrie et publicites desactivees%COLOR_RESET%
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reduction des diagnostics et suggestions demandee - limites selon edition%COLOR_RESET%
 
 REM  Taches planifiees de telemetrie
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des taches planifiees de telemetrie...%COLOR_RESET%
+set "WINOPT_TELEMETRY_TASKS="
 for %%T in (
     "Microsoft\Windows\Application Experience\Microsoft Compatibility Appraiser"
     "Microsoft\Windows\Application Experience\ProgramDataUpdater"
@@ -1242,20 +1589,15 @@ for %%T in (
     "Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload"
     "Microsoft\Windows\Windows Error Reporting\QueueReporting"
     "Microsoft\Windows\PI\Sqm-Tasks"
-    "Microsoft\Windows\CloudExperienceHost\CreateObjectTask"
-    "Microsoft\Windows\DiskFootprint\Diagnostics"
-    "Microsoft\Windows\NetTrace\GatherNetworkInfo"
-    "Microsoft\Windows\Shell\FamilySafetyMonitor"
-    "Microsoft\Windows\Shell\FamilySafetyRefreshTask"
-    "Microsoft\Windows\WDI\ResolutionHost"
-    "Microsoft\Windows\SettingSync\BackgroundUploadTask"
-    "Microsoft\Windows\SettingSync\NetworkStateChangeTask"
-    "Microsoft\Windows\SkyDrive\Idle Sync Maintenance Task"
-    "Microsoft\Windows\Work Folders\Work Folders Logon Synchronization"
-    "Microsoft\Windows\Work Folders\Work Folders Maintenance Work"
-    "Microsoft\Windows\PushToInstall\Registration"
-    "Microsoft\Windows\Subscription\EnableLicenseAcquisition"
-) do schtasks /Change /TN "%%~T" /Disable >nul 2>&1
+) do set "WINOPT_TELEMETRY_TASKS=!WINOPT_TELEMETRY_TASKS!;%%~T"
+call :SET_TASK_ENABLED "!WINOPT_TELEMETRY_TASKS!" false
+if !errorlevel! NEQ 0 (
+    set "SYSTEM_SECTION_ERROR=1"
+    echo [AVERTISSEMENT] Certaines taches de diagnostic n'ont pas pu etre desactivees.
+) else (
+    echo [OK] Taches de diagnostic presentes confirmees desactivees.
+)
+set "WINOPT_TELEMETRY_TASKS="
 
 REM  Autologgers de diagnostic OFF.
 REM  DiagLog reste actif sur portable Normal+Eco : les donnees E3/SRUM de batterie
@@ -1270,12 +1612,11 @@ if "!IS_NORMAL_ECO_LAPTOP!"=="1" (
 )
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\ReadyBoot" /v Start /t REG_DWORD /d 1 /f >nul 2>&1
 
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Taches de telemetrie desactivees%COLOR_RESET%
+REM Etat des taches confirme ci-dessus ; aucune interruption des instances actives.
 
 REM  Blocage telemetrie via hosts
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation du blocage de la telemetrie...%COLOR_RESET%
 set "HOSTS=%SystemRoot%\System32\drivers\etc\hosts"
-attrib -r "%HOSTS%" >nul 2>&1
 
 REM  Backup unique du fichier hosts avant modification ; aucun .bak existant n'est ecrase.
 call :BACKUP_HOSTS_BEFORE_CHANGE "%HOSTS%"
@@ -1285,14 +1626,13 @@ if "!HOSTS_BACKUP_RC!" NEQ "0" (
     set "HOSTS="
 )
 REM  Utilisation de PowerShell pour mettre a jour ou ajouter le bloc securise (Telemetrie uniquement)
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';$h=$env:HOSTS;$tmp=[System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($h),([System.IO.Path]::GetFileName($h)+'.'+[guid]::NewGuid().ToString('N')+'.tmp'));$crlf=[char]13+[char]10;$s='# Telemetry Block Start';$e='# Telemetry Block End';$domains='vortex.data.microsoft.com','vortex-win.data.microsoft.com','v10.vortex-win.data.microsoft.com','v10.events.data.microsoft.com','telecommand.telemetry.microsoft.com','oca.telemetry.microsoft.com','watson.telemetry.microsoft.com','watsonc.microsoft.com','settings.data.microsoft.com','settings-win.data.microsoft.com','mobile.events.data.microsoft.com','browser.events.data.microsoft.com','self.events.data.microsoft.com','v20.events.data.microsoft.com','telemetry.microsoft.com','telemetrycollector.microsoft.com','pipe.aria.microsoft.com','diagnostics.office.com','activity.windows.com','modern.watson.data.microsoft.com','applicationinsights.microsoft.com','azurewatson.microsoft.com';$nb=$crlf+$s+$crlf;foreach($d in $domains){$nb+='0.0.0.0 '+$d+$crlf};$nb+=$e+$crlf;try{if(Test-Path -LiteralPath $h){$cur=[System.IO.File]::ReadAllText($h,[System.Text.Encoding]::ASCII)}else{$cur=''};$cur=$cur -replace ('(?s)'+[regex]::Escape($s)+'.*?'+[regex]::Escape($e)),'';foreach($d in $domains){$cur=$cur -replace ('(?m)^0\.0\.0\.0\s+'+[regex]::Escape($d)+'\s*$'),''};$cur=$cur.TrimEnd()+$nb;if(Test-Path -LiteralPath $h){(Get-Item -LiteralPath $h).Attributes='Normal'};[System.IO.File]::WriteAllText($tmp,$cur,[System.Text.Encoding]::ASCII);[System.IO.File]::Copy($tmp,$h,$true);Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;exit 0}catch{Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;exit 1}" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';$h=$env:HOSTS;$item=$null;$attrs=$null;$tmp=[System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($h),([System.IO.Path]::GetFileName($h)+'.'+[guid]::NewGuid().ToString('N')+'.tmp'));$crlf=[char]13+[char]10;$s='# Telemetry Block Start';$e='# Telemetry Block End';$domains='vortex.data.microsoft.com','vortex-win.data.microsoft.com','v10.vortex-win.data.microsoft.com','v10.events.data.microsoft.com','telecommand.telemetry.microsoft.com','oca.telemetry.microsoft.com','watson.telemetry.microsoft.com','watsonc.microsoft.com','settings.data.microsoft.com','settings-win.data.microsoft.com','mobile.events.data.microsoft.com','browser.events.data.microsoft.com','self.events.data.microsoft.com','v20.events.data.microsoft.com','telemetry.microsoft.com','telemetrycollector.microsoft.com','pipe.aria.microsoft.com','diagnostics.office.com','activity.windows.com','modern.watson.data.microsoft.com','applicationinsights.microsoft.com','azurewatson.microsoft.com';$nb=$crlf+$s+$crlf;foreach($d in $domains){$nb+='0.0.0.0 '+$d+$crlf};$nb+=$e+$crlf;try{if(Test-Path -LiteralPath $h){$cur=[System.IO.File]::ReadAllText($h,[System.Text.Encoding]::GetEncoding(28591))}else{$cur=''};$cur=$cur -replace ('(?s)'+[regex]::Escape($s)+'.*?'+[regex]::Escape($e)),'';foreach($d in $domains){$cur=$cur -replace ('(?m)^0\.0\.0\.0\s+'+[regex]::Escape($d)+'\s*$'),''};$cur=$cur.TrimEnd()+$nb;if(Test-Path -LiteralPath $h){$item=Get-Item -LiteralPath $h -Force;$attrs=$item.Attributes;$item.IsReadOnly=$false};[System.IO.File]::WriteAllText($tmp,$cur,[System.Text.Encoding]::GetEncoding(28591));[System.IO.File]::Copy($tmp,$h,$true);Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;exit 0}catch{Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;exit 1}finally{if($item-ne$null-and$attrs-ne$null){$item.Attributes=$attrs}}" >nul 2>&1
 set "HOSTS_RC=!errorlevel!"
 if "!HOSTS_RC!"=="0" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Bloc de telemetrie ajoute au fichier hosts%COLOR_RESET%
 ) else (
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Fichier hosts non modifie. Les autres reglages continuent.%COLOR_RESET%
 )
-attrib +r "%HOSTS%" >nul 2>&1
 if not "!AIO_MODE!"=="1" ipconfig /flushdns >nul 2>&1
 set "HOSTS_RC="
 set "HOSTS="
@@ -1301,6 +1641,7 @@ set "HOSTS_BACKUP_RC="
 REM  1.6 - Services optimises
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation du reglage des services Windows...%COLOR_RESET%
 set "SERVICE_CONFIG_SKIPPED=0"
+set "SERVICE_CONFIG_FAILED=0"
 
 REM  1 - Services vitaux -> AUTOMATIQUE
 for %%S in (
@@ -1390,10 +1731,12 @@ if "!IS_NORMAL_ECO_LAPTOP!"=="1" (
 
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Configuration demandee pour les services presents%COLOR_RESET%
 if !SERVICE_CONFIG_SKIPPED! GTR 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%!SERVICE_CONFIG_SKIPPED! service ou services absents ignores. Aucune entree inutile creee%COLOR_RESET%
+if !SERVICE_CONFIG_FAILED! GTR 0 echo [AVERTISSEMENT] Services non confirmes : !SERVICE_CONFIG_FAILED!.
 set "SERVICE_CONFIG_SKIPPED="
+set "SERVICE_CONFIG_FAILED="
 
 REM  Services critiques laisses intacts : Bluetooth, Hello, RDP, Spooler, PlugPlay
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Services utiles regles. Bluetooth, VPN, Hello et RDP preserves%COLOR_RESET%
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages des services demandes. Verifiez vos usages avant redemarrage%COLOR_RESET%
 
 REM  1.7 - Optimisations demarrage et systeme
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisations systeme diverses...%COLOR_RESET%
@@ -1405,11 +1748,6 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v "DisableInventor
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v "DisableUAR" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v "AITEnable" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Configuration Manager" /v EnablePeriodicBackup /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" /v "01" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" /v "04" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" /v "08" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" /v "32" /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" /v "2048" /t REG_DWORD /d 7 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Optimisations demarrage et stockage terminees%COLOR_RESET%
 
 REM  1.8 - Utilitaires et Bloatwares (Automatique)
@@ -1466,6 +1804,8 @@ reg add "HKCU\Software\Policies\Microsoft\Edge" /v QuicAllowed /t REG_DWORD /d 1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v DnsOverHttpsMode /t REG_SZ /d automatic /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v DnsOverHttpsTemplates /t REG_SZ /d "https://cloudflare-dns.com/dns-query" /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v HardwareAccelerationModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v DiagnosticData /t REG_DWORD /d 0 /f >nul 2>&1
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v PersonalizationReportingEnabled /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v UserFeedbackAllowed /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v BackgroundModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v EdgeCollectionsEnabled /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1495,36 +1835,14 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation du P2P Win
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v DODownloadMode /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Mises a jour Windows telechargees depuis Microsoft uniquement%COLOR_RESET%
 
-REM  1.12 - Blocage des pubs Store dans la recherche
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Blocage des recommandations Store dans la recherche...%COLOR_RESET%
-set "STORE_DB=%LocalAppData%\Packages\Microsoft.WindowsStore_8wekyb3d8bbwe\LocalState\store.db"
-if exist "!STORE_DB!" (
-    REM  SID *S-1-1-0 = groupe "Tout le monde" : independant de la langue Windows.
-    REM  ("Everyone" echoue sur un Windows francais : erreur 1332, refus jamais pose.)
-    REM  Retirer un eventuel refus identique avant de le reposer rend l'operation idempotente ;
-    REM  pour revenir en arriere manuellement : icacls "<chemin vers store.db>" /remove:d *S-1-1-0
-    icacls "!STORE_DB!" /remove:d *S-1-1-0 >nul 2>&1
-    icacls "!STORE_DB!" /deny *S-1-1-0:F >nul 2>&1
-    if !errorlevel! EQU 0 (
-        echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Pubs Store bloquees dans la recherche%COLOR_RESET%
-    ) else (
-        echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Blocage des pubs Store non applique ; le script continue.%COLOR_RESET%
-    )
-) else (
-    echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Base du Store absente ; rien a bloquer.%COLOR_RESET%
-)
-set "STORE_DB="
+REM  1.12 - Le Store reste accessible. Ancien refus NTFS retire du profil.
 
 REM  1.13 - Affichage du code erreur BSoD
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de l'affichage des codes erreur BSoD...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl" /v DisplayParameters /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Codes d'erreur BSoD visibles pour faciliter le diagnostic%COLOR_RESET%
 
-REM  1.14 - Desactivation de l'aide F1
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de la touche F1 et de l'aide Windows...%COLOR_RESET%
-reg add "HKCR\Typelib\{8cec5860-07a1-11d9-b15e-000d56bfe6ee}\1.0\0\win64" /ve /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKCR\Typelib\{8cec5860-07a1-11d9-b15e-000d56bfe6ee}\1.0\0\win32" /ve /t REG_SZ /d "" /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Touche F1 desactivee pour eviter l'ouverture de l'aide%COLOR_RESET%
+REM  1.14 - F1 et les inscriptions COM restent intacts.
 
 REM  1.15 - Optimisations audio (latence)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'attenuation audio Windows...%COLOR_RESET%
@@ -1570,7 +1888,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 
 call :FINISH_ACTION "Reglages systeme"
-exit /b 0
+exit /b !SYSTEM_SECTION_ERROR!
 
 :OPTIMISATIONS_MEMOIRE
 cls
@@ -2396,6 +2714,8 @@ call :FINISH_ACTION "Reglages peripheriques"
 exit /b 0
 
 :TOGGLE_ECONOMIES_ENERGIE
+call :CONFIRMER_REGLAGES_AVANCES
+if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 set "SKIP_PAUSE=0"
 call :SCREEN_HEADER " GERER LE MODE ENERGIE"
 echo %COLOR_WHITE%  Choisissez entre performances et economies d'energie.%COLOR_RESET%
@@ -2476,7 +2796,7 @@ call :SET_POWERCFG_ACDC 0012ee47-9041-4b5d-9b77-535fba8b1442 6738e2c4-e8a5-4a42-
 call :SET_POWERCFG_ACDC 0d7dbae2-4294-402a-ba8e-26777e8488cd 309dce9b-bef4-4119-9921-a851fb12f0f4 1
 call :SET_POWERCFG_ACDC 19cbb8fa-5279-450e-9fac-8a3d5fedd0c1 12bbebe6-58d6-4636-95bb-3217ef867c1a 0
 
-REM  Veille hybride : desactivee (inutile si hibernate est off)
+REM  Veille hybride : choix avance du plan ; hibernation globale preservee.
 call :SET_POWERCFG_ACDC 238c9fa8-0aad-41ed-83f4-97be242c8f20 94ac6d29-73ce-41a6-809f-6363ba21b47e 0
 call :SET_POWERCFG_ACDC 238c9fa8-0aad-41ed-83f4-97be242c8f20 9d7815a6-7ee4-497e-8888-515a05f02364 0
 call :SET_POWERCFG_ACDC 2a737441-1930-4402-8d77-b2bebba308a3 0853a681-27c8-4100-a2fd-82013e970683 0
@@ -2526,21 +2846,12 @@ REM Les valeurs Device Parameters/WDF appartiennent aux pilotes et varient selon
 REM La commande WMI ci-dessus suffit pour le profil ; aucun forcage registre destructif n'est applique.
 call :STEP_RESULT "Mise en veille des peripheriques HID et USB reduite" "" "Mise en veille des peripheriques HID et USB partiellement reduite"
 
-REM  7.6 - Desactivation du demarrage rapide Fast Startup
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation du demarrage rapide Windows...%COLOR_RESET%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 0 /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Demarrage rapide desactive. Les redemarrages complets sont privilegies.%COLOR_RESET%
-
-REM  7.7 - Hibernation
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'hibernation...%COLOR_RESET%
-powercfg /hibernate off >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Hibernation desactivee. Espace disque recupere.%COLOR_RESET%
+REM  Demarrage rapide et hibernation : preferences utilisateur preservees.
 
 REM  7.8 - Configuration generale du systeme d'alimentation
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration du systeme d'alimentation...%COLOR_RESET%
 REM  ASPM est configure correctement a la section 7.18 ci-dessous avec SUB_PCIEXPRESS (501a4d13...)
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WcmSvc\GroupPolicy" /v fDisablePowerManagement /t REG_DWORD /d 1 /f >nul 2>&1
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v PlatformAoAcOverride /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v SleepStudyDisabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v SleepStudyDisabled /t REG_DWORD /d 1 /f >nul 2>&1
 
@@ -2762,15 +3073,7 @@ if "!POWER_PLAN_ALREADY_ACTIVE!"=="1" (
 set "POWER_PLAN_ALREADY_ACTIVE="
 REM Le plan Ultimate duplique est conserve : il peut etre reutilise sans proliferer les GUID.
 
-REM  7.1 - Demarrage rapide (Fast Startup)
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration du demarrage rapide au stock Windows...%COLOR_RESET%
-reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v HiberbootEnabled /t REG_DWORD /d 1 /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Demarrage rapide reactive comme au defaut Windows.%COLOR_RESET%
-
-REM  7.2 - Hibernation
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Retour de l'hibernation au stock Windows...%COLOR_RESET%
-powercfg /hibernate on >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Hibernation et veille hybride rendues disponibles comme sur le stock mesure.%COLOR_RESET%
+REM  Demarrage rapide et hibernation : preferences utilisateur preservees.
 
 REM  7.3 - USB Selective Suspend
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reactivation de la mise en veille selective USB...%COLOR_RESET%
@@ -2911,7 +3214,6 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie PCI rendue 
 REM  7.18 - Systeme d'alimentation
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration du systeme d'alimentation...%COLOR_RESET%
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WcmSvc\GroupPolicy" /v fDisablePowerManagement /f >nul 2>&1
-reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v PlatformAoAcOverride /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v SleepStudyDisabled /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v SleepStudyDisabled /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Systeme d'alimentation restaure%COLOR_RESET%
@@ -3132,8 +3434,8 @@ call :SCREEN_HEADER " GERER LES PROTECTIONS WINDOWS"
 echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%DEFAUT WINDOWS%COLOR_RESET%
 echo %COLOR_WHITE%    Restaure le snapshot ou applique la base stock 25H2 mesuree.%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_CYAN%GAMING%COLOR_RESET%  %COLOR_GREEN%RECOMMANDE%COLOR_RESET%
-echo %COLOR_WHITE%    Equilibre performances et protections pour tous types de jeux.%COLOR_RESET%
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_CYAN%GAMING%COLOR_RESET%  %COLOR_RED%AVANCE - PROTECTION REDUITE%COLOR_RESET%
+echo %COLOR_WHITE%    Reduit des mitigations CPU, SEHOP et la protection contre certains pilotes.%COLOR_RESET%
 echo %COLOR_WHITE%    Conserve les protections utiles aux anti-cheats modernes.%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_RED%PERFORMANCE MAX%COLOR_RESET%  %COLOR_RED%DECONSEILLE%COLOR_RESET%
@@ -3162,7 +3464,7 @@ goto :TOGGLE_PROTECTIONS_NOYAU
 call :SCREEN_HEADER " MODE GAMING"
 echo %COLOR_WHITE%Ce mode conserve l'isolation et l'integrite de la memoire.%COLOR_RESET%
 echo %COLOR_WHITE%Il reduit certaines protections du processeur pour les performances.%COLOR_RESET%
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Tous types de jeux ; compatibilite anti-cheat elevee.%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Compatibilite anti-cheat dependante du jeu, du firmware et de Windows.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour finaliser les changements.%COLOR_RESET%
 echo.
 call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Appliquer le mode Gaming ? [O=Appliquer / N=Annuler] : %COLOR_RESET%"
@@ -3295,8 +3597,16 @@ reg query "HKLM\SYSTEM\CurrentControlSet\Services\uhssvc" >nul 2>&1 && reg add "
 REM  Miroir registre de la desactivation (qui ecrit Start=4 hors du SCM) : sans ce
 REM  rattrapage, un 'sc config' refuse sur un pilote charge laisserait Defender
 REM  desactive sans chemin de retour. Meme valeurs de depart que ci-dessus.
-for %%S in (WinDefend WdNisSvc Sense SecurityHealthService WdNisDrv) do call :SET_EXISTING_SERVICE_START "%%S" 3
-for %%S in (WdBoot WdFilter) do call :SET_EXISTING_SERVICE_START "%%S" 0
+call :SET_EXISTING_SERVICE_START "WinDefend" 2
+if !errorlevel! NEQ 0 set "DEFENDER_ACTION_ERROR=1"
+for %%S in (WdNisSvc Sense SecurityHealthService WdNisDrv) do (
+    call :SET_EXISTING_SERVICE_START "%%S" 3
+    if !errorlevel! NEQ 0 set "DEFENDER_ACTION_ERROR=1"
+)
+for %%S in (WdBoot WdFilter) do (
+    call :SET_EXISTING_SERVICE_START "%%S" 0
+    if !errorlevel! NEQ 0 set "DEFENDER_ACTION_ERROR=1"
+)
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des politiques de desactivation ajoutees par l'outil...%COLOR_RESET%
 for %%V in (DisableRealtimeMonitoring DisableIOAVProtection DisableScriptScanning DisableBehaviorMonitoring DisableOnAccessProtection DisableArchiveScanning DisableEmailScanning DisableRemovableDriveScanning DisableScanningMappedNetworkDrivesForFullScan DisableScanningNetworkFiles) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender\Real-Time Protection" /v "%%V" /f >nul 2>&1
@@ -3311,7 +3621,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='
 if !errorlevel! NEQ 0 set "DEFENDER_ACTION_ERROR=1"
 
 for %%T in ("Microsoft\Windows\Windows Defender\Windows Defender Cleanup" "Microsoft\Windows\Windows Defender\Windows Defender Scheduled Scan" "Microsoft\Windows\Windows Defender\Windows Defender Update" "Microsoft\Windows\Windows Defender\Windows Defender Cache Maintenance" "Microsoft\Windows\Windows Defender\Windows Defender Verification" "Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Refresh") do schtasks /Change /TN "%%~T" /Enable >nul 2>&1
-powershell -NoProfile -Command "try{$s=Get-MpComputerStatus -ErrorAction Stop;if($s.AntivirusEnabled-and$s.RealTimeProtectionEnabled){exit 0};exit 1}catch{exit 1}" >nul 2>&1
+powershell -NoProfile -Command "try{$s=Get-MpComputerStatus -ErrorAction Stop;$start=(Get-ItemProperty -LiteralPath 'Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\WinDefend' -Name Start -ErrorAction Stop).Start;if($s.AntivirusEnabled-and$s.RealTimeProtectionEnabled-and$start-eq2){exit 0};exit 1}catch{exit 1}" >nul 2>&1
 if !errorlevel! NEQ 0 set "DEFENDER_ACTION_ERROR=1"
 if "!DEFENDER_ACTION_ERROR!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Defender reactive ; ASR et CFA existants conserves.%COLOR_RESET%
@@ -3320,6 +3630,8 @@ if "!DEFENDER_ACTION_ERROR!"=="0" (
 )
 call :FINISH_ACTION "Reglages Windows Defender"
 exit /b !DEFENDER_ACTION_ERROR!
+
+
 :DESACTIVER_DEFENDER_SECTION
 if not "!SKIP_PAUSE!"=="0" goto :DESACTIVER_DEFENDER_RUN
 cls
@@ -3632,6 +3944,7 @@ call :FINISH_ACTION "Toutes les fonctions IA/Widgets"
 goto :MENU_IA_WIDGETS_RECALL
 
 :DESACTIVER_IA_SECTION
+setlocal EnableDelayedExpansion
 call :SCREEN_HEADER " DESACTIVATION DE COPILOT / WIDGETS / RECALL"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Application des restrictions Copilot, Widgets et Recall.%COLOR_RESET%
 echo.
@@ -3643,8 +3956,10 @@ call :CORE_DESACTIVER_WIDGETS
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 call :CORE_DESACTIVER_RECALL
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
+set "AI_SECTION_RC=!STEP_ERRORS!"
 call :STEP_RESULT "Restrictions Copilot, Widgets et Recall appliquees" "" "Restrictions Copilot, Widgets et Recall partiellement appliquees" "" "Une strategie ou un composant indisponible peut avoir refuse une partie des reglages."
-exit /b !STEP_ERRORS!
+endlocal & exit /b %AI_SECTION_RC%
+
 
 :MENU_IA_OPTION_6_GATE
 if not "!SKIP_PAUSE!"=="0" goto :MENU_IA_OPTION_6
@@ -3735,7 +4050,8 @@ echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_ACTIVER_WIDGETS
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Widgets actives.%COLOR_RESET%
+if !errorlevel! EQU 0 echo [FAIT] Activation Widgets demandee.
+if !errorlevel! NEQ 0 echo [AVERTISSEMENT] Activation Widgets non confirmee.
 call :FINISH_ACTION "Reglages Widgets"
 goto :MENU_IA_WIDGETS_RECALL
 
@@ -3773,7 +4089,8 @@ echo.
 echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_ACTIVER_COPILOT
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Copilot active.%COLOR_RESET%
+if !errorlevel! EQU 0 echo [FAIT] Activation Copilot legacy demandee. L application moderne est distincte.
+if !errorlevel! NEQ 0 echo [AVERTISSEMENT] Activation Copilot non confirmee.
 call :FINISH_ACTION "Reglages Copilot"
 goto :MENU_IA_WIDGETS_RECALL
 
@@ -3821,41 +4138,60 @@ REM  renvoie aucun code exploitable, seule la valeur reellement stockee compte.
 REM  Motif ancre en fin de ligne : sans lui, findstr matcherait aussi 0x10 et 0x18.
 reg query "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" /v TurnOffWindowsCopilot 2>nul | findstr /R /C:"0x1[ ]*$" >nul
 if !errorlevel! NEQ 0 exit /b 1
+REM La politique legacy ne bloque pas l'application Copilot moderne.
+powershell -NoProfile -Command "try{if(@(Get-AppxPackage -Name Microsoft.Copilot -EA Stop).Count){Write-Host '[AVERTISSEMENT] Application Copilot moderne presente. Retrait explicite : Gestion Windows, Applications, Copilot.';exit 1};exit 0}catch{exit 1}"
+if !errorlevel! NEQ 0 exit /b 1
 if not "!AIO_MODE!"=="1" ipconfig /flushdns >nul 2>&1
 exit /b 0
 
 
 :CORE_ACTIVER_WIDGETS
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation des Widgets et de leur bouton...%COLOR_RESET%
+set "WIDGETS_ENABLE_RC=0"
 call :DELETE_REG_VALUE_IF_PRESENT "HKLM\SOFTWARE\Policies\Microsoft\Dsh" "AllowNewsAndInterests"
+if !errorlevel! NEQ 0 set "WIDGETS_ENABLE_RC=1"
 call :DELETE_REG_VALUE_IF_PRESENT "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" "EnableFeeds"
-REM TaskbarDa peut etre protege par Windows/UCPD. Retirer la strategie Dsh reactive deja les Widgets.
+if !errorlevel! NEQ 0 set "WIDGETS_ENABLE_RC=1"
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 1 /f >nul 2>&1
-if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Windows protege le bouton Widgets ; utilisez les Parametres pour l'afficher.%COLOR_RESET%
-exit /b 0
+reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa 2>nul | findstr /R /C:"REG_DWORD[ ]*0x1[ ]*$" >nul
+if !errorlevel! NEQ 0 (
+    echo [AVERTISSEMENT] Bouton Widgets non confirme ; verifiez son affichage dans les Parametres.
+    set "WIDGETS_ENABLE_RC=1"
+)
+if "!WIDGETS_ENABLE_RC!"=="1" echo [AVERTISSEMENT] Activation Widgets partielle : strategie ou bouton non confirme.
+exit /b !WIDGETS_ENABLE_RC!
+
 
 :CORE_DESACTIVER_WIDGETS
-set "WIDGETS_BUILD=0"
+setlocal EnableDelayedExpansion
+set "WIDGETS_BUILD="
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Application des restrictions pour les Widgets...%COLOR_RESET%
 for /f "tokens=3" %%B in ('reg query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v CurrentBuildNumber 2^>nul ^| findstr /i "CurrentBuildNumber"') do set "WIDGETS_BUILD=%%B"
-if !WIDGETS_BUILD! GEQ 22000 (
-    REM Windows 11 : strategie Widgets actuelle et bouton de la barre des taches.
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests /t REG_DWORD /d 0 /f >nul 2>&1
-    REM TaskbarDa peut etre protege par Windows/UCPD. La strategie Dsh suffit a desactiver toute l'experience Widgets.
-    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 0 /f >nul 2>&1
-    if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Bouton Widgets protege par Windows ; la strategie principale reste appliquee.%COLOR_RESET%
-    REM  Verification par relecture de la strategie principale (celle qui suffit).
-    reg query "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests 2>nul | findstr /R /C:"0x0[ ]*$" >nul
-    if !errorlevel! NEQ 0 exit /b 1
-) else (
-    REM Windows 10 : ancienne strategie Actualites et centres d'interet uniquement.
-    reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v EnableFeeds /t REG_DWORD /d 0 /f >nul 2>&1
-    reg query "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v EnableFeeds 2>nul | findstr /R /C:"0x0[ ]*$" >nul
-    if !errorlevel! NEQ 0 exit /b 1
+echo !WIDGETS_BUILD!| findstr /R /X "[0-9][0-9]*" >nul
+if errorlevel 1 (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Version de Windows illisible ; restrictions Widgets non appliquees.%COLOR_RESET%
+    endlocal & exit /b 1
 )
-set "WIDGETS_BUILD="
-exit /b 0
-
+set "WIDGETS_POLICY=HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"
+set "WIDGETS_VALUE=EnableFeeds"
+if !WIDGETS_BUILD! GEQ 22000 (
+    set "WIDGETS_POLICY=HKLM\SOFTWARE\Policies\Microsoft\Dsh"
+    set "WIDGETS_VALUE=AllowNewsAndInterests"
+)
+REM Conserver le diagnostic Windows sur stderr ; ne pas attribuer le refus a un composant sans preuve.
+reg add "!WIDGETS_POLICY!" /v !WIDGETS_VALUE! /t REG_DWORD /d 0 /f >nul
+REM La relecture decide du resultat, meme si reg add annonce un succes ou un echec.
+reg query "!WIDGETS_POLICY!" /v !WIDGETS_VALUE! 2>nul | findstr /R /C:"REG_DWORD[ ]*0x0[ ]*$" >nul
+if errorlevel 1 (
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Strategie Widgets non confirmee : !WIDGETS_POLICY! / !WIDGETS_VALUE! doit etre REG_DWORD 0.%COLOR_RESET%
+    endlocal & exit /b 1
+)
+if !WIDGETS_BUILD! GEQ 22000 (
+    REM Le bouton est secondaire ; seule la strategie principale vient d'etre confirmee.
+    reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 0 /f >nul 2>&1
+    reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa 2>nul | findstr /R /C:"REG_DWORD[ ]*0x0[ ]*$" >nul
+    if errorlevel 1 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Bouton Widgets non confirme ; la strategie principale est enregistree. Verifiez le bouton dans les Parametres.%COLOR_RESET%
+)
+endlocal & exit /b 0
 
 :CORE_ACTIVER_RECALL
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de Recall et de ses fonctions associees...%COLOR_RESET%
@@ -4918,6 +5254,51 @@ set "DX_REBOOT="
 exit /b 0
 
 :SUPPRIMER_BLOATWARES
+call :SCREEN_HEADER " APPLICATIONS OPTIONNELLES - COMPTE DU PROCESSUS ELEVE"
+echo Compte Windows cible :
+whoami
+echo Si l'UAC a utilise un autre compte, ses applications sont ciblees.
+echo Utilisez le compte dont les applications doivent etre modifiees.
+echo Chaque application reste un choix individuel. Aucune suppression automatique.
+echo Fermez l'application et sauvegardez ses donnees locales avant de la retirer.
+echo Store, WebView2, Xbox/Gaming Services, Photos et Calculatrice sont conserves.
+echo Une presence dans cette liste ne prouve pas une consommation au repos.
+echo.
+echo [1] Microsoft Copilot - application moderne, distincte de l'ancien bouton
+echo [2] Clipchamp - montage video
+echo [3] Microsoft Teams - visioconference
+echo [4] Nouveau Outlook - messagerie
+echo [5] Solitaire
+echo [6] Microsoft News
+echo [A] Ancien lot pour TOUS les utilisateurs - mode avance, sans restauration
+echo [M] Retour
+call :SUBMENU_CHOICE "Gestion Windows" "Applications [1-6, A, M] : " 123456AM
+set "APP_CHOICE=!errorlevel!"
+if "!APP_CHOICE!"=="8" goto :MENU_GESTION_WINDOWS
+if "!APP_CHOICE!"=="7" goto :SUPPRIMER_BLOATWARES_AVANCE
+set "WINOPT_OPTIONAL_APP="
+if "!APP_CHOICE!"=="1" set "WINOPT_OPTIONAL_APP=Microsoft.Copilot"
+if "!APP_CHOICE!"=="2" set "WINOPT_OPTIONAL_APP=Clipchamp.Clipchamp"
+if "!APP_CHOICE!"=="3" set "WINOPT_OPTIONAL_APP=MSTeams"
+if "!APP_CHOICE!"=="4" set "WINOPT_OPTIONAL_APP=Microsoft.OutlookForWindows"
+if "!APP_CHOICE!"=="5" set "WINOPT_OPTIONAL_APP=Microsoft.MicrosoftSolitaireCollection"
+if "!APP_CHOICE!"=="6" set "WINOPT_OPTIONAL_APP=Microsoft.BingNews"
+if not defined WINOPT_OPTIONAL_APP goto :MENU_GESTION_WINDOWS
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$a=@(Get-AppxPackage -Name $env:WINOPT_OPTIONAL_APP -EA Stop);if(-not$a.Count){Write-Host '[IGNORE] Application absente pour cet utilisateur';exit 2};$a|Select-Object Name,Version|Format-Table -AutoSize;exit 0}catch{Write-Host $_.Exception.Message;exit 1}"
+if !errorlevel! NEQ 0 (
+    pause
+    goto :SUPPRIMER_BLOATWARES
+)
+echo Desinstallation pour le compte affiche ci-dessus ; autres comptes conserves.
+echo Les donnees locales peuvent etre perdues. Reinstallation par Microsoft Store.
+echo Pour Copilot, le Web, Edge et Microsoft 365 sont des fonctions distinctes.
+call :ASK_CONFIRM "Desinstaller cette application ? [O=Desinstaller / N=Annuler] : "
+if !errorlevel! NEQ 0 goto :SUPPRIMER_BLOATWARES
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$n=$env:WINOPT_OPTIONAL_APP;$a=@(Get-AppxPackage -Name $n -EA Stop);foreach($p in $a){Remove-AppxPackage -Package $p.PackageFullName -EA Stop};if(@(Get-AppxPackage -Name $n -EA Stop).Count){throw 'Application encore presente'};Write-Host ('[OK] Application absente pour cet utilisateur : '+$n);exit 0}catch{Write-Host ('[ERREUR] '+$_.Exception.Message);exit 1}"
+pause
+goto :SUPPRIMER_BLOATWARES
+
+:SUPPRIMER_BLOATWARES_AVANCE
 call :SCREEN_HEADER " SUPPRESSION DES APPLICATIONS PREINSTALLEES"
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%La liste sera desinstallee pour tous les utilisateurs.%COLOR_RESET%
 echo.
@@ -5080,35 +5461,101 @@ del /f /q "%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%" "%WINOPT_RUNAS_BAC
 exit /b 0
 
 :CAPTURE_SECURITY_BASELINE
+set "WINOPT_SECURITY_SOURCE=%~f0"
 if exist "%WINOPT_SECURITY_BACKUP%" if exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 0
 if exist "%WINOPT_SECURITY_BACKUP%" exit /b 1
 if exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 1
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$r=$env:WINOPT_SECURITY_BACKUP;$b=$env:WINOPT_SECURITY_BCD_BACKUP;New-Item -ItemType Directory -Path (Split-Path -Parent $r) -Force|Out-Null;$targets=@(@{Path='SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management';Names=@('MoveImages','EnableGdsMitigation','PerformMmioMitigation','RestrictIndirectBranchPrediction','EnableKvashadow','KvaOpt','DisableStibp','EnableRetpoline','DisableBranchPrediction','FeatureSettings','FeatureSettingsOverride','FeatureSettingsOverrideMask')},@{Path='SYSTEM\CurrentControlSet\Control\Session Manager\Kernel';Names=@('KernelSEHOPEnabled','DisableExceptionChainValidation','MitigationOptions','MitigationAuditOptions')},@{Path='SYSTEM\CurrentControlSet\Control\DeviceGuard';Names=@('EnableVirtualizationBasedSecurity','RequirePlatformSecurityFeatures','Locked')},@{Path='SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity';Names=@('Enabled','Locked','WasEnabledBy')},@{Path='SOFTWARE\Policies\Microsoft\Windows\DeviceGuard';Names=@('EnableVirtualizationBasedSecurity','RequirePlatformSecurityFeatures','HypervisorEnforcedCodeIntegrity','LsaCfgFlags')},@{Path='SOFTWARE\Policies\Microsoft\Windows\System';Names=@('RunAsPPL')},@{Path='SYSTEM\CurrentControlSet\Control\Lsa';Names=@('LsaCfgFlags','RunAsPPLBoot','RunAsPPL')},@{Path='SYSTEM\CurrentControlSet\Control\CI\Policy';Names=@('WHQLSettings')},@{Path='SYSTEM\CurrentControlSet\Control\CI\Config';Names=@('VulnerableDriverBlocklistEnable')});$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$lines=@('Windows Registry Editor Version 5.00','');foreach($x in $targets){$lines+=('[HKEY_LOCAL_MACHINE\'+$x.Path+']');$key=$base.OpenSubKey($x.Path,$false);foreach($n in $x.Names){$present=$key-and($key.GetValueNames()-contains$n);if(-not$present){$lines+=([char]34+$n+[char]34+'=-');continue};$kind=$key.GetValueKind($n);$value=$key.GetValue($n,$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if($kind-eq[Microsoft.Win32.RegistryValueKind]::DWord){$lines+=('{0}=dword:{1:x8}'-f([char]34+$n+[char]34),[uint32]$value)}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::QWord){$lines+=('{0}=hex(b):{1}'-f([char]34+$n+[char]34),(([BitConverter]::GetBytes([uint64]$value)|ForEach-Object{$_.ToString('x2')})-join','))}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$lines+=('{0}=hex:{1}'-f([char]34+$n+[char]34),(([byte[]]$value|ForEach-Object{$_.ToString('x2')})-join','))}else{$v=([string]$value).Replace('\','\\').Replace([string][char]34,'\'+[char]34);$lines+=([char]34+$n+[char]34+'='+[char]34+$v+[char]34)}};if($key){$key.Dispose()};$lines+=''};$base.Dispose();[IO.File]::WriteAllLines($r,$lines,[Text.Encoding]::Unicode);$bt=(& bcdedit.exe /enum '{current}' 2>$null)-join[Environment]::NewLine;$v='__ABSENT__';if($bt-match'(?m)^\s*hypervisorlaunchtype\s+(\S+)'){$v=$Matches[1]};[IO.File]::WriteAllText($b,$v,[Text.Encoding]::ASCII);exit 0}catch{Remove-Item -LiteralPath @($env:WINOPT_SECURITY_BACKUP,$env:WINOPT_SECURITY_BCD_BACKUP) -Force -ErrorAction SilentlyContinue;exit 1}" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$r=$env:WINOPT_SECURITY_BACKUP+'.pending';$b=$env:WINOPT_SECURITY_BCD_BACKUP+'.pending';New-Item -ItemType Directory -Path (Split-Path -Parent $r) -Force|Out-Null;$definition=@([IO.File]::ReadAllLines($env:WINOPT_SECURITY_SOURCE)|Where-Object{$_.StartsWith('::SECTARGETPS ')});if($definition.Count-ne 1){throw 'Liste de securite invalide'};. ([scriptblock]::Create($definition[0].Substring(13)));$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$lines=@('Windows Registry Editor Version 5.00','');foreach($x in $targets){$lines+=('[HKEY_LOCAL_MACHINE\'+$x.Path+']');$key=$base.OpenSubKey($x.Path,$false);foreach($n in $x.Names){$present=$key-and($key.GetValueNames()-contains$n);if(-not$present){$lines+=([char]34+$n+[char]34+'=-');continue};$kind=$key.GetValueKind($n);$value=$key.GetValue($n,$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if($kind-eq[Microsoft.Win32.RegistryValueKind]::DWord){$lines+=('{0}=dword:{1:x8}'-f([char]34+$n+[char]34),([BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$value),0)))}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::QWord){$lines+=('{0}=hex(b):{1}'-f([char]34+$n+[char]34),(([BitConverter]::GetBytes([long]$value)|ForEach-Object{$_.ToString('x2')})-join','))}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$lines+=('{0}=hex:{1}'-f([char]34+$n+[char]34),(([byte[]]$value|ForEach-Object{$_.ToString('x2')})-join','))}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::String){$v=([string]$value).Replace('\','\\').Replace([string][char]34,'\'+[char]34);$lines+=([char]34+$n+[char]34+'='+[char]34+$v+[char]34)}else{throw 'Unsupported registry value kind'}};if($key){$key.Dispose()};$lines+=''};$base.Dispose();[IO.File]::WriteAllLines($r,$lines,[Text.Encoding]::Unicode);$bt=(& bcdedit.exe /enum '{current}' 2>$null)-join[Environment]::NewLine;if($LASTEXITCODE-ne0){throw 'BCD read failed'};$v='__ABSENT__';if($bt-match'(?mi)^\s*hypervisorlaunchtype\s+(\S+)'){$v=$Matches[1];if($v-notmatch'^(?i:Auto|Off)$'){throw 'Unexpected BCD value'}};[IO.File]::WriteAllText($b,$v,[Text.Encoding]::ASCII);Move-Item -LiteralPath $r -Destination $env:WINOPT_SECURITY_BACKUP -ErrorAction Stop;Move-Item -LiteralPath $b -Destination $env:WINOPT_SECURITY_BCD_BACKUP -ErrorAction Stop;exit 0}catch{Remove-Item -LiteralPath @($r,$b) -Force -ErrorAction SilentlyContinue;exit 1}" >nul 2>&1
 exit /b !errorlevel!
+
+
 
 :RESTORE_SECURITY_BASELINE
 if not exist "%WINOPT_SECURITY_BACKUP%" if not exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 2
 if not exist "%WINOPT_SECURITY_BACKUP%" exit /b 1
 if not exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 1
-reg import "%WINOPT_SECURITY_BACKUP%" >nul 2>&1
+REM  Validate the saved BCD token before any registry import.
+powershell -NoProfile -Command "try{$v=[IO.File]::ReadAllText($env:WINOPT_SECURITY_BCD_BACKUP).Trim();if($v-notmatch'^(?i:__ABSENT__|Auto|Off)$'){exit 1};$null=& bcdedit.exe /enum '{current}' 2>$null;if($LASTEXITCODE-ne0){exit 1};exit 0}catch{exit 1}" >nul 2>&1
 if !errorlevel! NEQ 0 exit /b 1
-set "WINOPT_BCD_VALUE="
-for /f "usebackq delims=" %%A in ("%WINOPT_SECURITY_BCD_BACKUP%") do set "WINOPT_BCD_VALUE=%%A"
-if not defined WINOPT_BCD_VALUE exit /b 1
-REM  bcdedit /deletevalue renvoie 1 quand la valeur est deja absente, ce qui est
-REM  le cas courant : les profils Gaming et Performance max la suppriment aussi.
-REM  Le succes se lit donc sur l'etat final, pas sur le code retour.
-if /i "!WINOPT_BCD_VALUE!"=="__ABSENT__" (
-    bcdedit /deletevalue {current} hypervisorlaunchtype >nul 2>&1
-    bcdedit /enum {current} 2>nul | findstr /i "hypervisorlaunchtype" >nul
-    if !errorlevel! EQU 0 exit /b 1
-) else (
-    bcdedit /set {current} hypervisorlaunchtype !WINOPT_BCD_VALUE! >nul 2>&1
-    if !errorlevel! NEQ 0 exit /b 1
-)
-del /f /q "%WINOPT_SECURITY_BACKUP%" "%WINOPT_SECURITY_BCD_BACKUP%" >nul 2>&1
-set "WINOPT_BCD_VALUE="
+call :RESTORE_SECURITY_REGISTRY
+if !errorlevel! NEQ 0 exit /b 1
+REM  Native read failures must not count as an absent BCD value.
+powershell -NoProfile -Command "try{$v=[IO.File]::ReadAllText($env:WINOPT_SECURITY_BCD_BACKUP).Trim();if($v-eq'__ABSENT__'){$null=& bcdedit.exe /deletevalue '{current}' hypervisorlaunchtype 2>$null}else{$null=& bcdedit.exe /set '{current}' hypervisorlaunchtype $v 2>$null;if($LASTEXITCODE-ne0){exit 1}};$bt=(& bcdedit.exe /enum '{current}' 2>$null)-join[Environment]::NewLine;if($LASTEXITCODE-ne0){exit 1};$found=$bt-match'(?mi)^\s*hypervisorlaunchtype\s+(\S+)';if($v-eq'__ABSENT__'){if($found){exit 1}}else{if(-not$found-or$Matches[1]-ine$v){exit 1}};exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! NEQ 0 exit /b 1
+REM  Keep the first baseline for retry and inspection. Renewal must be explicit.
 exit /b 0
+
+
+
+
+:RESTORE_SECURITY_REGISTRY
+setlocal DisableDelayedExpansion
+set "WINOPT_SECURITY_SOURCE=%~f0"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$c=@([IO.File]::ReadAllLines($env:WINOPT_SECURITY_SOURCE)|Where-Object{$_.StartsWith('::SECREGPS ')}|ForEach-Object{$_.Substring(11)});if($c.Count-lt 30){throw 'Helper incomplet'};& ([scriptblock]::Create($c-join[Environment]::NewLine))}catch{Write-Host ('[ERREUR] '+$_.Exception.Message);exit 1}"
+endlocal & exit /b %errorlevel%
+
+::SECREGPS $ErrorActionPreference='Stop'
+::SECTARGETPS $targets=@(@{Path='SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management';Names=@('MoveImages','EnableGdsMitigation','PerformMmioMitigation','RestrictIndirectBranchPrediction','EnableKvashadow','KvaOpt','DisableStibp','EnableRetpoline','DisableBranchPrediction','FeatureSettings','FeatureSettingsOverride','FeatureSettingsOverrideMask')},@{Path='SYSTEM\CurrentControlSet\Control\Session Manager\Kernel';Names=@('KernelSEHOPEnabled','DisableExceptionChainValidation','MitigationOptions','MitigationAuditOptions')},@{Path='SYSTEM\CurrentControlSet\Control\DeviceGuard';Names=@('EnableVirtualizationBasedSecurity','RequirePlatformSecurityFeatures','Locked')},@{Path='SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity';Names=@('Enabled','Locked','WasEnabledBy')},@{Path='SOFTWARE\Policies\Microsoft\Windows\DeviceGuard';Names=@('EnableVirtualizationBasedSecurity','RequirePlatformSecurityFeatures','HypervisorEnforcedCodeIntegrity','LsaCfgFlags')},@{Path='SOFTWARE\Policies\Microsoft\Windows\System';Names=@('RunAsPPL')},@{Path='SYSTEM\CurrentControlSet\Control\Lsa';Names=@('LsaCfgFlags','RunAsPPLBoot','RunAsPPL')},@{Path='SYSTEM\CurrentControlSet\Control\CI\Policy';Names=@('WHQLSettings')},@{Path='SYSTEM\CurrentControlSet\Control\CI\Config';Names=@('VulnerableDriverBlocklistEnable')})
+
+::SECREGPS $definition=@([IO.File]::ReadAllLines($env:WINOPT_SECURITY_SOURCE)|Where-Object{$_.StartsWith('::SECTARGETPS ')});if($definition.Count-ne 1){throw 'Liste de securite invalide'};. ([scriptblock]::Create($definition[0].Substring(13)))
+::SECREGPS $allowed=@{};foreach($t in $targets){foreach($n in $t.Names){$allowed[$t.Path+'|'+$n]=$true}}
+::SECREGPS $seen=@{};$sections=@{};$entries=@();$path=$null
+::SECREGPS $lines=[IO.File]::ReadAllLines($env:WINOPT_SECURITY_BACKUP)
+::SECREGPS if($lines.Count-lt 3-or$lines[0]-cne'Windows Registry Editor Version 5.00'){throw 'Format de capture registre invalide'}
+::SECREGPS foreach($line in $lines|Select-Object -Skip 1){
+::SECREGPS     if(-not$line.Trim()){continue}
+::SECREGPS     if($line-match'^\[HKEY_LOCAL_MACHINE\\([^\]]+)\]$'){$path=$Matches[1];if($path-notin$targets.Path-or$sections.ContainsKey($path)){throw 'Cle de capture non autorisee ou dupliquee'};$sections[$path]=$true;continue}
+::SECREGPS     if(-not$path-or$line-notmatch'^"([A-Za-z0-9_]+)"=(.*)$'){throw 'Entree de capture registre invalide'}
+::SECREGPS     $name=$Matches[1];$data=$Matches[2];$id=$path+'|'+$name
+::SECREGPS     if(-not$allowed.ContainsKey($id)-or$seen.ContainsKey($id)){throw 'Valeur de capture non autorisee ou dupliquee'}
+::SECREGPS     $seen[$id]=$true;$kind=$null;$expected=$null
+::SECREGPS     if($data-eq'-'){$kind='Absent'}
+::SECREGPS     elseif($data-match'^dword:([0-9a-fA-F]{8})$'){$kind='DWord';$expected=$Matches[1]}
+::SECREGPS     elseif($data-match'^hex\(b\):((?:[0-9a-fA-F]{2},){7}[0-9a-fA-F]{2})$'){$kind='QWord';$expected=$Matches[1]}
+::SECREGPS     elseif($data-match'^hex:((?:[0-9a-fA-F]{2}(?:,|$))*)$'){$kind='Binary';$expected=$Matches[1]}
+::SECREGPS     elseif($data-match'^"((?:[^"\\]|\\["\\])*)"$'){$kind='String';$expected=[regex]::Replace($Matches[1],'\\([\\"])','$1')}
+::SECREGPS     else {throw ('Type de capture non pris en charge : '+$name)}
+::SECREGPS     $entries+=[pscustomobject]@{Path=$path;Name=$name;Kind=$kind;Expected=$expected}
+::SECREGPS }
+::SECREGPS if($entries.Count-ne$allowed.Count){throw 'Capture registre incomplete'}
+::SECREGPS # Match capture and native reg.exe: the default view of this process.
+::SECREGPS $base=[Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine','Default')
+::SECREGPS try{
+::SECREGPS     foreach($e in $entries){
+::SECREGPS         $key=$null
+::SECREGPS         try{
+::SECREGPS             if($e.Kind-eq'Absent'){$key=$base.OpenSubKey($e.Path,$true);if($key){$key.DeleteValue($e.Name,$false)}}
+::SECREGPS             else {
+::SECREGPS                 $value=$e.Expected
+::SECREGPS                 switch($e.Kind){
+::SECREGPS                     'DWord' {$value=[BitConverter]::ToInt32([BitConverter]::GetBytes([Convert]::ToUInt32($e.Expected,16)),0)}
+::SECREGPS                     'QWord' {$value=[BitConverter]::ToInt64([byte[]]@($e.Expected.Split(',')|ForEach-Object{[Convert]::ToByte($_,16)}),0)}
+::SECREGPS                     'Binary' {$value=[byte[]]@($e.Expected.Split(',',[StringSplitOptions]::RemoveEmptyEntries)|ForEach-Object{[Convert]::ToByte($_,16)})}
+::SECREGPS                 }
+::SECREGPS                 $key=$base.CreateSubKey($e.Path);$key.SetValue($e.Name,$value,[Microsoft.Win32.RegistryValueKind]$e.Kind)
+::SECREGPS             }
+::SECREGPS         }finally{if($key){$key.Dispose()}}
+::SECREGPS     }
+::SECREGPS     foreach($e in $entries){
+::SECREGPS         $key=$base.OpenSubKey($e.Path,$false)
+::SECREGPS         try{
+::SECREGPS             $present=$key-and$key.GetValueNames()-contains$e.Name
+::SECREGPS             if($e.Kind-eq'Absent'){if($present){throw ('Valeur encore presente : '+$e.Name)};continue}
+::SECREGPS             if(-not$present-or$key.GetValueKind($e.Name).ToString()-ne$e.Kind){throw ('Presence/type non restaure : '+$e.Name)}
+::SECREGPS             $value=$key.GetValue($e.Name,$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames)
+::SECREGPS             switch($e.Kind){
+::SECREGPS                 'DWord' {$actual=([BitConverter]::ToUInt32([BitConverter]::GetBytes([int]$value),0)).ToString('x8')}
+::SECREGPS                 'QWord' {$actual=([BitConverter]::GetBytes([long]$value)|ForEach-Object{$_.ToString('x2')})-join','}
+::SECREGPS                 'Binary' {$actual=([byte[]]$value|ForEach-Object{$_.ToString('x2')})-join','}
+::SECREGPS                 'String' {$actual=[string]$value}
+::SECREGPS             }
+::SECREGPS             if($e.Kind-eq'String'){if($actual-cne$e.Expected){throw ('Donnee non restauree : '+$e.Name)}}
+::SECREGPS             elseif($actual-ine$e.Expected){throw ('Donnee non restauree : '+$e.Name)}
+::SECREGPS         }finally{if($key){$key.Dispose()}}
+::SECREGPS     }
+::SECREGPS }finally{$base.Dispose()}
+::SECREGPS Write-Host ('[OK] Valeurs de securite restaurees et relues : '+$entries.Count)
+::SECREGPS exit 0
 
 :SET_MEMORY_POWER_PROFILE
 set "MEMORY_POWER_ERROR=0"
@@ -5597,14 +6044,18 @@ powershell -NoProfile -Command "Get-ChildItem -Path (Join-Path $env:APPDATA 'Mic
 exit /b
 
 :SET_EXISTING_SERVICE_START
-REM  %~1 = nom du service ; %~2 = valeur Start. Une cle absente est ignoree, jamais creee.
+REM A missing service is ignored; existing services are verified after the write.
 reg query "HKLM\SYSTEM\CurrentControlSet\Services\%~1" >nul 2>&1
 if !errorlevel! NEQ 0 (
     set /a "SERVICE_CONFIG_SKIPPED+=1"
     exit /b 0
 )
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\%~1" /v Start /t REG_DWORD /d %~2 /f >nul 2>&1
-exit /b 0
+reg query "HKLM\SYSTEM\CurrentControlSet\Services\%~1" /v Start 2>nul | findstr /R /C:"REG_DWORD[ ]*0x%~2[ ]*$" >nul
+if !errorlevel! EQU 0 exit /b 0
+set /a "SERVICE_CONFIG_FAILED+=1"
+echo [ERREUR] Demarrage du service %~1 non confirme : Start attendu %~2.
+exit /b 1
 
 :SET_DEVICE_MSI_PROFILE
 REM  %~1 = classe PnP (Display, Net ou USB) ; %~2 = PROFIL_USAGE (0=Gaming, 1=Normal).
