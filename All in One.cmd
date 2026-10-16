@@ -741,7 +741,7 @@ echo %STYLE_BOLD%%COLOR_BLUE%--- RUNTIMES ET DEPENDANCES ---%COLOR_RESET%
 echo %COLOR_YELLOW%[7]%COLOR_RESET% %COLOR_GREEN%Installer les runtimes Visual C++ et DirectX de juin 2010%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- APPLICATIONS ET NETTOYAGE ---%COLOR_RESET%
-echo %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Supprimer les applications Windows inutiles%COLOR_RESET%
+echo %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Choisir les applications Windows a desinstaller%COLOR_RESET%
 echo.
 echo [9] Sauvegardes, restauration et corrections des anciens reglages
 echo [V] Profil Valorant : appliquer ou restaurer
@@ -783,17 +783,16 @@ exit /b !errorlevel!
 
 :PARCOURS_RECOMMANDE
 call :SCREEN_HEADER " PARCOURS RECOMMANDE - GAMING ET BUREAU"
-echo Les valeurs modifiees sont sauvegardees avant ecriture et relues apres.
-echo Certains reglages de confidentialite, navigateurs et Widgets touchent tous les comptes.
-echo Compte cible des valeurs HKCU et de la sauvegarde :
+echo Quatre choix, puis un recapitulatif avant application.
+echo Sauvegarde automatique ; retour arriere dans [G] puis [9].
+echo Premiere sauvegarde conservee, meme apres plusieurs passages.
+echo Certains reglages et leur restauration concernent tous les comptes Windows.
+echo Evitez de les gerer depuis plusieurs comptes : leurs sauvegardes peuvent se contredire.
+echo Compte concerne pour les reglages personnels :
 whoami
-echo Si l'UAC a utilise un autre compte, son profil est cible, pas celui de la session.
-echo Utilisez le compte dont le profil doit etre modifie.
-echo Elle conserve son premier etat capture ; la restauration touche aussi les autres comptes.
-echo Des captures creees par differents comptes peuvent donc se contredire.
-echo Sur un PC deja optimise, cet etat inclut les anciens reglages.
-echo Le menu Recuperation explique les corrections de ces anciens reglages.
-echo Aucun changement des protections, du reseau, des pilotes ou de la veille.
+echo Si l'UAC utilise un autre compte, c'est son profil qui sera modifie.
+echo Sur un PC deja optimise, la sauvegarde inclut les anciens reglages.
+echo Securite, pilotes, reseau et veille preserves. Details dans le README.
 echo.
 echo [1/4] Reduire diagnostics facultatifs, publicites et suggestions Windows ?
 echo Les diagnostics requis peuvent rester actifs selon l'edition Windows.
@@ -816,9 +815,15 @@ echo Telechargements Microsoft signes ; les runtimes installes ne sont pas annul
 call :COMMON_YES_NO "Runtimes [O=Verifier / N=Ignorer / M=Annuler] : " SAFE_RUNTIMES
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
 echo.
-echo Recapitulatif : 1=demande, 0=conserve
-echo Confidentialite=!SAFE_PRIVACY! Navigateurs=!SAFE_BACKGROUND! Widgets=!SAFE_WIDGETS!
-echo Runtimes=!SAFE_RUNTIMES!
+echo VOS CHOIX :
+if "!SAFE_PRIVACY!"=="1" echo   Confidentialite : reduire diagnostics facultatifs et suggestions
+if not "!SAFE_PRIVACY!"=="1" echo   Confidentialite : conserver vos reglages
+if "!SAFE_BACKGROUND!"=="1" echo   Navigateurs : limiter l'activite apres fermeture
+if not "!SAFE_BACKGROUND!"=="1" echo   Navigateurs : conserver vos reglages
+if "!SAFE_WIDGETS!"=="1" echo   Widgets / Actualites : desactiver
+if not "!SAFE_WIDGETS!"=="1" echo   Widgets / Actualites : conserver vos reglages
+if "!SAFE_RUNTIMES!"=="1" echo   Composants pour les jeux : verifier et installer si besoin
+if not "!SAFE_RUNTIMES!"=="1" echo   Composants pour les jeux : ignorer
 call :ASK_CONFIRM "Lancer ce parcours ? [O=Lancer / N=Annuler] : "
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
 set "WINOPT_SAFE_GROUPS="
@@ -839,7 +844,7 @@ echo.
 echo Fermez et rouvrez les navigateurs pour leur prise en compte.
 echo Une deconnexion/reconnexion ou un redemarrage peut etre requis pour Widgets.
 echo La relecture des valeurs ne prouve pas un gain de performances.
-echo Annuler ces reglages : Gestion Windows, Sauvegardes et restauration.
+echo Retour arriere : [G] Gestion Windows, [9] Recuperation, puis [1].
 pause
 goto :MENU_PRINCIPAL
 
