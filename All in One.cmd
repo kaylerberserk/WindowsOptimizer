@@ -222,10 +222,11 @@ set "LOAD_TOTAL="
 :: Ecran d'information : le parcours recommande est commun au jeu et au bureau.
 call :SCREEN_HEADER " WINDOWS OPTIMIZER - BIENVENUE"
 echo %COLOR_WHITE%Pour jouer et utiliser le PC au quotidien : [O] puis [1] Recommande.%COLOR_RESET%
-echo Quatre choix simples, une sauvegarde automatique et un retour arriere.
-echo Les profils Gaming/Normal et Max/Eco sont reserves au mode avance.
+echo %COLOR_GREEN%Un recapitulatif a valider ; personnalisation facultative.%COLOR_RESET%
+echo %COLOR_WHITE%Sauvegarde automatique et retour arriere disponibles.%COLOR_RESET%
+echo %COLOR_WHITE%Les profils Gaming/Normal et Max/Eco sont reserves au mode avance.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%CLAVIER%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_CYAN%--- CLAVIER ---%COLOR_RESET%
 echo Appuyez sur la touche indiquee, sans Entree. [M] permet de revenir.
 echo Clavier AZERTY : MAJ + chiffre en haut, ou pave numerique active.
 echo.
@@ -591,35 +592,38 @@ set "SKIP_PAUSE=0"
 call :SCREEN_HEADER "Script d'Optimisation Windows : All in One"
 
 REM Informations utiles et navigation visibles dans une console de 30 lignes.
-echo %COLOR_WHITE%Windows : %COLOR_CYAN%%HW_OS%%COLOR_RESET%
-echo %COLOR_WHITE%CPU     : %COLOR_CYAN%%HW_CPU%%COLOR_RESET%
-echo %COLOR_WHITE%GPU     : %COLOR_CYAN%%HW_GPU%%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE%Windows : %COLOR_CYAN%%HW_OS%%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE%CPU     : %COLOR_CYAN%%HW_CPU%%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_WHITE%GPU     : %COLOR_CYAN%%HW_GPU%%COLOR_RESET%
 if "%DETECTE_PORTABLE%"=="1" (
-    echo %COLOR_WHITE%RAM     : %COLOR_CYAN%%HW_RAM% Go - PC portable%COLOR_RESET%
+    echo %STYLE_BOLD%%COLOR_WHITE%RAM     : %COLOR_CYAN%%HW_RAM% Go - PC portable%COLOR_RESET%
 ) else (
-    echo %COLOR_WHITE%RAM     : %COLOR_CYAN%%HW_RAM% Go - PC fixe%COLOR_RESET%
+    echo %STYLE_BOLD%%COLOR_WHITE%RAM     : %COLOR_CYAN%%HW_RAM% Go - PC fixe%COLOR_RESET%
 )
 if "%HAS_INTERNET%"=="1" (
-    echo %COLOR_WHITE%Internet: %COLOR_GREEN%Connecte%COLOR_RESET%
+    echo %STYLE_BOLD%%COLOR_WHITE%Internet: %COLOR_GREEN%Connecte%COLOR_RESET%
 ) else (
-    echo %COLOR_WHITE%Internet: %COLOR_YELLOW%Hors ligne ou connexion filtree%COLOR_RESET%
+    echo %STYLE_BOLD%%COLOR_WHITE%Internet: %COLOR_YELLOW%Hors ligne ou connexion filtree%COLOR_RESET%
 )
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%POUR COMMENCER%COLOR_RESET%
-echo %COLOR_YELLOW%[O]%COLOR_RESET% Optimiser le PC - parcours recommande ou avance
-echo %COLOR_YELLOW%[R]%COLOR_RESET% Point de restauration   %COLOR_YELLOW%[G]%COLOR_RESET% Applications et recuperation
+echo %STYLE_BOLD%%COLOR_CYAN%--- OPTIMISATION DU PC ---%COLOR_RESET%
+echo %COLOR_YELLOW%[O]%COLOR_RESET% %STYLE_BOLD%%COLOR_GREEN%Tout optimiser - recommande ou avance%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%REGLAGES AVANCES - COMPATIBILITE ET SECURITE A CONSIDERER%COLOR_RESET%
-echo %COLOR_YELLOW%[1]%COLOR_RESET% Systeme    %COLOR_YELLOW%[2]%COLOR_RESET% Memoire     %COLOR_YELLOW%[3]%COLOR_RESET% Disques
-echo %COLOR_YELLOW%[4]%COLOR_RESET% GPU        %COLOR_YELLOW%[5]%COLOR_RESET% Reseau      %COLOR_YELLOW%[6]%COLOR_RESET% Clavier / souris
-echo %COLOR_YELLOW%[7]%COLOR_RESET% Energie    %COLOR_YELLOW%[8]%COLOR_RESET% Protections Windows
+echo %STYLE_BOLD%%COLOR_CYAN%--- OPTIMISATIONS PAR SECTION - AVANCE ---%COLOR_RESET%
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Optimisations Systeme%COLOR_RESET%    %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Optimisations Memoire%COLOR_RESET%
+echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_GREEN%Optimisations Disques%COLOR_RESET%    %COLOR_YELLOW%[4]%COLOR_RESET% %COLOR_GREEN%Optimisations GPU%COLOR_RESET%
+echo %COLOR_YELLOW%[5]%COLOR_RESET% %COLOR_GREEN%Optimisations Reseau%COLOR_RESET%     %COLOR_YELLOW%[6]%COLOR_RESET% %COLOR_GREEN%Optimisations Clavier/Souris%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%OUTILS%COLOR_RESET%
-echo %COLOR_YELLOW%[N]%COLOR_RESET% Nettoyage avance de Windows
-echo %COLOR_YELLOW%[W]%COLOR_RESET% MAS - activation Windows et Office
-echo %COLOR_YELLOW%[T]%COLOR_RESET% WinUtil - outil externe de Chris Titus Tech
+echo %STYLE_BOLD%%COLOR_CYAN%--- ENERGIE ET PROTECTIONS - AVANCE ---%COLOR_RESET%
+echo %COLOR_YELLOW%[7]%COLOR_RESET% %COLOR_RED%Gerer les economies d'energie%COLOR_RESET%   %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Gerer les protections Windows%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%[Q]%COLOR_RESET% Quitter
+echo %STYLE_BOLD%%COLOR_CYAN%--- OUTILS ET GESTION WINDOWS ---%COLOR_RESET%
+echo %COLOR_YELLOW%[R]%COLOR_RESET% %COLOR_CYAN%Creer un point de restauration%COLOR_RESET%
+echo %COLOR_YELLOW%[G]%COLOR_RESET% %COLOR_MAGENTA%Gestion Windows : Defender, UAC, applis, interface et recuperation%COLOR_RESET%
+echo %COLOR_YELLOW%[N]%COLOR_RESET% %COLOR_CYAN%Nettoyage avance de Windows%COLOR_RESET%
+echo %COLOR_YELLOW%[W]%COLOR_RESET% %COLOR_MAGENTA%Activation Windows et Office avec le script MAS%COLOR_RESET%
+echo %COLOR_YELLOW%[T]%COLOR_RESET% %COLOR_MAGENTA%WinUtil, utilitaire Windows de Chris Titus Tech%COLOR_RESET%
+echo %COLOR_YELLOW%[Q]%COLOR_RESET% %STYLE_BOLD%%COLOR_RED%Quitter le script%COLOR_RESET%
 echo.
 <nul set /p ="%STYLE_BOLD%%COLOR_YELLOW%Choisissez une option [1-8, O, N, R, G, W, T, Q] : %COLOR_RESET%"
 call :AZCHOICE 12345678ONRGWTQ
@@ -697,23 +701,25 @@ goto :MENU_PRINCIPAL
 :MENU_GESTION_WINDOWS
 set "SKIP_PAUSE=0"
 call :SCREEN_HEADER " GESTION DES COMPOSANTS WINDOWS"
-echo Applications, interface, securite et retour arriere.
+echo %COLOR_WHITE%Securite, interface, applications et retour arriere.%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%INTERFACE%COLOR_RESET%
-echo %COLOR_YELLOW%[3]%COLOR_RESET% Animations Windows
-echo %COLOR_YELLOW%[4]%COLOR_RESET% Copilot, Widgets et Recall sous Windows 11
+echo %STYLE_BOLD%%COLOR_CYAN%--- SECURITE ---%COLOR_RESET%
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Gerer Windows Defender%COLOR_RESET%
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Gerer UAC, le controle du compte utilisateur%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%APPLICATIONS - DESINSTALLATIONS SUR CONFIRMATION%COLOR_RESET%
-echo %COLOR_YELLOW%[8]%COLOR_RESET% Choisir les applications Windows a desinstaller
-echo %COLOR_YELLOW%[5]%COLOR_RESET% Desinstaller OneDrive
-echo %COLOR_YELLOW%[6]%COLOR_RESET% Desinstaller Edge
-echo %COLOR_YELLOW%[7]%COLOR_RESET% Verifier/installer les composants pour les jeux
-echo %COLOR_YELLOW%[V]%COLOR_RESET% Profil Valorant : appliquer ou restaurer
+echo %STYLE_BOLD%%COLOR_CYAN%--- INTERFACE ---%COLOR_RESET%
+echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_GREEN%Gerer les animations Windows%COLOR_RESET%
+echo %COLOR_YELLOW%[4]%COLOR_RESET% %COLOR_GREEN%Gerer Copilot, Widgets et Recall sous Windows 11%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%SECURITE ET RECUPERATION%COLOR_RESET%
-echo %COLOR_YELLOW%[9]%COLOR_RESET% Annuler les reglages ou corriger une ancienne optimisation
-echo %COLOR_YELLOW%[1]%COLOR_RESET% Gerer Windows Defender
-echo %COLOR_YELLOW%[2]%COLOR_RESET% Gerer UAC - controle du compte utilisateur
+echo %STYLE_BOLD%%COLOR_CYAN%--- APPLICATIONS ET COMPOSANTS ---%COLOR_RESET%
+echo %COLOR_YELLOW%[5]%COLOR_RESET% %COLOR_RED%Desinstaller OneDrive%COLOR_RESET%
+echo %COLOR_YELLOW%[6]%COLOR_RESET% %COLOR_RED%Desinstaller Edge%COLOR_RESET%
+echo %COLOR_YELLOW%[7]%COLOR_RESET% %COLOR_GREEN%Verifier/installer Visual C++ et DirectX pour les jeux%COLOR_RESET%
+echo %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Choisir les applications Windows a desinstaller%COLOR_RESET%
+echo.
+echo %STYLE_BOLD%%COLOR_CYAN%--- RECUPERATION ET JEUX ---%COLOR_RESET%
+echo %COLOR_YELLOW%[9]%COLOR_RESET% %COLOR_CYAN%Annuler les reglages ou corriger une ancienne optimisation%COLOR_RESET%
+echo %COLOR_YELLOW%[V]%COLOR_RESET% %COLOR_MAGENTA%Profil Valorant : appliquer ou restaurer%COLOR_RESET%
 call :SUBMENU_CHOICE "principal" "Choisissez une option [1-9, V, M] : " 123456789VM
 REM  Gestion des choix (EQU = egalite stricte, ordre sans importance)
 if !errorlevel! EQU 11 goto :MENU_PRINCIPAL
@@ -795,7 +801,7 @@ if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
 call :SCREEN_HEADER " RECOMMANDE - PRET A APPLIQUER"
 echo Aucun reglage applique avant validation. Personnalisez si besoin.
 echo.
-echo VOS CHOIX :
+echo %STYLE_BOLD%%COLOR_CYAN%VOS CHOIX :%COLOR_RESET%
 if "!SAFE_PRIVACY!"=="1" echo   Confidentialite : reduire diagnostics facultatifs et suggestions
 if not "!SAFE_PRIVACY!"=="1" echo   Confidentialite : conserver vos reglages
 if "!SAFE_BACKGROUND!"=="1" echo   Navigateurs : limiter l'activite apres fermeture
@@ -816,7 +822,7 @@ echo Compte personnel cible - celui de l'administrateur si l'UAC en utilise un :
 whoami
 echo Des sauvegardes de plusieurs comptes peuvent se contredire.
 echo.
-<nul set /p ="[O] Appliquer / [P] Personnaliser / [N] Annuler : "
+<nul set /p ="%COLOR_YELLOW%[O]%COLOR_RESET% %COLOR_GREEN%Appliquer%COLOR_RESET% / %COLOR_YELLOW%[P]%COLOR_RESET% %COLOR_CYAN%Personnaliser%COLOR_RESET% / %COLOR_YELLOW%[N]%COLOR_RESET% Annuler : "
 call :AZCHOICE OPNM
 if !errorlevel! EQU 2 goto :PERSONNALISER_RECOMMANDE
 if !errorlevel! NEQ 1 goto :MENU_PRINCIPAL
@@ -844,16 +850,16 @@ goto :MENU_PRINCIPAL
 
 :MENU_RECUPERATION
 call :SCREEN_HEADER " SAUVEGARDES ET RECUPERATION"
-echo [1] Annuler les reglages du parcours recommande
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Annuler les reglages du parcours recommande%COLOR_RESET%
 echo     Certaines strategies et leur restauration touchent tous les comptes Windows.
 echo     Restaure la sauvegarde initiale de ce compte, conservee pour reessai.
-echo [2] Corriger les anciens blocages Store et taches fonctionnelles
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Corriger les anciens blocages Store et taches fonctionnelles%COLOR_RESET%
 echo     Retire le refus Everyone ajoute par l'ancien script sur store.db.
 echo     Reactive famille, synchro, licences et diagnostics fonctionnels presents.
 echo     Ce sont des corrections ciblees, pas la restauration de leur etat initial.
-echo [3] Protections noyau : restaurer la capture ou la base Windows documentee
-echo [4] Reactiver Defender et SmartScreen - action distincte de la restauration
-echo [5] Reactiver UAC - redemarrage requis
+echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_GREEN%Protections noyau : restaurer la capture ou la base Windows documentee%COLOR_RESET%
+echo %COLOR_YELLOW%[4]%COLOR_RESET% %COLOR_GREEN%Reactiver Defender et SmartScreen - action distincte de la restauration%COLOR_RESET%
+echo %COLOR_YELLOW%[5]%COLOR_RESET% %COLOR_GREEN%Reactiver UAC - redemarrage requis%COLOR_RESET%
 call :SUBMENU_CHOICE "Gestion Windows" "Recuperation [1-5, M] : " 12345M
 if !errorlevel! EQU 6 goto :MENU_GESTION_WINDOWS
 if !errorlevel! EQU 5 goto :RECUPERATION_UAC
@@ -922,8 +928,8 @@ echo Compte Windows cible pour les configurations Valorant :
 whoami
 echo Si l'UAC a utilise un autre compte, ses fichiers sont cibles.
 echo Fermez le jeu. Tous les comptes Valorant de ce profil Windows sont concernes.
-echo [1] Appliquer le profil fourni - plein ecran, qualite minimale, VSync/HDR OFF
-echo [2] Restaurer les fichiers .winopt-backup - reglages ulterieurs remplaces
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Appliquer le profil fourni - plein ecran, qualite minimale, VSync/HDR OFF%COLOR_RESET%
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Restaurer les fichiers .winopt-backup - reglages ulterieurs remplaces%COLOR_RESET%
 call :SUBMENU_CHOICE "Gestion Windows" "Valorant [1=Appliquer / 2=Restaurer / M=Retour] : " 12M
 if !errorlevel! EQU 3 goto :MENU_GESTION_WINDOWS
 if !errorlevel! EQU 2 goto :RESTAURER_VALORANT
@@ -1072,16 +1078,15 @@ endlocal & exit /b %errorlevel%
 
 :TOUT_OPTIMISER
 call :SCREEN_HEADER " TOUT OPTIMISER - CHOISIR LE PARCOURS"
-echo [1] RECOMMANDE - Gaming, bureau et usage general
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%RECOMMANDE - Gaming, bureau et usage general%COLOR_RESET%
 echo     Confidentialite et activite en arriere-plan, avec sauvegarde ciblee.
 echo     Preserve pilotes, reseau, veille, securite et preferences d'affichage.
 echo.
-echo [2] AVANCE - Anciens profils Gaming/Normal et Performance max/Eco
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%AVANCE - Anciens profils Gaming/Normal et Performance max/Eco%COLOR_RESET%
 echo     Modifie pilotes, reseau, memoire, energie et preferences Windows.
 echo     Risques de compatibilite ; aucun gain de FPS ou de latence garanti.
 echo     Eco/Normal ne restaure pas integralement votre etat precedent.
 echo.
-echo [M] Retour au menu
 call :SUBMENU_CHOICE "principal" "Parcours [1=Recommande / 2=Avance / M=Retour] : " 12M
 if !errorlevel! EQU 1 goto :PARCOURS_RECOMMANDE
 if !errorlevel! NEQ 2 goto :MENU_PRINCIPAL
@@ -5258,13 +5263,13 @@ echo Si l'UAC utilise un autre compte, c'est son profil qui sera modifie.
 echo Chaque application est un choix. Fermez-la et sauvegardez ses donnees.
 echo Store, WebView2, Xbox, Photos et Calculatrice sont conserves.
 echo.
-echo [1] Microsoft Copilot - application moderne, distincte de l'ancien bouton
-echo [2] Clipchamp - montage video
-echo [3] Microsoft Teams - visioconference
-echo [4] Nouveau Outlook - messagerie
-echo [5] Solitaire
-echo [6] Microsoft News
-echo [A] Ancien lot pour TOUS les utilisateurs - mode avance, sans restauration
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_RED%Microsoft Copilot - application moderne, distincte de l'ancien bouton%COLOR_RESET%
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%Clipchamp - montage video%COLOR_RESET%
+echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_RED%Microsoft Teams - visioconference%COLOR_RESET%
+echo %COLOR_YELLOW%[4]%COLOR_RESET% %COLOR_RED%Nouveau Outlook - messagerie%COLOR_RESET%
+echo %COLOR_YELLOW%[5]%COLOR_RESET% %COLOR_RED%Solitaire%COLOR_RESET%
+echo %COLOR_YELLOW%[6]%COLOR_RESET% %COLOR_RED%Microsoft News%COLOR_RESET%
+echo %COLOR_YELLOW%[A]%COLOR_RESET% %COLOR_RED%Ancien lot pour TOUS les utilisateurs - mode avance, sans restauration%COLOR_RESET%
 call :SUBMENU_CHOICE "Gestion Windows" "Applications [1-6, A, M] : " 123456AM
 set "APP_CHOICE=!errorlevel!"
 if "!APP_CHOICE!"=="8" goto :MENU_GESTION_WINDOWS
