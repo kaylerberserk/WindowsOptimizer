@@ -53,7 +53,7 @@ L'ouverture du script ne modifie plus les fichiers de Valorant. Le menu **[G] �
 
 1. Créez un point de restauration avec **[R]**.
 2. Choisissez **[O] → [1] Recommandé** pour un PC de jeu, de bureau et d'usage général.
-3. Choisissez séparément confidentialité, navigateurs en arrière-plan, Widgets et runtimes. Chaque question a son écran. Le récapitulatif affiche les choix en clair et précède toute écriture de ce parcours ; **M** ou l'annulation finale ne change aucun de ces réglages.
+3. Vérifiez le récapitulatif et appuyez sur **O** pour appliquer : confidentialité renforcée, activité des navigateurs après fermeture limitée et composants de jeux vérifiés/installés si besoin. Les Widgets sont conservés. **P — Personnaliser** permet de modifier ces quatre préférences ; **N** annule. Aucune écriture de ce parcours ne précède la validation. Les extensions/notifications après fermeture des navigateurs peuvent s’arrêter ; les runtimes installés ne sont pas annulés par la restauration.
 4. Le parcours sauvegarde les valeurs ciblées avant écriture, puis les relit. Une valeur refusée est signalée et rend le résultat partiel. La prise en compte par Windows ou le navigateur reste dépendante de sa version, de son édition et des stratégies prioritaires.
 5. Fermez et rouvrez les navigateurs. Une reconnexion ou un redémarrage peut être requis pour les Widgets.
 6. **[O] → [2] Avancé** conserve les anciens profils Gaming/Normal et Performance max/Eco, après un avertissement explicite. Les sections **[1] à [7]** sont également avancées.

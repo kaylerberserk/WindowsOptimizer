@@ -751,8 +751,15 @@ call :ASK_CONFIRM "Continuer avec les reglages avances ? [O=Continuer / N=Annule
 exit /b !errorlevel!
 
 :PARCOURS_RECOMMANDE
-call :SCREEN_HEADER " PARCOURS RECOMMANDE - GAMING ET BUREAU"
-echo Quatre choix, puis un recapitulatif avant application.
+set "SAFE_PRIVACY=1"
+set "SAFE_BACKGROUND=1"
+set "SAFE_WIDGETS=0"
+set "SAFE_RUNTIMES=1"
+goto :RECAP_RECOMMANDE
+
+:PERSONNALISER_RECOMMANDE
+call :SCREEN_HEADER " RECOMMANDE - ETAPE 1 / 4"
+echo Ajustez les quatre preferences, puis validez le recapitulatif.
 echo Sauvegarde automatique ; retour arriere dans [G] puis [9].
 echo Premiere sauvegarde conservee, meme apres plusieurs passages.
 echo Certains reglages et leur restauration concernent tous les comptes Windows.
@@ -783,8 +790,10 @@ echo [4/4] Installer/verifier Visual C++ et DirectX pour les jeux ?
 echo Telechargements Microsoft signes ; les runtimes installes ne sont pas annules.
 call :COMMON_YES_NO "Runtimes [O=Verifier / N=Ignorer / M=Annuler] : " SAFE_RUNTIMES
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
-call :SCREEN_HEADER " RECOMMANDE - VERIFIER VOS CHOIX"
-echo Aucun de ces choix n'a encore ete applique. [N] annule ce parcours.
+
+:RECAP_RECOMMANDE
+call :SCREEN_HEADER " RECOMMANDE - PRET A APPLIQUER"
+echo Aucun reglage applique avant validation. Personnalisez si besoin.
 echo.
 echo VOS CHOIX :
 if "!SAFE_PRIVACY!"=="1" echo   Confidentialite : reduire diagnostics facultatifs et suggestions
@@ -796,13 +805,21 @@ if not "!SAFE_WIDGETS!"=="1" echo   Widgets / Actualites : conserver vos reglage
 if "!SAFE_RUNTIMES!"=="1" echo   Composants pour les jeux : verifier et installer si besoin
 if not "!SAFE_RUNTIMES!"=="1" echo   Composants pour les jeux : ignorer
 echo.
-echo Sauvegarde initiale conservee ; retour arriere : [G] puis [9] puis [1].
-echo Certaines strategies et leur restauration touchent tous les comptes.
-echo Compte pour les reglages personnels :
-whoami
+if "!SAFE_BACKGROUND!"=="1" echo Apres fermeture : extensions/notifications coupees, reouverture moins rapide.
+if "!SAFE_RUNTIMES!"=="1" echo Telechargements Microsoft signes ; installations non annulees au retour.
+echo Securite, pilotes, reseau, veille et applications conserves.
 echo.
-call :ASK_CONFIRM "Lancer ce parcours ? [O=Lancer / N=Annuler] : "
-if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
+echo Sauvegarde initiale conservee ; retour : [G] puis [9] puis [1].
+echo Elle capture votre etat actuel, meme s'il a deja ete optimise.
+echo Certaines strategies et leur restauration touchent tous les comptes.
+echo Compte personnel cible - celui de l'administrateur si l'UAC en utilise un :
+whoami
+echo Des sauvegardes de plusieurs comptes peuvent se contredire.
+echo.
+<nul set /p ="[O] Appliquer / [P] Personnaliser / [N] Annuler : "
+call :AZCHOICE OPNM
+if !errorlevel! EQU 2 goto :PERSONNALISER_RECOMMANDE
+if !errorlevel! NEQ 1 goto :MENU_PRINCIPAL
 set "WINOPT_SAFE_GROUPS="
 if "!SAFE_PRIVACY!"=="1" set "WINOPT_SAFE_GROUPS=!WINOPT_SAFE_GROUPS! privacy"
 if "!SAFE_BACKGROUND!"=="1" set "WINOPT_SAFE_GROUPS=!WINOPT_SAFE_GROUPS! background"
