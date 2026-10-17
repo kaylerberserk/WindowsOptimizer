@@ -930,7 +930,7 @@ set "WINOPT_LEGACY_TASKS="
 if "!LEGACY_ERRORS!"=="0" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Corrections verifiees pour les elements presents.
 ) else (
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Corrections incompletes : !LEGACY_ERRORS! refus ou erreurs.
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Corrections incompletes : voir les refus et erreurs ci-dessus.
 )
 echo Les autres anciens reglages ne sont pas annules par cette action.
 pause
@@ -5716,7 +5716,7 @@ for /l %%N in (1,1,50) do (
     if !errorlevel! NEQ 0 exit /b 0
 )
 set "SAGEID="
-echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Pas d'identifiant cleanmgr libre ; etape ignoree, rien d'ecrase.%COLOR_RESET%
+echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Pas d'identifiant cleanmgr libre ; etape ignoree, sans ecraser.%COLOR_RESET%
 exit /b 1
 
 :SET_NAGLE_PROFILE
