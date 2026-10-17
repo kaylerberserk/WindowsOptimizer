@@ -170,7 +170,7 @@ L'option Bloatwares cible une liste d'applications préinstallées, notamment Ac
 <details>
 <summary><strong>Quels outils se lancent automatiquement ?</strong></summary>
 
-Le profil Valorant s'applique au lancement, jeu fermé, sans changer la résolution. En Gaming, NVIDIA Profile Inspector et son profil peuvent être exécutés sur un GPU NVIDIA compatible. Avec le profil d'énergie Performance Max, SetTimerResolution peut être installé, lancé et ajouté au démarrage ; Eco retire ce démarrage automatique. Les ressources O&O, Fortnite et les autres outils Timer & Interrupt ne sont pas exécutés automatiquement.
+Le profil Valorant s'applique au lancement, jeu fermé, sans changer la résolution. En Gaming, NVIDIA Profile Inspector et son profil peuvent être exécutés sur un GPU NVIDIA compatible. Avec le profil d'énergie Performance Max, SetTimerResolution peut être installé, lancé et ajouté au démarrage avec `--resolution 5275` (0,5275 ms demandée, réglage expérimental) ; Eco retire ce démarrage automatique. Les ressources O&O, Fortnite et les autres outils Timer & Interrupt ne sont pas exécutés automatiquement.
 
 </details>
 
