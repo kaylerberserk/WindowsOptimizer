@@ -451,7 +451,7 @@ exit /b 0
 
 :REFRESH_INTERNET_STATUS
 set "HAS_INTERNET=0"
-ping -n 1 -w 1500 1.1.1.1 >nul 2>&1
+ping -n 1 -w 1500 1.1.1.1 2>nul | findstr /c:"TTL=" >nul
 if !errorlevel! EQU 0 (
     set "HAS_INTERNET=1"
     exit /b
@@ -832,15 +832,20 @@ if "!SAFE_BACKGROUND!"=="1" set "WINOPT_SAFE_GROUPS=!WINOPT_SAFE_GROUPS! backgro
 if "!SAFE_WIDGETS!"=="1" set "WINOPT_SAFE_GROUPS=!WINOPT_SAFE_GROUPS! widgets"
 call :SAFE_SETTINGS apply
 set "SAFE_RC=!errorlevel!"
-if "!SAFE_RC!"=="0" (
-    echo %COLOR_GREEN%[OK]%COLOR_RESET% Valeurs selectionnees sauvegardees et relues dans le registre.
-) else (
+REM L'ecran des runtimes efface la console : laisser lire les erreurs avant.
+if not "!SAFE_RC!"=="0" if "!SAFE_RUNTIMES!"=="1" (
     echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Reglages partiels ou sauvegarde impossible. Voir les erreurs.
+    pause
 )
 set "SKIP_PAUSE=1"
 if "!SAFE_RUNTIMES!"=="1" call :INSTALLER_VISUAL_REDIST
 set "SKIP_PAUSE=0"
 echo.
+if "!SAFE_RC!"=="0" (
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% Valeurs selectionnees sauvegardees et relues dans le registre.
+) else (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Reglages partiels ou sauvegarde impossible. Voir les erreurs.
+)
 echo Fermez et rouvrez les navigateurs pour leur prise en compte.
 echo Une deconnexion/reconnexion ou un redemarrage peut etre requis pour Widgets.
 echo La relecture des valeurs ne prouve pas un gain de performances.
@@ -903,6 +908,7 @@ if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
 set "LEGACY_ERRORS=0"
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsStore_8wekyb3d8bbwe\LocalState\store.db';if(Test-Path -LiteralPath $f){$a=Get-Acl -LiteralPath $f;$sid='S-1-1-0';foreach($r in @($a.Access)){if($r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value-eq$sid-and$r.AccessControlType-eq'Deny'-and-not$r.IsInherited){[void]$a.RemoveAccessRuleSpecific($r)}};Set-Acl -LiteralPath $f -AclObject $a;$a=Get-Acl -LiteralPath $f;if(@($a.Access|Where-Object{$_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value-eq$sid-and$_.AccessControlType-eq'Deny'-and-not$_.IsInherited}).Count){exit 1}};exit 0}catch{Write-Host $_.Exception.Message;exit 1}"
 if !errorlevel! NEQ 0 set /a "LEGACY_ERRORS+=1"
+set "WINOPT_LEGACY_TASKS="
 for %%U in (
     "Microsoft\Windows\CloudExperienceHost\CreateObjectTask"
     "Microsoft\Windows\DiskFootprint\Diagnostics"
@@ -917,10 +923,10 @@ for %%U in (
     "Microsoft\Windows\Work Folders\Work Folders Maintenance Work"
     "Microsoft\Windows\PushToInstall\Registration"
     "Microsoft\Windows\Subscription\EnableLicenseAcquisition"
-) do (
-    call :SET_TASK_ENABLED "%%~U" true
-    if !errorlevel! NEQ 0 set /a "LEGACY_ERRORS+=1"
-)
+) do set "WINOPT_LEGACY_TASKS=!WINOPT_LEGACY_TASKS!;%%~U"
+call :SET_TASK_ENABLED "!WINOPT_LEGACY_TASKS!" true
+if !errorlevel! NEQ 0 set /a "LEGACY_ERRORS+=1"
+set "WINOPT_LEGACY_TASKS="
 if "!LEGACY_ERRORS!"=="0" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% Corrections verifiees pour les elements presents.
 ) else (
@@ -1183,7 +1189,7 @@ echo %COLOR_WHITE% Elle utilise les reglages disponibles sur votre version de Wi
 echo.
 echo %COLOR_RED% [AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres seront SUPPRIMES du PC.%COLOR_RESET%
 echo %COLOR_WHITE%        C'est le comportement documente de Windows, pas un choix de ce script.%COLOR_RESET%
-echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Chaque fonction pourra etre reactivee depuis Gestion Windows.%COLOR_RESET%
+echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Chaque fonction disponible sera reactivable dans Gestion Windows.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_CYAN% [O] DESACTIVER%COLOR_RESET%      - Bloquer Copilot, Widgets et Recall
@@ -1580,7 +1586,7 @@ REM  Activity History OFF
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableActivityFeed" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "PublishUserActivities" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "UploadUserActivities" /t REG_DWORD /d 0 /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Diagnostics et suggestions reduits - limites selon l'edition%COLOR_RESET%
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reduction des diagnostics et suggestions demandee - selon l'edition%COLOR_RESET%
 
 REM  Taches planifiees de telemetrie
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des taches planifiees de telemetrie...%COLOR_RESET%
@@ -3405,7 +3411,7 @@ if "!SECURITY_RESTORE_RC!"=="0" (
     exit /b 0
 )
 if "!SECURITY_RESTORE_RC!"=="1" (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Restauration de la base de securite en echec ; rien n'est modifie.%COLOR_RESET%
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Restauration securite en echec ; capture conservee, etat a verifier.%COLOR_RESET%
     set "SECURITY_RESTORE_RC="
     exit /b 1
 )
@@ -4100,6 +4106,7 @@ goto :MENU_IA_WIDGETS_RECALL
 :MENU_IA_OPTION_1
 call :SCREEN_HEADER " ACTIVATION DE COPILOT"
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Reactiver Copilot restaure son bouton et ses suggestions IA.%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Reactive aussi l'IA du Bloc-notes, pour tous les comptes.%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
@@ -4172,7 +4179,7 @@ if !errorlevel! NEQ 0 (
     echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Bouton Widgets non confirme ; verifiez-le dans les Parametres.
     set "WIDGETS_ENABLE_RC=1"
 )
-if "!WIDGETS_ENABLE_RC!"=="1" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Widgets actives partiellement : strategie ou bouton non confirme.
+if "!WIDGETS_ENABLE_RC!"=="1" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Widgets actives en partie : strategie ou bouton non confirme.
 exit /b !WIDGETS_ENABLE_RC!
 
 
@@ -4652,7 +4659,7 @@ powershell -NoProfile -Command "try { Enable-ComputerRestore -Drive ($env:System
 if !errorlevel! EQU 0 (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification : restauration systeme disponible sur %SystemDrive%.%COLOR_RESET%
 ) else (
-    echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Restauration systeme non confirmee ; point cree quand meme.%COLOR_RESET%
+    echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Restauration systeme non confirmee ; point tente quand meme.%COLOR_RESET%
 )
 ping -n 3 127.0.0.1 >nul
 echo.
@@ -5709,7 +5716,7 @@ for /l %%N in (1,1,50) do (
     if !errorlevel! NEQ 0 exit /b 0
 )
 set "SAGEID="
-echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Aucun identifiant cleanmgr libre ; etape ignoree sans rien ecraser.%COLOR_RESET%
+echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Pas d'identifiant cleanmgr libre ; etape ignoree, rien d'ecrase.%COLOR_RESET%
 exit /b 1
 
 :SET_NAGLE_PROFILE
@@ -5882,7 +5889,7 @@ if "!VC_EXIT!"=="0" (
 ) else (
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : code installateur !VC_EXIT!.%COLOR_RESET%
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Journal : !VC_LOG!%COLOR_RESET%
-    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%MSI ancien manquant : reparer avec le paquet de cette version.%COLOR_RESET%
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Si un ancien MSI manque : reparer avec le paquet de cette version.%COLOR_RESET%
     set "VC_ARCH="
     set "VC_FILE="
     set "VC_LOG="
@@ -6003,7 +6010,7 @@ if !errorlevel! EQU 0 goto :INSTALL_STR_COMMIT
 :INSTALL_STR_FAILURE
 if exist "%STR_TMP%" del /f /q "%STR_TMP%" >nul 2>&1
 if exist "%STR_DIR%" rmdir "%STR_DIR%" >nul 2>&1
-echo [ERREUR] SetTimerResolution : echec avec curl, BITS et PowerShell.
+echo %COLOR_RED%[ERREUR]%COLOR_RESET% SetTimerResolution : echec avec curl, BITS et PowerShell.
 set "STR_TMP="
 set "STR_DOWNLOAD_URL="
 exit /b 1
