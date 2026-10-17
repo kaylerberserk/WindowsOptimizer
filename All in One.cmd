@@ -2943,10 +2943,10 @@ if exist "%STR_EXE%" (
     REM  Lance par "start" depuis la console, le programme ne reste pas en vie
     REM  (mesure en VM, console reelle) et le controle qui suit affichait une
     REM  erreur a chaque passage. Start-Process en fenetre cachee le garde actif.
-    powershell -NoProfile -Command "try{Start-Process -FilePath $env:STR_EXE -ArgumentList '--resolution','5070','--no-console' -WorkingDirectory $env:STR_DIR -WindowStyle Hidden -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
+    powershell -NoProfile -Command "try{Start-Process -FilePath $env:STR_EXE -ArgumentList '--resolution','5275','--no-console' -WorkingDirectory $env:STR_DIR -WindowStyle Hidden -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
     set "STR_START_RC=!errorlevel!"
     if "!STR_START_RC!"=="0" (
-        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Lancement de SetTimerResolution demande avec une resolution de 5070.%COLOR_RESET%
+        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Lancement de SetTimerResolution demande avec une resolution de 5275.%COLOR_RESET%
         ping -n 2 127.0.0.1 >nul
         tasklist /fi "IMAGENAME eq SetTimerResolution.exe" 2>nul | findstr /i /c:"SetTimerResolution.exe" >nul 2>&1
         if !errorlevel! NEQ 0 (
@@ -6028,7 +6028,7 @@ powershell -NoProfile -Command "$p=$env:STR_TMP;try{$b=[IO.File]::ReadAllBytes($
 exit /b !errorlevel!
 
 :CREATE_STR_STARTUP_SHORTCUT
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$d=Split-Path -Parent $env:STR_STARTUP_LNK;New-Item -ItemType Directory -Path $d -Force|Out-Null;$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut($env:STR_STARTUP_LNK);$s.TargetPath=$env:STR_EXE;$s.Arguments='--resolution 5070 --no-console';$s.WorkingDirectory=$env:STR_DIR;$s.Description='SetTimerResolution - WindowsOptimizer';$s.Save();$v=$w.CreateShortcut($env:STR_STARTUP_LNK);if(-not (Test-Path -LiteralPath $env:STR_STARTUP_LNK) -or $v.TargetPath -ne $env:STR_EXE -or $v.Arguments -ne '--resolution 5070 --no-console'){exit 1};exit 0}catch{exit 1}" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$d=Split-Path -Parent $env:STR_STARTUP_LNK;New-Item -ItemType Directory -Path $d -Force|Out-Null;$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut($env:STR_STARTUP_LNK);$s.TargetPath=$env:STR_EXE;$s.Arguments='--resolution 5275 --no-console';$s.WorkingDirectory=$env:STR_DIR;$s.Description='SetTimerResolution - WindowsOptimizer';$s.Save();$v=$w.CreateShortcut($env:STR_STARTUP_LNK);if(-not (Test-Path -LiteralPath $env:STR_STARTUP_LNK) -or $v.TargetPath -ne $env:STR_EXE -or $v.Arguments -ne '--resolution 5275 --no-console'){exit 1};exit 0}catch{exit 1}" >nul 2>&1
 exit /b !errorlevel!
 
 :REMOVE_STR_AUTOSTART_TASK

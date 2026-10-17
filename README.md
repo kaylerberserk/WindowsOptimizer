@@ -4,52 +4,23 @@
 
 ### 🚀 Optimisation modulaire pour Windows 11
 
-*Choisissez des profils clairs pour les performances, la latence et la confidentialité.*
+*Des profils de performance et des outils de maintenance dans un script portable.*
 
-![Windows](https://img.shields.io/badge/Windows-11-0078D6?style=for-the-badge&logo=windows&logoColor=white)![Version](https://img.shields.io/badge/Version-2026.08-orange?style=for-the-badge)![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-
-**Conçu pour le jeu, le multitâche et la confidentialité.**<br />*Code source public • Script unique • Réglages explicites*
+![Windows](https://img.shields.io/badge/Windows-11-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 
 </div>
 
----
-
-## 📌 Sommaire
-
-- [📖 À propos du projet](#-%C3%A0-propos-du-projet)
-- [🚀 Démarrage rapide](#-d%C3%A9marrage-rapide)
-- [🛠️ Guide des fonctionnalités](#%EF%B8%8F-guide-des-fonctionnalit%C3%A9s)
-- [❓ FAQ (Foire aux questions)](#-faq-foire-aux-questions)
-
----
-
-## 📖 À propos du projet
-
-**Windows Optimizer** regroupe dans un batch portable des profils de performance et des outils de maintenance pour Windows 11.
-
 Windows 11 est la seule cible prise en charge.
 
-Ce script privilégie une configuration lisible et des profils explicites pour Windows 11. Le résultat dépend toutefois de la version de Windows, des pilotes, du matériel et des logiciels installés. Créez un point de restauration et lisez les avertissements avant les options sensibles (sécurité, Edge, OneDrive et nettoyage avancé).
-
----
-
 ## 🚀 Démarrage rapide
+
+Collez cette commande dans **PowerShell**, puis acceptez la demande d'administration :
 
 ```powershell
 irm https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/main/launcher.ps1 | iex
 ```
 
-Collez cette commande dans **PowerShell non administrateur**. Le launcher télécharge et contrôle le batch publié sur `main`, précharge le timer dans son dossier temporaire, le normalise en CRLF puis l'ouvre dans une fenêtre CMD administrateur dédiée, comme lors d'un lancement manuel. Acceptez la demande UAC : appartenir au groupe Administrateurs ne suffit pas sans jeton élevé. Le dossier temporaire est supprimé à la fin.
-
-Depuis un clone local, cette commande vérifie le batch publié sans demander l'UAC ni exécuter l'optimiseur :
-
-```powershell
-.\launcher.ps1 -VerifyOnly
-```
-
-> Le launcher n'utilise pas un `All in One.cmd` placé à côté de lui : la commande `irm` et `.\launcher.ps1` utilisent le même batch publié. Pour tester la copie locale, ouvrez directement `All in One.cmd` en administrateur. Le mode `-VerifyOnly` affiche la source et le SHA-256 contrôlés.
-
-L'ouverture du script ne modifie plus les fichiers de Valorant. Le menu **[G] → [V]** permet d'appliquer explicitement le profil fourni ou de restaurer les fichiers `.winopt-backup`, jeu fermé. Le profil concerne tous les comptes Valorant trouvés dans le profil du compte Windows élevé affiché : plein écran, qualité minimale, VSync/HDR désactivés ; les résolutions et autres clés non ciblées sont conservées. La restauration remplace les fichiers entiers par leur sauvegarde initiale et écrase donc les modifications ultérieures. Aucun gain de FPS n'est garanti.
+Le lanceur télécharge la version publiée du script et l'ouvre dans une fenêtre administrateur. Vous pouvez aussi [télécharger All in One.cmd](https://github.com/kaylerberserk/WindowsOptimizer/blob/main/All%20in%20One.cmd) et l'exécuter en tant qu'administrateur.
 
 ### Premier parcours
 
@@ -85,214 +56,201 @@ Le parcours avancé installe toujours les runtimes manquants sans question suppl
 
 ## 🛠️ Guide des fonctionnalités
 
-### 🌟 Profils avancés à deux axes ([O] → [2])
+Si les composants ne peuvent pas être installés en arrière-plan, le script reprend au premier plan. Les contrôles de signature et d’installation restent actifs ; en cas d’échec, le résumé indique le journal conservé dans `%TEMP%\WinOpt_Runtimes_*\runtime.log`. Le menu **[7] Runtimes** conserve son affichage détaillé au premier plan.
 
-Le parcours **[O] → [2] Avancé** repose sur **deux axes indépendants** qui définissent 4 combinaisons possibles. Le script vous pose quelques questions (profil + options) et en déduit automatiquement la configuration demandée.
+> Le script modifie réellement Windows. Les options de sécurité réduisent certaines protections ; les désinstallations et le nettoyage peuvent supprimer des données. Un point de restauration ne remplace pas une sauvegarde de vos fichiers.
 
-Le parcours automatique enchaîne ensuite les sections sans nouvelle question et affiche un résumé final. Les prérequis, téléchargements, installateurs et confirmations destructives conservent leurs contrôles dédiés.
+## 🛠️ Profils et fonctionnalités
 
-Les sections granulaires reprennent la même logique : **Mémoire** et **Réseau** demandent les deux axes, tandis que **Disques/GPU/Système/Input** demandent l'usage. Le menu **Protections Sécurité** propose séparément trois niveaux explicites.
+### Usage et énergie — parcours avancé
 
-> Les mentions **stock mesuré** correspondent à l'installation propre Windows 11 25H2 build `26200.8037` utilisée comme référence pour cet audit. Les états dépendants d'un pilote ou d'un périphérique, notamment MSI, sont sauvegardés puis restaurés individuellement au lieu d'être généralisés à tous les PC.
->
-> Normal/Eco restaure les réglages exclusifs gérés par ces profils ; ce n'est pas une remise à zéro intégrale de Windows. Les choix destructifs (désinstallations, suppressions de fichiers, caches, télémétrie et services) restent explicitement hors d'une restauration automatique universelle.
+Les sections **[1] à [7]** et **[O] → [2] Avancé** changent des réglages globaux Windows/pilotes après avertissement. Le parcours recommandé reste le choix proposé pour le jeu et le bureau au quotidien. Les deux axes Usage/Énergie sont indépendants et disponibles sur PC fixe comme portable.
 
-#### Axe 1 — Usage (`PROFIL_USAGE`)
+| Choix | Rôle |
+|---|---|
+| **Gaming** | Applique les réglages orientés jeu et latence pour la carte graphique, le clavier, la souris et le réseau. |
+| **Normal** | Restaure les réglages exclusifs gérés par le profil Gaming. |
+| **Eco** | Utilise le plan Équilibré et privilégie les économies d'énergie. |
+| **Performance Max** | Privilégie les performances, avec davantage de consommation et de chaleur possibles. Le réglage des minuteries système reste expérimental. |
 
-> *Pilote la **latence applicative** : périphériques d'entrée, pile TCP, latence GPU.*
+Vous pouvez combiner Gaming avec Eco, ou Normal avec Performance Max. **Normal + Eco** est la combinaison la plus conservatrice parmi ces profils avancés. Changer de profil restaure les réglages exclusifs pris en charge, mais ne remet pas tout Windows à zéro et ne réinstalle pas les applications supprimées.
 
-|  Choix |   Profil | Réglages clés                                                                                                                                                                                                                                                                                                  |
-|:-------:|:----------:|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **[1]** | **GAMING** | Réduit la latence du GPU, des entrées et du réseau : VRR/Auto HDR OFF, pile TCP Gaming (activation de BBR2 tentée, Pacing et ECN), accélération souris OFF et réglages MSI compatibles. Nagle/DelACK et RSC/LSO ne sont coupés qu'avec MaxPerf ; Eco conserve les offloads réseau.                             |
-| **[2]** | **NORMAL** | Restaure la pile TCP et l'énergie GPU au stock mesuré : cubic, Pacing/ECN OFF, Nagle/DelACK natifs et propriétés réseau du pilote réinitialisées. Les états MSI capturés et les réglages NVIDIA touchés par Gaming sont restaurés de façon ciblée. L'accélération souris reste désactivée par choix du script, sauf en **Normal + Eco sur portable** où le comportement Windows stock est conservé. |
+### Effets à connaître dans les profils avancés
 
-#### Axe 2 — Énergie (`PROFIL_POWER`)
+- Système : réduit les suggestions, les fichiers récents de l'Explorateur, l'historique de recherche, AutoPlay et les diagnostics/personnalisation Edge ; coupe l'atténuation audio pendant les appels. Les Jump Lists, l'indexation et la recherche Windows restent disponibles. Normal/Eco ne rétablit pas tous ces réglages communs. Les tâches absentes et refusées sont distinguées ; un refus de service ou de tâche rend le bilan partiel. Les instances de tâches déjà lancées ne sont pas interrompues.
+- Navigateurs : accélération matérielle et QUIC activés, DNS sur HTTPS Cloudflare en mode automatic avec repli normal, préchargements Edge et activité Edge/Chrome après fermeture conservés. Le parcours recommandé propose de limiter cet arrière-plan.
+- Portable Normal + Eco : DiagLog et le service d'alimentation moderne sont préservés. Le refus NTFS sur la base du Store, les changements COM de F1, le nettoyage automatique et les modifications forcées d'hibernation/Modern Standby sont retirés des profils.
+- Réseau Gaming + Performance Max : économies d'énergie réduites et réglages de latence appliqués aux propriétés exposées par le pilote, dont MIMO sans économie, U-APSD désactivé et mode 40 MHz non bloqué sur les adaptateurs Intel compatibles. Le résultat dépend du pilote ; aucun gain universel n'est établi.
+- Performance Max : compression mémoire coupée au-delà de 8 Go de RAM, économies HIPM/DIPM et parking des disques désactivés ; Eco rend ces deux réglages de stockage à Windows. Le preset timer reste expérimental et réversible via Eco.
 
-> *Pilote **l'énergie, le niveau de tuning NIC et le plan d'alimentation**.*
+### Menu principal
 
-|  Choix |    Profil | Réglages clés                                                                                                                                                                                                                                    |
-|:-------:|:------------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **[1]** |   **ECO**  | Plan Équilibré sans supprimer les plans OEM, hibernation et démarrage rapide préservés, compression mémoire active et économies d'énergie réseau/USB restaurées. Les propriétés réseau modifiées par MaxPerf reviennent au défaut du pilote.   |
-| **[2]** | **MAX PERF** | Plan Ultimate Performance, économies d'énergie réseau/USB ciblées désactivées et compression mémoire coupée au-delà de 8 Go de RAM. En Gaming, le tuning réseau devient plus agressif. Le preset timer reste expérimental et réversible via Eco. Les économies d'énergie des liens disque (HIPM/DIPM) et le parking des disques sont coupés ; Eco les rend à Windows. |
+| Touche | Section | Fonction |
+|---|---|---|
+| **[O]** | Tout optimiser | Propose le parcours recommandé ou les anciens profils avancés. |
+| **[1]** | Système, avancé | Réglages système, confidentialité, services et suggestions Windows. |
+| **[2]** | Mémoire | Gestion de la RAM et de la compression mémoire selon les profils. |
+| **[3]** | Disques | Réglages de stockage ; entretien des SSD et maintenance Windows conservés. |
+| **[4]** | GPU | Réglages graphiques et de latence compatibles avec le matériel. |
+| **[5]** | Réseau | Réglages de connexion et de la carte réseau selon l'usage et l'énergie. |
+| **[6]** | Input | Réglages clavier, souris et contrôleurs compatibles. |
+| **[7]** | Énergie | Plans d'alimentation et économies d'énergie. |
+| **[8]** | Sécurité | Choix du mode de protections Windows décrit ci-dessous. |
+| **[N]** | Nettoyage avancé | Supprime temporaires, caches, rapports et contenu de la corbeille. La suppression de `Windows.old` demande une confirmation séparée. |
+| **[R]** | Point de restauration | Crée un point de restauration système. |
+| **[G]** | Gestion Windows | Accède aux options de maintenance ci-dessous. |
+| **[W]** | MAS | Lance l'outil externe MAS, à utiliser dans le respect des licences Windows/Office. |
+| **[T]** | WinUtil | Lance l'outil externe WinUtil. |
+| **[Q]** | Quitter | Ferme le script. |
 
-> **Sur PC fixe comme portable** : les deux questions sont posées, pour permettre un desktop silencieux/économe ou un laptop branché en **MAX PERF**.
-> **Sur PC portable** : la combinaison **GAMING + ECO** est autorisée avec un avertissement — l'avertissement est en réalité posé sur **tout** PC, pas seulement les portables. Nagle/DelACK revient au comportement Windows natif (batterie avant tout), tandis qu'initialRTO=3000 et maxsynretransmissions=2 restent appliqués par l'axe Gaming ; les optimisations GPU/input/CPU restent agressives.
->
-> Les quatre combinaisons remplacent leurs valeurs exclusives gérées. Elles ne retrouvent pas nécessairement les préférences personnalisées antérieures.
-> Le changement manuel Eco/Performance Max resynchronise aussi `DisablePagingExecutive`, FTH et la compression mémoire. La passe de convergence réseau renvoie désormais une erreur lorsqu'une carte ne peut pas appliquer ses propriétés.
+### Protections Windows — menu [8]
 
-| Combinaison          | Comportement principal                                                                                                                                                                                                                                                                          |
-|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Gaming + MaxPerf** | Réglages de latence les plus agressifs : Nagle/DelACK et RSC/LSO coupés, Interrupt Moderation active avec les délais exposés réglés au minimum annoncé par le pilote. Sur Realtek, le script applique aussi le niveau `Low` (`InterruptModerationLevel=0`) et l'intervalle `IntMitiInterval=0`. |
-| **Gaming + Eco**     | Réglages gaming GPU/input, mais comportement réseau natif pour Nagle/DelACK et offloads conservés afin de privilégier autonomie et stabilité.                                                                                                                                                   |
-| **Normal + MaxPerf** | Plan et énergie MaxPerf sans les réglages réseau gaming agressifs ; RSC/LSO et propriétés de latence exclusives sont restaurés.                                                                                                                                                                 |
-| **Normal + Eco**     | Configuration la plus conservatrice : comportement réseau natif, gestion d'énergie active et plan Équilibré. Sur portable, `SEMgrSvc` reste en Manual, `DiagLog` reste actif et le comportement pointeur Windows est conservé.                                                                  |
+Le profil d'énergie **Performance Max** et le mode de sécurité du même nom sont deux choix distincts.
 
-#### Règle d'attribution (design interne)
+| Mode | Effet |
+|---|---|
+| **Défaut Windows** | Restaure les paramètres de sécurité capturés ; sans capture, applique les valeurs de repli prévues par le script. |
+| **Gaming** | Active la sécurité basée sur la virtualisation (VBS) et l'intégrité de la mémoire (HVCI), même si ces protections étaient coupées, tout en réduisant certaines autres protections. |
+| **Performance Max** | Désactive notamment VBS et HVCI et réduit d'autres protections. Ce mode est déconseillé pour un usage courant. |
 
-Chaque réglage est principalement piloté par **un seul axe**, sauf les exceptions explicites ci-dessous :
+La compatibilité dépend du jeu et de l'anti-cheat : certains exigent VBS/HVCI, TPM ou Secure Boot. L'application dépend aussi du matériel et de Windows ; les règles d'entreprise et certains verrouillages peuvent empêcher des changements.
 
-- **Latence applicative** (input, I/O, stack TCP Nagle/timers, low-latency GPU) → `PROFIL_USAGE`
-- **Énergie / tuning NIC / plan d'alimentation** → `PROFIL_POWER`
+Dans **Tout optimiser → Avancé**, activer l'option Protections Windows applique **Gaming** pour l'usage Gaming ou **Défaut Windows** pour l'usage Normal. Le mode de sécurité Performance Max se choisit séparément dans le menu [8].
 
-Exceptions réseau :
+Gaming et Performance Max conservent LSA Protection avec `RunAsPPL=2`, sans écrire de variable UEFI ; cette valeur n'est appliquée qu'à partir de Windows 11 22H2. La première modification des protections capture 32 valeurs ciblées et le réglage BCD ; Défaut Windows restaure cette capture, ou la base Windows mesurée si elle manque. Une ancienne valeur `RunAsPPL=1` peut avoir laissé un verrou UEFI : sa suppression nécessite une procédure Microsoft depuis la récupération. Defender et UAC restent des actions distinctes ; aucune restauration ne récupère les instantanés Recall supprimés.
 
-- **RSC/LSO/RscIPv6** : coupés uniquement en **GAMING + MAX PERF** (préservent débit/stabilité en Normal/Eco).
-- **initialRTO / maxsynretransmissions** : 3000 ms / 2 en Gaming ; 1000 ms / 4 en Normal, conformément à l'état stock Windows 11 25H2 mesuré. La documentation `netsh` liste encore 3000/2 comme valeurs par défaut, mais les builds clients Windows 11 observés utilisent 1000/4. `initialRTO` ne règle pas le RTO des paquets après connexion.
-- **Congestion / heuristics** : Gaming demande BBR2 sur Internet, InternetCustom, Datacenter, DatacenterCustom et Compat avec `forcews=enabled`. Normal restaure `cubic` et `forcews=default`. Le paramètre WSH n'est plus utilisé par Windows. Le loopback Large MTU est désactivé en Gaming et réactivé en Normal.
-- **Nagle/DelACK** : agressif en Gaming+MaxPerf, natif Windows en Eco et en Normal+MaxPerf.
+### Gestion Windows — menu [G]
 
-### ⚙️ Optimisations Granulaires
+| Touche | Option | Effet |
+|---|---|---|
+| **[1]** | Windows Defender | Active ou désactive les protections ; un état partiel est signalé si toutes les modifications ne sont pas appliquées. |
+| **[2]** | UAC | Modifie les notifications du contrôle de compte utilisateur. |
+| **[3]** | Animations | Active ou désactive les animations de l'interface. |
+| **[4]** | IA et Widgets | Gère Copilot, l'IA du Bloc-notes, les Widgets et Recall selon la version de Windows. Désactiver Recall supprime ses instantanés enregistrés. |
+| **[5]** | OneDrive | Désinstalle OneDrive et arrête la synchronisation. Le dossier local OneDrive est supprimé, sauf si Bureau, Documents ou Images y sont rangés. |
+| **[6]** | Microsoft Edge | Désinstalle Edge en conservant WebView2. Certaines fonctions Windows et applications web peuvent être affectées. |
+| **[7]** | Runtimes | Installe les composants Visual C++ et DirectX manquants. |
+| **[8]** | Applications | Choix individuels pour le compte élevé affiché ; ancien lot tous comptes via **[A] Avancé**. |
+| **[9]** | Récupération | Restaure le recommandé, propose les corrections ciblées et les réactivations de sécurité. |
+| **[V]** | Valorant | Applique explicitement le profil fourni ou restaure les fichiers sauvegardés, jeu fermé. |
+| **[M]** | Retour | Revient au menu principal. |
 
-- **[1] Système** : Optimisation du noyau (Kernel), de la planification CPU et réduction des diagnostics et suggestions, avec limites selon édition. Sous Windows 11, tous les profils désactivent les suggestions et les applications récemment ajoutées (`Start_IrisRecommendations=0`, `ShowRecentList=0`) ; Gaming masque aussi « Recommandations » et « Tout », tandis que Normal supprime uniquement ces politiques de masquage. Sur **portable + Normal + Eco**, `DiagLog` reste actif et `SEMgrSvc` reste en demarrage manuel afin de preserver les diagnostics/batterie et la page moderne Alimentation et batterie. **Ce que la section retire volontairement** : les suggestions dans la zone de recherche et dans le menu Démarrer (`DisableSearchBoxSuggestions=1`, `DisableSearchSuggestions=1`) ainsi que la liste des fichiers récents de l'Explorateur (`ShowFrequent=0`). Seuls les Jump Lists, l'indexation Windows et la recherche comme fonction de Windows restent disponibles. Les tâches de diagnostic sont traitées en un seul passage avec relecture de leur état ; les tâches absentes et les refus sont distingués, et un refus rend le bilan système partiel. Les instances déjà en cours ne sont pas interrompues. La section pose aussi des réglages navigateur communs aux profils : QUIC et accélération matérielle activés, préchargement des pages activé et verrouillé dans Edge (`NetworkPredictionOptions=0`), DNS sur HTTPS Cloudflare en mode `automatic` (chiffré quand disponible, repli DNS normal sur les réseaux filtrés), démarrage rapide et arrière-plan Edge conservés dans ce profil avancé. Le parcours recommandé propose de les couper. Le refus NTFS sur la base du Store, la modification des inscriptions COM pour F1, la politique de nettoyage automatique et les changements forcés d’hibernation/Modern Standby sont retirés des profils. Gaming et Normal coupent aussi l'exécution automatique (AutoPlay), l'historique de recherche local, l'accès des sites à la liste des langues, les notifications de compte et suggestions de Windows, les sites personnalisés du menu Démarrer, la baisse du volume pendant les appels (`UserDuckingPreference=3`) et les diagnostics/personnalisation Edge (`DiagnosticData=0`, `PersonalizationReportingEnabled=0`) ; repasser en Normal ou en Eco ne les rétablit pas.
-- **[2] Mémoire** : Ajustement de la gestion RAM et de la compression mémoire selon l'énergie, avec Prefetch piloté par l'usage.
-- **[3] Disques** : TRIM et maintenance Windows conservés ; chemins longs activés en Gaming et rendus à `LongPathsEnabled=0` en Normal, comme sur le stock mesuré.
-- **[4] GPU** : Configuration des priorités graphiques et des options de latence prises en charge par le pilote.
-- **[5] Réseau** : pile TCP Gaming ou stock mesuré en Normal, puis réglages de la carte selon l'énergie. Eco privilégie stabilité et autonomie ; Gaming+MaxPerf applique les options de latence les plus agressives que le pilote expose. En Gaming, une stratégie QoS marque aussi le trafic UDP/TCP de Fortnite en DSCP 46. Les économies d'énergie Intel `EEELinkAdvertisement`, `SipsEnabled` et `ULPMode` suivent le même traitement que `*EEE` ; Eco et Normal les rendent au défaut du pilote.
-- **[6] Input** : Ajustement de la réponse clavier/souris, des files d'entrée et du mode MSI des contrôleurs compatibles.
-- **[7] Énergie** : Gestion des plans d'alimentation et déblocage de l'Ultimate Performance, avec choix d'usage pour appliquer le bon tuning NIC.
-- **[8] Sécurité** : Choix entre 3 modes pour VBS/HVCI/CFG/SEHOP, mitigations processeur, LSA/Credential Guard, hyperviseur BCD et liste de pilotes vulnérables.
+## ❓ Questions fréquentes
 
-| Mode                          |  Sécurité VBS / HVCI  | Anti-Cheats (Valorant / FACEIT) | Usage Recommandé                                               |
-|-------------------------------|:----------------------:|:-------------------------------:|----------------------------------------------------------------|
-| **1 - Défaut Windows**        | ✅ Selon l'état Windows |          Selon Windows/jeu  | Capture restaurée ; sinon base stock Windows 11 25H2 appliquée |
-| **2 - Gaming (avancé)** |        ✅ Activé |     ⚠️ Selon les jeux  | Réduction des protections CPU, SEHOP et pilotes      |
-| **3 - Performance Max ⚠️**    |      ❌ Désactivé  |        ⚠️ Selon les jeux | Réglages les plus agressifs, avec sécurité réduite             |
+Cliquez sur une question pour afficher sa réponse.
 
-> ### 💡 Vue d'ensemble des 3 modes
->
-> * **Gaming (avancé)** : **Active** VBS / HVCI — y compris sur une machine où ils étaient coupés — et conserve **LSA Protection** (`RunAsPPL=2`, c'est-à-dire PPL actif **sans** écriture de variable UEFI — valeur que Microsoft n'applique qu'à partir du build 22H2) pour limiter les conflits avec les anti-cheats modernes, laisse **CFG** à `NOTSET` (défaut Windows), désactive **SEHOP**, réduit les mitigations CPU et demande la désactivation de la blocklist.
-> * **Défaut Windows** : restaure le snapshot capturé avant un profil de sécurité. Sans snapshot, il applique la base stock mesurée (FeatureSettings=0, `RunAsPPL=2`, `RunAsPPLBoot` supprimé, blocklist de pilotes=1) et retire les overrides de l'outil.
-> * **Performance Max ⚠️ (Déconseillé)** : Désactive VBS, HVCI et SEHOP, conserve CFG et **LSA Protection** (`RunAsPPL=2`, PPL actif sans écriture de variable UEFI), réduit les mitigations CPU et demande la désactivation de la blocklist.
+<details>
+<summary><strong>Avec quelles versions de Windows est-il compatible ?</strong></summary>
 
-> ### 🔍 Notes & Précisions techniques
->
-> * **Champs modifiés** : les modes *Gaming* et *Performance Max* modifient uniquement CFG et SEHOP dans `MitigationOptions` pour préserver les autres mitigations de processus. *Défaut Windows* restaure les valeurs capturées ou applique la base stock 25H2 lorsqu'aucun snapshot n'existe.
-> * **Mitigations CPU (Spectre/Meltdown)** : `33554435/3` (0x2000003) correspond aux modes *Gaming* et *Perf Max*. Le mode *Défaut Windows* ne force plus `0/3` : il restaure l'état précédent ou laisse Windows gérer l'absence d'override.
-> * **Blocklist de pilotes** : *Gaming* conserve HVCI actif. Si HVCI, Smart App Control ou le mode S restent actifs, Windows peut continuer d'imposer la blocklist même si la désactivation a été demandée.
-> * **Application automatique** : dans **Tout optimiser → Avancé**, la question *Protections Windows* applique directement les réglages *Défaut Windows* en usage Normal ou *Gaming* en usage Gaming. Elle ne demande pas de choisir un second mode de sécurité. *Performance Max* reste accessible séparément depuis le menu Sécurité.
+Windows 11 uniquement. Certaines options dépendent de la version de Windows, du matériel et des pilotes. Sur un PC professionnel ou géré par une organisation, des règles peuvent empêcher les modifications.
 
-### 🧰 Outils & Utilitaires
+</details>
 
-- **[N] Nettoyage Avancé** : Nettoyage système en 26 étapes : temporaires, corbeille, dumps, caches Windows/applications, journaux archivés, npm, OneDrive/Defender et autres diagnostics. `Windows.old` n'est supprimé qu'après une confirmation séparée.
-- **[R] Point de Restauration** : Crée un point de restauration système avant toute modification.
-- **[G] Gestion Windows** : Menu dédié (Defender, UAC, animations, IA/Widgets, Edge, OneDrive…).
-- **[W] MAS** : Lance le script officiel MAS depuis son URL de mise à jour continue. À utiliser dans le respect des licences Windows/Office.
-- **[T] WinUtil** : Lance la dernière version officielle disponible de WinUtil.
-- **[Q] Quitter** : Ferme le script.
+<details>
+<summary><strong>Quel profil choisir ?</strong></summary>
 
-### 📂 Gestion Windows & Maintenance (Menu [G])
+En cas de doute, choisissez **[O] → [1] Recommandé** : un récapitulatif et une seule confirmation, avec personnalisation facultative. Les profils **Gaming/Normal** et **Eco/Performance Max** restent accessibles dans le parcours avancé. Sur portable, Performance Max peut augmenter la chauffe et réduire l'autonomie. Le mode de sécurité Performance Max est un choix séparé et déconseillé pour un usage courant.
 
-| Touche  | Fonction             | Description                                                                                                                                                            |
-|:-------:|----------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **[1]** | **Windows Defender** | Activation ou désactivation étendue. La réactivation conserve les règles ASR et CFA existantes, réactive les protections principales et signale un état final partiel. |
-| **[2]** | **UAC**              | Gestion fine des notifications du Contrôle de Compte Utilisateur.                                                                                                      |
-| **[3]** | **Animations**       | Choix entre une interface visuelle riche ou ultra-réactive.                                                                                                            |
-| **[4]** | **IA & Widgets**     | Activation ou désactivation de Copilot, de l'IA du Bloc-notes et des Widgets sur Windows 11. Recall dépend de la version/édition de Windows ; le désactiver supprime les instantanés déjà enregistrés. |
-| **[5]** | **OneDrive**         | Désinstallation complète et arrêt de la synchronisation. `%USERPROFILE%\OneDrive` est supprimé, sauf si Bureau, Documents ou Images y sont rangés : le dossier est alors conservé. |
-| **[6]** | **Microsoft Edge**   | Désinstallation de Microsoft Edge avec WebView2 préservé. Recherche, Widgets, météo et certaines PWA peuvent être affectés.                                            |
-| **[7]** | **Runtimes**         | Installation du Visual C++ v14 actuel et de DirectX June 2010. Les téléchargements VC++ x86/x64 sont parallélisés quand les deux manquent et leurs signatures sont vérifiées dans un seul processus PowerShell ; DirectX utilise `curl` en priorité avec BITS/PowerShell en secours. |
-| **[8]** | **Applications** | Choix individuel pour le compte élevé affiché ; ancien lot pour tous les comptes accessible par **[A] Avancé**. |
-| **[9]** | **Récupération** | Restauration du parcours recommandé, corrections ciblées des anciens blocages et accès aux réactivations de sécurité. |
-| **[V]** | **Valorant** | Application explicite du profil fourni ou restauration des fichiers sauvegardés, jeu fermé. |
-| **[M]** | **Retour**           | Retour au menu principal.                                                                                                                                              |
+</details>
 
-## ❓ FAQ (Foire aux questions)
+<details>
+<summary><strong>Quel gain de FPS attendre ?</strong></summary>
 
-### 🏠 Installation & Sécurité
+Le résultat dépend du matériel, des pilotes, des logiciels et de la charge. Aucun gain de FPS n'est garanti : comparez vos jeux avant et après avec les mêmes réglages.
 
-**Q : La commande** `irm` **ne démarre pas le launcher ?**
+</details>
 
-R : Exécutez-la dans **Windows PowerShell** ou **PowerShell**, pas dans `cmd.exe`. En cas d'erreur réseau ou d'URL, la commande affiche immédiatement l'erreur de `Invoke-RestMethod`. Depuis un clone, lancez `.\launcher.ps1 -VerifyOnly` pour contrôler le launcher et le batch sans UAC ni modification système.
+<details>
+<summary><strong>Est-ce sans risque pour mon PC ?</strong></summary>
 
-**Q : Est-ce que ce script peut provoquer une incompatibilité ?**
-R : Oui, comme tout outil qui modifie des stratégies, services, pilotes ou paramètres réseau. Créez d'abord un point de restauration, choisissez le parcours **[O] → [1] Recommandé** en cas de doute et évitez les options de sécurité ou de désinstallation dont vous n'avez pas besoin.
+Des incompatibilités sont possibles après des changements de services, de réseau ou de sécurité. Créez un point de restauration et sauvegardez vos fichiers avant de commencer. Vous pouvez appliquer les sections séparément et éviter les désinstallations ou les options sensibles dont vous n'avez pas besoin.
 
-**Q : Mon antivirus détecte le script, pourquoi ?**  
-R : Les commandes d'administration, les téléchargements et les modifications de sécurité peuvent déclencher une alerte. Ne supposez pas automatiquement qu'il s'agit d'un faux positif : vérifiez le dépôt, le diff et les fichiers téléchargés avant exécution.
+</details>
 
-**Q : Puis-je lancer le script plusieurs fois ?**  
-R : Oui pour les profils principaux : Gaming/Normal et Performance Max/Eco remplacent leurs réglages exclusifs et nettoient plusieurs vestiges connus. Un parcours **Tout optimiser → Avancé** n'exécute chaque section qu'une fois, mais vous pouvez relancer ensuite une section depuis le menu. Les suppressions, désinstallations, caches et autres actions destructives ne sont pas toutes répétables ni réversibles. Un point de restauration ne récupère pas nécessairement les fichiers supprimés, les désinstallations, la corbeille, les caches ou `Windows.old`.
+<details>
+<summary><strong>Est-ce compatible avec Valorant, FACEIT et les autres anti-cheats ?</strong></summary>
 
-### 🎮 Performance & Gaming
+La compatibilité dépend du jeu et des exigences de son anti-cheat. Le mode de sécurité Gaming active VBS et l'intégrité de la mémoire ; Performance Max les désactive et peut empêcher certains jeux de démarrer. Aucun mode ne garantit la compatibilité avec tous les jeux.
 
-**Q : Quel gain de FPS puis-je espérer ?**  
-R : Le gain varie selon le matériel et la charge. Il peut surtout se manifester par une latence ou une stabilité plus régulière ; aucun gain de FPS n'est garanti.
+</details>
 
-**Q : Que fait le preset timer de Performance Max ?**
-R : Les profils avancés suppriment les overrides BCD `useplatformclock`/`useplatformtick`/`tscsyncpolicy`. Performance Max ajoute `disabledynamictick=yes` et lance `SetTimerResolution` via un raccourci du dossier de démarrage, tandis qu'Eco supprime aussi cet override, retire le raccourci et réactive HPET s'il avait été désactivé par une ancienne version du script. Microsoft classe ces options comme des réglages de débogage : le preset reste expérimental et aucun gain universel n'est garanti. Un redémarrage est nécessaire après le changement.
+<details>
+<summary><strong>Faut-il désactiver Defender ou l'UAC ?</strong></summary>
 
-**Q : Pourquoi modifier les mitigations Spectre/Meltdown (Option 8) ?**
-R : Certaines protections ajoutent une charge selon le processeur et la charge de travail. Gaming active VBS/HVCI (même s'ils étaient coupés), laisse CFG au défaut Windows, désactive SEHOP, réduit les mitigations CPU et demande la désactivation de la blocklist. HVCI peut néanmoins maintenir cette blocklist active. Performance Max désactive VBS/HVCI/SEHOP, laisse CFG au défaut Windows, réduit les mitigations CPU et demande aussi la désactivation de la blocklist. Défaut Windows restaure le snapshot de sécurité ou applique la base stock 25H2 mesurée sans snapshot. Les trois modes suppriment la surcharge BCD `hypervisorlaunchtype` lorsqu'ils la gèrent ; les stratégies et verrous externes restent prioritaires.
+Non, ces choix sont facultatifs. Gardez l'antivirus et les confirmations administrateur actifs pour un usage courant : les désactiver réduit la protection du PC.
 
-**Q : Changer plusieurs fois de mode de sécurité laisse-t-il les anciens réglages actifs ?**
-R : Le premier passage du profil de sécurité Gaming ou Performance Max capture les valeurs ciblées et la valeur BCD avant modification. Défaut Windows réimporte ensuite ce snapshot de façon ciblée ; sans snapshot, il retire les overrides connus puis applique les quelques valeurs stock mesurées et explicitement gérées (`FeatureSettings=0`, `RunAsPPL=2`, `RunAsPPLBoot` supprimé, blocklist=1). Une stratégie d'entreprise peut cependant réimposer une valeur extérieure au script.
+</details>
 
-**Q : Performance Max désactive-t-il toutes les protections ?**
-R : Non. Performance Max désactive VBS, HVCI, SEHOP et Credential Guard local/policy, laisse CFG à `NOTSET` (dont le défaut Windows effectif est ON), demande la désactivation de la blocklist, réduit les mitigations CPU, mais conserve LSA Protection avec `RunAsPPL=2` (PPL actif sans écriture de variable UEFI) et laisse les Kernel Shadow Stacks inchangées. Smart App Control, le mode S ou une stratégie peuvent maintenir la blocklist active. La valeur BCD `hypervisorlaunchtype` est supprimée (`deletevalue`). Une ancienne configuration Credential Guard verrouillée en UEFI peut nécessiter une procédure avec confirmation physique pour retirer ce verrou.
+<details>
+<summary><strong>Puis-je relancer le script ou changer de profil ?</strong></summary>
 
-**Q : Quelle différence entre Gaming et Performance Max pour les anti-cheats ?**
-R : Gaming active VBS/HVCI et laisse CFG au défaut Windows afin de limiter les incompatibilités. Performance Max désactive VBS/HVCI ; sa compatibilité dépend donc du jeu, de l'anti-cheat et de leur version. Certains exigent aussi TPM, Secure Boot, la virtualisation ou IOMMU.
+Oui. Les profils remplacent leurs réglages exclusifs pris en charge. Relancer le script ne restaure toutefois pas les fichiers ou applications supprimés et réapplique les actions automatiques décrites ci-dessous.
 
-**Q : Est-ce compatible avec tous les jeux en ligne ?**
-R : Aucune compatibilité universelle ne peut être garantie. Le mode Gaming active VBS/HVCI et conserve CFG pour limiter les conflits avec les anti-cheats modernes, mais désactive SEHOP — sans garantir les exigences futures de chaque jeu ou anti-cheat.
+</details>
 
-### 🌐 Maintenance & Divers
+<details>
+<summary><strong>Dois-je redémarrer ?</strong></summary>
 
-**Q : Est-ce que le nettoyage (Option N) supprime mes documents ?**  
-R : Il ne cible pas directement les dossiers Documents/Images/Vidéos actuels. Il vide toutefois la corbeille et supprime des caches, dumps, rapports d'erreur et journaux archivés. Si `Windows.old` existe, sa suppression définitive est proposée séparément et peut inclure d'anciennes données utilisateur. Les journaux Event Viewer actifs, l'historique Windows Update et les autres fichiers de récupération sont conservés.
+Un redémarrage est recommandé après un parcours complet et nécessaire quand le script, Windows ou un installateur le demande. Certains changements ne prennent effet qu'après le redémarrage.
 
-**Q : Puis-je réinstaller OneDrive ou Edge plus tard ?**  
-R : Oui. OneDrive se réinstalle via `winget install Microsoft.OneDrive` ou depuis le site Microsoft. Edge peut être réinstallé manuellement, mais les politiques Edge Update posées lors de sa suppression peuvent devoir être retirées si l'installateur les respecte. Les données supprimées pendant la désinstallation ne sont pas récupérées.
+</details>
 
-**Q : Quels "Bloatwares" sont supprimés ?**  
-R : **[G] → [8]** propose séparément Copilot moderne, Clipchamp, Teams, le nouvel Outlook, Solitaire et News pour le compte élevé affiché. Une application utile au quotidien n’est pas retirée parce qu’elle est installée. La présence puis l’absence sont relues ; les autres comptes et le provisionnement sont conservés. La désinstallation peut perdre des données locales ; le Microsoft Store permet une réinstallation, sans récupération automatique de ces données. Les fonctions Copilot d’Edge, du Web et de Microsoft 365 sont distinctes de l’application moderne. L’ancien lot ci-dessous reste accessible par **[A] Avancé** avec sa confirmation pour tous les utilisateurs.
+<details>
+<summary><strong>Le nettoyage supprime-t-il mes documents ?</strong></summary>
 
-#### 🗑️ Supprimé
+Il ne cible pas les dossiers Documents, Images ou Vidéos actuels, mais vide la corbeille et supprime des caches et fichiers de diagnostic. La suppression de `Windows.old`, proposée séparément, peut effacer d'anciennes données et retire la possibilité de revenir à la précédente installation de Windows par ce dossier.
 
-| Catégorie          | Applications                                                                                 |
-|--------------------|----------------------------------------------------------------------------------------------|
-| **Jeux & Pubs**    | Candy Crush (Saga & Soda), Solitaire Collection.                                             |
-| **Social / Liens** | Skype, People, Microsoft Family.                                                             |
-| **Utilitaires**    | Cartes (Maps), Feedback Hub, Get Help, Get Started, Mixed Reality Portal, Assistance rapide. |
-| **Services**       | Office Hub (Web stub), OneConnect (Forfaits mobiles), Bing News (Actualités).                |
+</details>
 
-#### ✅ Conservé
+<details>
+<summary><strong>Quelles applications sont supprimées ?</strong></summary>
 
-| Catégorie        | Applications                                                   |
-|------------------|----------------------------------------------------------------|
-| **Gaming**       | Suite **Xbox** (Game Bar, App), DirectX, Game Mode.            |
-| **Quotidien**    | Météo, Sports, Finances, Alarmes, Caméra, Enregistreur vocal.  |
-| **Multimédia**   | Musique (Groove), Films et TV, Photos, Paint.                  |
-| **Productivité** | Calculatrice, Bloc-notes, Courrier & Calendrier, Sticky Notes. |
-| **Système**      | Store, Sécurité Windows, Terminal, Capture.                    |
+**[G] → [8]** propose séparément Copilot moderne, Clipchamp, Teams, le nouvel Outlook, Solitaire et News pour le compte élevé affiché. Les autres comptes et le provisionnement sont conservés. Les fonctions Copilot d'Edge, du Web et de Microsoft 365 sont distinctes. **[A] Avancé** conserve l'ancien lot pour tous les utilisateurs avec confirmation, dont Skype, Cartes et Candy Crush si présents. Edge et OneDrive ont leurs options séparées ; Windows Update, Store et WebView2 sont conservés. Une désinstallation peut perdre des données locales : réinstaller depuis le Store ne les récupère pas.
 
-**Q : Dois-je redémarrer après l'optimisation ?**
-R : Un redémarrage est recommandé après un parcours complet. Il est nécessaire si le script, Windows ou un installateur le signale, notamment pour certains changements VBS/HVCI/SEHOP, pilotes ou alimentation.
+</details>
 
-### 🛡️ Sécurité & fiabilité
+<details>
+<summary><strong>Quels outils se lancent automatiquement ?</strong></summary>
 
-**Q : Comment les téléchargements distants sont-ils vérifiés ?**
-R : Le launcher n'accepte que le dépôt officiel WindowsOptimizer (branche `main` ou commit SHA-1 explicite), impose HTTPS, un délai de téléchargement, le format ASCII/CRLF et des marqueurs internes du batch. Son mode `-VerifyOnly` teste la chaîne sans élévation ni modification système. NVIDIA Profile Inspector, son profil et SetTimerResolution utilisent la même racine de publication. SetTimerResolution est téléchargé dans un fichier temporaire, vérifié comme exécutable PE puis déplacé dans `Program Files` ; `curl`, BITS et PowerShell sont essayés en secours. Les runtimes Visual C++ et DirectX utilisent désormais la même stratégie réseau rapide (`curl` en priorité, BITS puis PowerShell en secours), avec téléchargement parallèle x86/x64 pour VC++ lorsque les deux architectures manquent. Chaque exécutable runtime est contrôlé par taille et signature Authenticode Microsoft avant exécution. MAS et WinUtil restent des outils externes explicitement sélectionnés, limités à leurs deux URLs autorisées ; le fichier téléchargé est refusé s'il s'agit d'une page HTML/XML ou si sa signature Authenticode existe sans être valide. Les outils du dépôt sont contrôlés surtout par source, chemin, taille et compatibilité, sans validation Authenticode systématique.
+L'ouverture du script ne modifie pas Valorant. **[G] → [V]** permet d'appliquer le profil fourni, jeu fermé, à tous les comptes Valorant du profil Windows élevé affiché : plein écran, qualité minimale, VSync/HDR désactivés, résolution et clés non ciblées conservées. La restauration remplace les fichiers entiers par leur première sauvegarde `.winopt-backup` et écrase les modifications ultérieures. En Gaming, NVIDIA Profile Inspector et son profil peuvent être exécutés sur un GPU NVIDIA compatible. Avec le profil d'énergie Performance Max, SetTimerResolution peut être installé, lancé et ajouté au démarrage avec `--resolution 5275` (0,5275 ms demandée, réglage expérimental) ; Eco retire ce démarrage automatique. Les ressources O&O, Fortnite et les autres outils Timer & Interrupt ne sont pas exécutés automatiquement.
 
-**Q : Visual C++ réclame un ancien fichier MSI introuvable ?**
-R : Le cache d'installation de l'ancienne version est incomplet. Le script conserve les journaux VC++ dans `%TEMP%\WinOpt_VC14_<architecture>_*.log` et signale un échec de l'installateur même si des DLL sont présentes. Récupérez le redistribuable Microsoft correspondant exactement à la version demandée et utilisez-le pour réparer l'installation, puis réessayez le paquet actuel. Si la désinstallation est elle aussi bloquée, consultez [l'outil de dépannage Microsoft](https://support.microsoft.com/help/17588) pour retirer uniquement l'entrée défectueuse avant de réinstaller. Les quatre composants « X86 Minimum Runtime », « X86 Additional Runtime », « X64 Minimum Runtime » et « X64 Additional Runtime » sont distincts : traitez uniquement ceux qui réclament un MSI absent, avec la version indiquée par la fenêtre, puis réinstallez le redistribuable de chaque architecture concernée. Ne supprimez pas tout `Package Cache` ni les autres versions de Visual C++. Les runtimes déjà détectés selon ces critères (Visual C++ 14.40 ou plus, DirectX June 2010 complet) sont conservés : ce parcours n'effectue pas leur mise à jour forcée et ne garantit pas l'intégrité de leur cache MSI.
+</details>
 
-**Q : Certains outils sont-ils exécutés automatiquement ?**
-R : NVIDIA Profile Inspector et son profil peuvent être exécutés automatiquement en Gaming sur un GPU NVIDIA compatible. SetTimerResolution peut être installé, ajouté au démarrage et lancé en MaxPerf. La configuration O&O, les modèles de `Game Configs\` et les autres outils Timer & Interrupt ne sont pas lancés automatiquement par le batch actuel.
+<details>
+<summary><strong>Puis-je revenir en arrière ?</strong></summary>
 
-**Q : Credential Guard et LSA peuvent-ils rester actifs malgré le script ?**
-R : Oui. Gaming et Performance Max conservent LSA Protection avec `RunAsPPL=2` — PPL actif **sans** écriture de variable UEFI, `1` étant au contraire le mode *avec* variable UEFI, non réversible par registre ni par stratégie — suppriment `RunAsPPLBoot` et désactivent Credential Guard avec `LsaCfgFlags=0`. `2` est aussi la valeur stock mesurée sur une installation neuve. ⚠️ Microsoft précise que cette valeur **n'est appliquée qu'à partir du build Windows 11 22H2** : sur Windows 10 ou un Windows 11 antérieur, écrire `2` n'active pas PPL. Le script ne filtre pas sur la version, donc sur ces systèmes le mode announced n'est pas garanti. Défaut Windows restaure la capture précédente ; sans capture, il applique la même base : `RunAsPPL=2` et `RunAsPPLBoot` supprimé. ⚠️ Si une version antérieure du script a déjà été exécutée sur cette machine, `RunAsPPL=1` a pu écrire la variable dans le firmware : vérifier et, le cas échéant, retirer ce verrou avec l'outil `LsaPplConfig.efi` de Microsoft depuis un environnement de récupération. Une stratégie d'entreprise peut néanmoins imposer un autre état.
+**[G] → [9] → [1]** restaure les valeurs sauvegardées du parcours recommandé. Les profils avancés Normal/Eco et Défaut Windows restaurent seulement les réglages qu'ils prennent en charge. Ils ne remettent pas tout Windows à zéro. Un point de restauration peut aider pour les changements système ; les fichiers supprimés, la corbeille vidée et les données retirées lors d'une désinstallation nécessitent une sauvegarde pour être récupérés.
 
-**Q : Quelles fonctionnalités essentielles sont conservées ?**
-R : Windows Update, Microsoft Store et WebView2 ne sont pas volontairement supprimés. Les fonctions dépendantes d'Edge, OneDrive ou d'une autre application retirée peuvent néanmoins changer.
+</details>
+
+<details>
+<summary><strong>Puis-je réinstaller OneDrive ou Edge ?</strong></summary>
+
+Oui, depuis Microsoft. Les politiques de mise à jour posées lors de la suppression d'Edge peuvent devoir être retirées avant sa réinstallation. Réinstaller ne récupère pas les données supprimées.
+
+</details>
+
+<details>
+<summary><strong>Pourquoi la commande de lancement ne fonctionne-t-elle pas ?</strong></summary>
+
+Exécutez-la dans PowerShell, pas dans l'invite de commandes. Vérifiez la connexion Internet, acceptez la demande d'administration et consultez le message d'erreur. Vous pouvez aussi télécharger le script et le lancer en tant qu'administrateur.
+
+Pour vérifier uniquement le téléchargement depuis une copie de `launcher.ps1`, utilisez `.\launcher.ps1 -VerifyOnly` dans PowerShell. Ce mode ne lance pas l'optimiseur et affiche la source ainsi qu'un SHA-256 informatif. Le lanceur utilise toujours le script publié, même si un `All in One.cmd` se trouve à côté de lui.
+
+</details>
+
+<details>
+<summary><strong>Pourquoi mon antivirus affiche-t-il une alerte ?</strong></summary>
+
+Les commandes d'administration et les modifications de sécurité peuvent déclencher une alerte. Ne supposez pas qu'il s'agit d'un faux positif : examinez le code et les fichiers téléchargés avant de poursuivre.
+
+</details>
 
 ---
 
 <div align="center">
 
-**Développé avec passion par Kayler**  
-*Optimisez votre expérience Windows dès aujourd'hui.*
+**Développé avec passion par Kayler**
 
 [**📥 Télécharger All in One.cmd**](https://github.com/kaylerberserk/WindowsOptimizer/blob/main/All%20in%20One.cmd)
 
