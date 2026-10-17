@@ -1935,6 +1935,33 @@ if "!HAS_NVIDIA!"=="1" (
     echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%NVIDIA Profile Inspector ignore. Aucun GPU NVIDIA detecte.%COLOR_RESET%
 )
 
+REM  4.9 - Pilote NVIDIA : PhysX, chemin GR535 et compteurs de performance
+if "!HAS_NVIDIA!"=="1" (
+    if "!PROFIL_USAGE!"=="0" (
+        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA...%COLOR_RESET%
+        REM  PhysX traite sur le GPU au lieu du processeur.
+        reg add "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v NvCplPhysxAuto /t REG_DWORD /d 0 /f >nul 2>&1
+        REM  Chemin de mise a l'echelle GR535 : 0 le retire, 1 le remet.
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v EnableGR535 /t REG_DWORD /d 0 /f >nul 2>&1
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v EnableGR535 /t REG_DWORD /d 0 /f >nul 2>&1
+        REM  Compteurs de performance GPU lisibles sans elevation : la cle globale et
+        REM  la cle de classe par carte, que le pilote consulte tous les deux.
+        reg add "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v RmProfilingAdminOnly /t REG_DWORD /d 0 /f >nul 2>&1
+        for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do reg add "%%K" /v RmProfilingAdminOnly /t REG_DWORD /d 0 /f >nul 2>&1
+        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA appliques.%COLOR_RESET%
+    ) else (
+        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des reglages du pilote NVIDIA...%COLOR_RESET%
+        reg delete "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v NvCplPhysxAuto /f >nul 2>&1
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v EnableGR535 /t REG_DWORD /d 1 /f >nul 2>&1
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v EnableGR535 /t REG_DWORD /d 1 /f >nul 2>&1
+        reg delete "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v RmProfilingAdminOnly /f >nul 2>&1
+        for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do reg delete "%%K" /v RmProfilingAdminOnly /f >nul 2>&1
+        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA rendus au comportement natif.%COLOR_RESET%
+    )
+) else (
+    echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA ignores. Aucun GPU NVIDIA detecte.%COLOR_RESET%
+)
+
 call :FINISH_ACTION "Reglages GPU"
 exit /b 0
 
@@ -3235,7 +3262,12 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /t RE
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "TyposquattingCheckerEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%SmartScreen desactive sur les principales surfaces Windows.%COLOR_RESET%
+REM  Hameconnage renforce : meme page que SmartScreen dans Securite Windows. La
+REM  surface documentee est la branche Policies, pas CurrentVersion, et l'ADMX
+REM  range la suppression dans le choix "non configure", donc la restauration
+REM  supprime au lieu de poser un 1.
+for %%V in (CaptureThreatWindow NotifyMalicious NotifyPasswordReuse NotifyUnsafeApp ServiceEnabled) do reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WTDS\Components" /v "%%V" /t REG_DWORD /d 0 /f >nul 2>&1
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%SmartScreen et protection anti-hameconnage desactives.%COLOR_RESET%
 exit /b
 
 :RESTORE_SMARTSCREEN_DEFAULT_EXTRA
@@ -3250,6 +3282,21 @@ reg delete "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /f
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v "TyposquattingCheckerEnabled" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenEnabled" /f >nul 2>&1
 reg delete "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /f >nul 2>&1
+for %%V in (CaptureThreatWindow NotifyMalicious NotifyPasswordReuse NotifyUnsafeApp ServiceEnabled) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WTDS\Components" /v "%%V" /f >nul 2>&1
+exit /b
+
+:APPLY_DEFENDER_NOTIFICATIONS_OFF
+REM  Une seule valeur documentee couvre toutes les notifications de Securite
+REM  Windows et rend sans effet celle qui ne masque que les non critiques. La
+REM  strategie non configuree laisse les notifications visibles, donc la
+REM  restauration supprime la valeur au lieu d'ecrire un 0.
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Masquage des notifications de Securite Windows...%COLOR_RESET%
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Notifications" /v "DisableNotifications" /t REG_DWORD /d 1 /f >nul 2>&1
+exit /b
+
+:RESTORE_DEFENDER_NOTIFICATIONS_DEFAULT
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des notifications de Securite Windows...%COLOR_RESET%
+reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender Security Center\Notifications" /v "DisableNotifications" /f >nul 2>&1
 exit /b
 
 :TOGGLE_DEFENDER
@@ -3304,7 +3351,19 @@ reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender\Real-Time Protection" /v Di
 for %%V in (DisableAntiSpyware DisableAntiVirus DisableBlockAtFirstSeen DisableRoutinelyTakingAction) do reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v "%%V" /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v VerifiedAndReputableTrustModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v SmartLockerMode /t REG_DWORD /d 1 /f >nul 2>&1
+
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des protections systeme associees...%COLOR_RESET%
+REM  Smart App Control et la protection contre les rancongiciels reviennent au choix
+REM  de Windows par suppression, puisque leur valeur par defaut n'est pas garantie.
+REM  Une modification de CFA ou de LSA-PPL faite a la main n'est donc pas retrouvee.
+reg delete "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v "VerifiedAndReputablePolicyState" /f >nul 2>&1
+reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender\Windows Defender Exploit Guard\Controlled Folder Access" /v "EnableControlledFolderAccess" /f >nul 2>&1
+REM  RunAsPPL : 2 est le defaut mesure d'une installation neuve Windows 11 22H2+,
+REM  actif sans verrou UEFI.
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v "RunAsPPL" /t REG_DWORD /d 2 /f >nul 2>&1
+
 call :RESTORE_SMARTSCREEN_DEFAULT_EXTRA
+call :RESTORE_DEFENDER_NOTIFICATIONS_DEFAULT
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reactivation des protections principales...%COLOR_RESET%
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{Set-MpPreference -DisableRealtimeMonitoring $false -DisableBehaviorMonitoring $false -DisableBlockAtFirstSeen $false -DisableIOAVProtection $false -DisableScriptScanning $false -DisableArchiveScanning $false -DisableEmailScanning $false -DisableRemovableDriveScanning $false -PUAProtection Enabled -MAPSReporting Advanced -SubmitSamplesConsent SendSafeSamples -EnableNetworkProtection Enabled -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
@@ -3385,6 +3444,17 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows Defender" /v "DisableRoutinely
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v "VerifiedAndReputableTrustModeEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Microsoft\Windows Defender" /v "SmartLockerMode" /t REG_DWORD /d 0 /f >nul 2>&1
 
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des protections systeme associees...%COLOR_RESET%
+REM  Smart App Control : c'est cette valeur d'etat que le noyau consulte, les deux
+REM  precedentes ne suffisent pas a le couper.
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy" /v "VerifiedAndReputablePolicyState" /t REG_DWORD /d 0 /f >nul 2>&1
+REM  Protection contre les rancongiciels : elle ajoute un cout d'ecriture sur les
+REM  dossiers proteges.
+reg add "HKLM\SOFTWARE\Microsoft\Windows Defender\Windows Defender Exploit Guard\Controlled Folder Access" /v "EnableControlledFolderAccess" /t REG_DWORD /d 0 /f >nul 2>&1
+REM  LSA-PPL. La modification demande un redemarrage, et une valeur 1 signifie un
+REM  verrou UEFI que Windows refusera de lever.
+reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v "RunAsPPL" /t REG_DWORD /d 0 /f >nul 2>&1
+
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des taches planifiees de Defender et ExploitGuard...%COLOR_RESET%
 schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Cleanup" /Disable >nul 2>&1
 schtasks /Change /TN "Microsoft\Windows\Windows Defender\Windows Defender Scheduled Scan" /Disable >nul 2>&1
@@ -3395,6 +3465,7 @@ schtasks /Change /TN "Microsoft\Windows\ExploitGuard\ExploitGuard MDM policy Ref
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de SmartScreen...%COLOR_RESET%
 call :APPLY_SMARTSCREEN_DISABLE_EXTRA
+call :APPLY_DEFENDER_NOTIFICATIONS_OFF
 REM  Verification symetrique de la reactivation : si Defender reste actif, la desactivation
 REM  n'a pas abouti et le script doit le dire plutot que d'annoncer un succes.
 powershell -NoProfile -Command "try{$s=Get-MpComputerStatus -ErrorAction Stop;if($s.AntivirusEnabled-and$s.RealTimeProtectionEnabled){exit 1};exit 0}catch{exit 1}" >nul 2>&1
