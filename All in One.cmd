@@ -194,7 +194,7 @@ set "WINOPT_RUNAS_BACKUP=%WINOPT_BACKUP_DIR%\runas-file-verb.reg"
 set "WINOPT_DIR_RUNAS_BACKUP=%WINOPT_BACKUP_DIR%\runas-dir-verb.reg"
 call :BACKUP_SELF_BEFORE_EXECUTION
 if !errorlevel! NEQ 0 (
-    echo [ERREUR] Impossible de sauvegarder All in One.cmd avant execution.
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% Impossible de sauvegarder All in One.cmd avant execution.
     pause
     exit /b 1
 )
@@ -362,8 +362,8 @@ echo %COLOR_CYAN%---------------------------------------------------------------
 echo %COLOR_WHITE%Quel usage voulez-vous privilegier ?%COLOR_RESET%
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-echo %COLOR_GREEN%[1] GAMING%COLOR_RESET% : Tous types de jeux, reactivite et latence reduite
-echo %COLOR_CYAN%[2] NORMAL%COLOR_RESET% : Bureautique, multimedia, creation et stabilite
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%GAMING%COLOR_RESET% : Tous types de jeux, reactivite et latence reduite
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_CYAN%NORMAL%COLOR_RESET% : Bureautique, multimedia, creation et stabilite
 echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au menu precedent%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le script adaptera automatiquement ses reglages a cet usage.%COLOR_RESET%
@@ -401,8 +401,8 @@ if "%DETECTE_PORTABLE%"=="1" (
 )
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-echo %COLOR_GREEN%[1] ECO%COLOR_RESET% : Autonomie, temperature et economies d'energie Windows actives
-echo %COLOR_RED%[2] Performance max%COLOR_RESET% : Plus de performances, chauffe et consommation accrues
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%ECO%COLOR_RESET% : Autonomie, temperature et economies d'energie Windows actives
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%Performance max%COLOR_RESET% : Plus de performances, chauffe et consommation accrues
 echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au menu precedent%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Ce choix ne change pas l'usage Gaming ou Normal selectionne.%COLOR_RESET%
@@ -871,7 +871,7 @@ call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Restaurer les valeurs capturees du 
 if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
 call :SAFE_SETTINGS restore
 if !errorlevel! EQU 0 echo %COLOR_GREEN%[OK]%COLOR_RESET% Valeurs capturees restaurees et relues.
-if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Restauration incomplete ou aucune capture. Sauvegarde conservee.
+if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Restauration incomplete ou sans capture. Sauvegarde conservee.
 pause
 goto :MENU_RECUPERATION
 
@@ -922,9 +922,9 @@ for %%U in (
     if !errorlevel! NEQ 0 set /a "LEGACY_ERRORS+=1"
 )
 if "!LEGACY_ERRORS!"=="0" (
-    echo [OK] Corrections verifiees pour les elements presents.
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% Corrections verifiees pour les elements presents.
 ) else (
-    echo [AVERTISSEMENT] Corrections incompletes : !LEGACY_ERRORS! refus ou erreurs.
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Corrections incompletes : !LEGACY_ERRORS! refus ou erreurs.
 )
 echo Les autres anciens reglages ne sont pas annules par cette action.
 pause
@@ -1271,7 +1271,7 @@ REM Les sections precedentes qui ecrivent dans SCHEME_CURRENT ciblent ainsi le b
 set "AIO_POWER_PRESELECTED=0"
 call :SELECT_TARGET_POWER_SCHEME !PROFIL_POWER!
 if !errorlevel! NEQ 0 (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Impossible d'activer le plan d'alimentation cible. Aucune optimisation n'a ete appliquee.%COLOR_RESET%
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Plan d'alimentation cible non active. Aucune optimisation appliquee.%COLOR_RESET%
     set "SKIP_PAUSE=0"
     set "AIO_MODE=0"
     set "AIO_POWER_PRESELECTED="
@@ -1345,7 +1345,7 @@ echo.
 
 echo %STYLE_BOLD%%COLOR_BLUE%-- PARCOURS EFFECTUE ----------------------------------------------------------%COLOR_RESET%
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Systeme, Memoire, Disques et GPU executees.%COLOR_RESET%
-if not "!AIO_SYSTEM_RC!"=="0" echo [AVERTISSEMENT] Section Systeme partielle : voir les erreurs signalees.
+if not "!AIO_SYSTEM_RC!"=="0" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Section Systeme partielle : voir les erreurs signalees.
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Reseau et Peripheriques executees.%COLOR_RESET%
 if "!AIO_RUNTIME_RC!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Runtimes Visual C++ et DirectX verifies.%COLOR_RESET%
@@ -1387,8 +1387,8 @@ if "!DESACTIVER_ANIMATIONS!"=="1" (
     echo %COLOR_CYAN%[INCHANGE]%COLOR_RESET% %COLOR_WHITE%Aucun changement des animations Windows.%COLOR_RESET%
 )
 if "!DESACTIVER_IA!"=="1" (
-    if "!AIO_IA_RC!"=="0" echo [OK] Controles de la section IA confirmes ; prise en compte selon Windows.
-    if not "!AIO_IA_RC!"=="0" echo [AVERTISSEMENT] Restrictions IA incompletes ou refusees : voir les erreurs.
+    if "!AIO_IA_RC!"=="0" echo %COLOR_GREEN%[OK]%COLOR_RESET% Controles de la section IA confirmes ; prise en compte selon Windows.
+    if not "!AIO_IA_RC!"=="0" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Restrictions IA incompletes ou refusees : voir les erreurs.
 ) else (
     echo %COLOR_CYAN%[INCHANGE]%COLOR_RESET% %COLOR_WHITE%Aucun changement de Copilot, Widgets et Recall.%COLOR_RESET%
 )
@@ -1580,7 +1580,7 @@ REM  Activity History OFF
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "EnableActivityFeed" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "PublishUserActivities" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\System" /v "UploadUserActivities" /t REG_DWORD /d 0 /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reduction des diagnostics et suggestions demandee - limites selon edition%COLOR_RESET%
+echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Diagnostics et suggestions reduits - limites selon l'edition%COLOR_RESET%
 
 REM  Taches planifiees de telemetrie
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des taches planifiees de telemetrie...%COLOR_RESET%
@@ -1603,9 +1603,9 @@ for %%T in (
 call :SET_TASK_ENABLED "!WINOPT_TELEMETRY_TASKS!" false
 if !errorlevel! NEQ 0 (
     set "SYSTEM_SECTION_ERROR=1"
-    echo [AVERTISSEMENT] Certaines taches de diagnostic n'ont pas pu etre desactivees.
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Certaines taches de diagnostic n'ont pas pu etre desactivees.
 ) else (
-    echo [OK] Taches de diagnostic presentes confirmees desactivees.
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% Taches de diagnostic presentes confirmees desactivees.
 )
 set "WINOPT_TELEMETRY_TASKS="
 
@@ -1740,8 +1740,8 @@ if "!IS_NORMAL_ECO_LAPTOP!"=="1" (
 )
 
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Configuration demandee pour les services presents%COLOR_RESET%
-if !SERVICE_CONFIG_SKIPPED! GTR 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%!SERVICE_CONFIG_SKIPPED! service ou services absents ignores. Aucune entree inutile creee%COLOR_RESET%
-if !SERVICE_CONFIG_FAILED! GTR 0 echo [AVERTISSEMENT] Services non confirmes : !SERVICE_CONFIG_FAILED!.
+if !SERVICE_CONFIG_SKIPPED! GTR 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Services absents ignores : !SERVICE_CONFIG_SKIPPED!. Aucune entree creee%COLOR_RESET%
+if !SERVICE_CONFIG_FAILED! GTR 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Services non confirmes : !SERVICE_CONFIG_FAILED!.
 if !SERVICE_CONFIG_FAILED! GTR 0 set "SYSTEM_SECTION_ERROR=1"
 set "SERVICE_CONFIG_SKIPPED="
 set "SERVICE_CONFIG_FAILED="
@@ -2467,7 +2467,7 @@ if "!PROFIL_POWER!"=="0" (
 call :SET_NIC_PROFILE !PROFIL_POWER! !PROFIL_USAGE!
 if !errorlevel! NEQ 0 (
     set "NETWORK_SECTION_ERROR=1"
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Certains reglages de la carte reseau n'ont pas pu etre appliques.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Certains reglages de la carte reseau non appliques.%COLOR_RESET%
 ) else if "!PROFIL_POWER!"=="0" (
     if "!PROFIL_USAGE!"=="0" (
         echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Profil reseau Gaming + Performance max demande.%COLOR_RESET%
@@ -2899,7 +2899,7 @@ REM Les trois suppressions BCD sont communes a tous les profils ; MaxPerf ajoute
 call :RESET_BCD_TIMER_OVERRIDES
 bcdedit /set disabledynamictick yes >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Preset timer Performance max demande.%COLOR_RESET%
-echo %COLOR_WHITE%Dynamic Tick coupe ; les autres choix de timer restent geres par Windows et HPET est conserve actif.%COLOR_RESET%
+echo %COLOR_WHITE%Dynamic Tick coupe ; autres timers geres par Windows, HPET conserve actif.%COLOR_RESET%
 
 REM  7.10 - Installation SetTimerResolution
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration de SetTimerResolution...%COLOR_RESET%
@@ -2921,7 +2921,7 @@ if exist "%STR_EXE%" (
         echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%SetTimerResolution installe dans %STR_DIR%%COLOR_RESET%
     ) else (
         set "STR_TIMER_ERROR=1"
-        echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%SetTimerResolution non installe ; le timer automatique est indisponible.%COLOR_RESET%
+        echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%SetTimerResolution non installe ; timer automatique indisponible.%COLOR_RESET%
     )
 )
 if exist "%STR_EXE%" (
@@ -3292,7 +3292,7 @@ exit /b !errorlevel!
 call :SCREEN_HEADER " APPLICATION DU MODE DE SECURITE GAMING"
 call :CAPTURE_SECURITY_BASELINE
 if !errorlevel! NEQ 0 (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%La base de securite ne peut pas etre sauvegardee ; aucune modification appliquee.%COLOR_RESET%
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Base de securite non sauvegardee ; aucune modification appliquee.%COLOR_RESET%
     exit /b 1
 )
 
@@ -3344,7 +3344,7 @@ call :SCREEN_HEADER " APPLICATION DU MODE DE SECURITE PERFORMANCE MAX"
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Protections memoire et processeur reduites.%COLOR_RESET%
 call :CAPTURE_SECURITY_BASELINE
 if !errorlevel! NEQ 0 (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%La base de securite ne peut pas etre sauvegardee ; aucune modification appliquee.%COLOR_RESET%
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Base de securite non sauvegardee ; aucune modification appliquee.%COLOR_RESET%
     exit /b 1
 )
 
@@ -3395,7 +3395,7 @@ REM Restaurer la base capturee si elle existe ; sans snapshot, appliquer uniquem
 REM les valeurs et absences mesurees sur l'installation Windows 11 25H2 de reference.
 call :RESTORE_RUNAS_VERB
 set "RUNAS_RESTORE_RC=!errorlevel!"
-if "!RUNAS_RESTORE_RC!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Verbe runas : restauration incomplete, la capture est conservee pour un nouvel essai.%COLOR_RESET%
+if "!RUNAS_RESTORE_RC!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Verbe runas : restauration incomplete, capture conservee.%COLOR_RESET%
 set "RUNAS_RESTORE_RC="
 call :RESTORE_SECURITY_BASELINE
 set "SECURITY_RESTORE_RC=!errorlevel!"
@@ -3405,7 +3405,7 @@ if "!SECURITY_RESTORE_RC!"=="0" (
     exit /b 0
 )
 if "!SECURITY_RESTORE_RC!"=="1" (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%La restauration de la base de securite a echoue ; les overrides restent inchanges.%COLOR_RESET%
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Restauration de la base de securite en echec ; rien n'est modifie.%COLOR_RESET%
     set "SECURITY_RESTORE_RC="
     exit /b 1
 )
@@ -3684,7 +3684,7 @@ if !errorlevel! NEQ 0 (
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des preferences Defender...%COLOR_RESET%
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{Set-MpPreference -DisableRealtimeMonitoring $true -DisableBehaviorMonitoring $true -DisableBlockAtFirstSeen $true -DisableIOAVProtection $true -DisableScriptScanning $true -DisableArchiveScanning $true -DisableEmailScanning $true -DisableRemovableDriveScanning $true -PUAProtection Disabled -MAPSReporting Disabled -SubmitSamplesConsent 2 -EnableNetworkProtection Disabled -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
 if !errorlevel! NEQ 0 (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Les preferences Defender n'ont pas converge ; les services restent actifs.%COLOR_RESET%
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Preferences Defender non confirmees ; services laisses actifs.%COLOR_RESET%
     exit /b 1
 )
 
@@ -3728,7 +3728,7 @@ if !errorlevel! EQU 0 (
     call :FINISH_ACTION "Reglages Windows Defender"
     exit /b 0
 )
-echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Desactivation de Defender incomplete : Windows la maintient active.%COLOR_RESET%
+echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Defender toujours actif : Windows refuse la desactivation.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Une strategie de groupe, la protection contre les falsifications ou un%COLOR_RESET%
 echo %COLOR_WHITE%        autre antivirus peut la bloquer. Verifiez l'etat dans Securite Windows.%COLOR_RESET%
 call :FINISH_ACTION "Reglages Windows Defender"
@@ -3851,7 +3851,7 @@ reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v
 if "!UI_ANIMATIONS_RC!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Animations activees.%COLOR_RESET%
 ) else (
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Animations de l'interface non modifiees ; les autres reglages sont appliques.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Animations non modifiees ; autres reglages appliques.%COLOR_RESET%
 )
 set "UI_ANIMATIONS_RC="
 call :FINISH_ACTION "Reglages animations"
@@ -3899,7 +3899,7 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v Ex
 if "!UI_ANIMATIONS_RC!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Animations desactivees.%COLOR_RESET%
 ) else (
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Animations de l'interface non modifiees ; les autres reglages sont appliques.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Animations non modifiees ; autres reglages appliques.%COLOR_RESET%
 )
 set "UI_ANIMATIONS_RC="
 call :FINISH_ACTION "Reglages animations"
@@ -4064,8 +4064,8 @@ echo.
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_ACTIVER_WIDGETS
-if !errorlevel! EQU 0 echo [FAIT] Activation Widgets demandee.
-if !errorlevel! NEQ 0 echo [AVERTISSEMENT] Activation Widgets non confirmee.
+if !errorlevel! EQU 0 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% Activation Widgets demandee.
+if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Activation Widgets non confirmee.
 call :FINISH_ACTION "Reglages Widgets"
 goto :MENU_IA_WIDGETS_RECALL
 
@@ -4104,14 +4104,14 @@ echo.
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_ACTIVER_COPILOT
-if !errorlevel! EQU 0 echo [FAIT] Activation Copilot legacy demandee. L application moderne est distincte.
-if !errorlevel! NEQ 0 echo [AVERTISSEMENT] Activation Copilot non confirmee.
+if !errorlevel! EQU 0 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% Activation Copilot legacy demandee. L application moderne est distincte.
+if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Activation Copilot non confirmee.
 call :FINISH_ACTION "Reglages Copilot"
 goto :MENU_IA_WIDGETS_RECALL
 
 
 :CORE_ACTIVER_COPILOT
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de Copilot, de ses integrations Edge et de l'IA du Bloc-notes...%COLOR_RESET%
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de Copilot, integrations Edge et IA du Bloc-notes...%COLOR_RESET%
 call :DELETE_REG_VALUE_IF_PRESENT "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" "TurnOffWindowsCopilot"
 call :DELETE_REG_VALUE_IF_PRESENT "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" "TurnOffWindowsCopilot"
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v ShowCopilotButton /t REG_DWORD /d 1 /f >nul 2>&1
@@ -4169,10 +4169,10 @@ if !errorlevel! NEQ 0 set "WIDGETS_ENABLE_RC=1"
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 1 /f >nul 2>&1
 reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa 2>nul | findstr /R /C:"REG_DWORD[ ]*0x1[ ]*$" >nul
 if !errorlevel! NEQ 0 (
-    echo [AVERTISSEMENT] Bouton Widgets non confirme ; verifiez son affichage dans les Parametres.
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Bouton Widgets non confirme ; verifiez-le dans les Parametres.
     set "WIDGETS_ENABLE_RC=1"
 )
-if "!WIDGETS_ENABLE_RC!"=="1" echo [AVERTISSEMENT] Activation Widgets partielle : strategie ou bouton non confirme.
+if "!WIDGETS_ENABLE_RC!"=="1" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Widgets actives partiellement : strategie ou bouton non confirme.
 exit /b !WIDGETS_ENABLE_RC!
 
 
@@ -4204,7 +4204,7 @@ if !WIDGETS_BUILD! GEQ 22000 (
     REM Le bouton est secondaire ; seule la strategie principale vient d'etre confirmee.
     reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 0 /f >nul 2>&1
     reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa 2>nul | findstr /R /C:"REG_DWORD[ ]*0x0[ ]*$" >nul
-    if errorlevel 1 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Bouton Widgets non confirme ; la strategie principale est enregistree. Verifiez le bouton dans les Parametres.%COLOR_RESET%
+    if errorlevel 1 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Strategie Widgets enregistree ; bouton a verifier dans les Parametres.%COLOR_RESET%
 )
 endlocal & exit /b 0
 
@@ -4391,7 +4391,7 @@ REM  fichiers. Regle AGENTS.md : supprimer une valeur n'est pas l'inverse correc
 set "ONEDRIVE_KFM_PROTECTED=0"
 reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders" 2>nul | findstr /i "OneDrive" >nul 2>&1 && set "ONEDRIVE_KFM_PROTECTED=1"
 if "%ONEDRIVE_KFM_PROTECTED%"=="1" (
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Bureau, Documents ou Images sont ranges DANS le dossier OneDrive.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Bureau, Documents ou Images sont DANS le dossier OneDrive.%COLOR_RESET%
     echo %COLOR_WHITE%   Ce dossier n'est donc PAS supprime : vos fichiers y sont encore.%COLOR_RESET%
     echo %COLOR_WHITE%   Desactivez d'abord 'Sauvegarde des dossiers Bureau, Documents et Images'%COLOR_RESET%
     echo %COLOR_WHITE%   Parametres ^> Comptes ^> Sauvegarde et synchronisation, puis relancez.%COLOR_RESET%
@@ -4505,7 +4505,7 @@ if "!EDGE_UNINSTALLER_FOUND!"=="1" (
     REM reel, verifie a l'etape finale, conclut sur la reussite.
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Desinstalleur Edge officiel lance ; suppression en cours.%COLOR_RESET%
 ) else (
-    echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Aucun desinstalleur Edge officiel trouve ; le nettoyage force continue.%COLOR_RESET%
+    echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Pas de desinstalleur Edge officiel ; nettoyage force.%COLOR_RESET%
 )
 set "EDGE_UNINSTALLER_FOUND="
 
@@ -4620,7 +4620,7 @@ goto :MENU_GESTION_WINDOWS
 :OUTIL_ACTIVATION
 call :SCREEN_HEADER " OUTIL D'ACTIVATION WINDOWS ET OFFICE MAS"
 
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Lancement de l'outil d'activation ; suivez les instructions a l'ecran.%COLOR_RESET%
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Outil d'activation lance ; suivez les instructions.%COLOR_RESET%
 call :RUN_REMOTE_PS "https://get.activated.win"
 if !errorlevel! EQU 0 (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Outil d'activation termine.%COLOR_RESET%
@@ -4647,12 +4647,12 @@ goto :MENU_PRINCIPAL
 :CREER_POINT_RESTAURATION
 call :SCREEN_HEADER " CREATION D'UN POINT DE RESTAURATION"
 
-echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification et activation de la restauration systeme si necessaire...%COLOR_RESET%
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de la restauration systeme si necessaire...%COLOR_RESET%
 powershell -NoProfile -Command "try { Enable-ComputerRestore -Drive ($env:SystemDrive+'\') -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
 if !errorlevel! EQU 0 (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification : restauration systeme disponible sur %SystemDrive%.%COLOR_RESET%
 ) else (
-    echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Restauration systeme non confirmee ; creation du point continue.%COLOR_RESET%
+    echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Restauration systeme non confirmee ; point cree quand meme.%COLOR_RESET%
 )
 ping -n 3 127.0.0.1 >nul
 echo.
@@ -4982,7 +4982,7 @@ echo.
 echo   %COLOR_WHITE%Espace avant :%COLOR_RESET% %COLOR_YELLOW%%SPACE_BEFORE_GB% Go%COLOR_RESET%
 echo   %COLOR_WHITE%Espace apres :%COLOR_RESET% %COLOR_GREEN%%SPACE_AFTER_GB% Go%COLOR_RESET%
 echo   %COLOR_WHITE%Espace gagne :%COLOR_RESET% %COLOR_CYAN%%SPACE_FREED_GB% Go%COLOR_RESET%
-if not "%CLEAN_WARNINGS%"=="0" echo   %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%%CLEAN_WARNINGS% etapes terminees avec avertissement ; consultez les messages precedents.%COLOR_RESET%
+if not "%CLEAN_WARNINGS%"=="0" echo   %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Etapes avec avertissement : %CLEAN_WARNINGS%. Voir les messages precedents.%COLOR_RESET%
 echo.
 if not "!SKIP_PAUSE!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour finaliser.%COLOR_RESET%
 call :PROMPT_MANUAL_REBOOT
@@ -5109,7 +5109,7 @@ REM  Telecharger les packages manquants avant installation.
 REM  Si x86 et x64 manquent, curl les recupere en parallele pour exploiter une connexion rapide.
 call :DOWNLOAD_VC14_REDISTS
 if !errorlevel! NEQ 0 (
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Un ou plusieurs packages Visual C++ n'ont pas pu etre telecharges.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Telechargement Visual C++ incomplet.%COLOR_RESET%
 )
 
 REM  Visual C++ v14 actuel x86
@@ -5139,7 +5139,7 @@ if "%VCINSTALL%:%VC_SECTION_RESULT%"=="2:0" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification reelle : %COLOR_GREEN%%VCINSTALL%/2%COLOR_RESET% %COLOR_WHITE%versions presentes.%COLOR_RESET%
 ) else (
     set "VC_SECTION_RESULT=1"
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Verification : %VCINSTALL%/2 versions presentes ; installation non validee.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Verification : %VCINSTALL%/2 presentes ; installation non validee.%COLOR_RESET%
 )
 if "!SKIP_PAUSE!"=="0" ping -n 4 127.0.0.1 >nul
 
@@ -5353,7 +5353,7 @@ echo.
 if "!APPX_RESULT_OK!"=="0" (
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Le bilan de suppression n'a pas pu etre etabli.%COLOR_RESET%
 ) else if "!APPX_RC!"=="0" (
-    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Applications supprimees : !APPX_REMOVED! ; deja absentes : !APPX_MISSING!.%COLOR_RESET%
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Supprimees : !APPX_REMOVED! ; deja absentes : !APPX_MISSING!.%COLOR_RESET%
 ) else (
     echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Applications non supprimees completement : !APPX_FAILED!.%COLOR_RESET%
     echo %COLOR_WHITE%Supprimees : !APPX_REMOVED! ; deja absentes : !APPX_MISSING!.%COLOR_RESET%
@@ -5709,7 +5709,7 @@ for /l %%N in (1,1,50) do (
     if !errorlevel! NEQ 0 exit /b 0
 )
 set "SAGEID="
-echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Aucun identifiant cleanmgr libre ; cette etape est ignoree pour ne pas ecraser une configuration existante.%COLOR_RESET%
+echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Aucun identifiant cleanmgr libre ; etape ignoree sans rien ecraser.%COLOR_RESET%
 exit /b 1
 
 :SET_NAGLE_PROFILE
@@ -5882,7 +5882,7 @@ if "!VC_EXIT!"=="0" (
 ) else (
     echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Visual C++ v14 !VC_ARCH! : code installateur !VC_EXIT!.%COLOR_RESET%
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Journal : !VC_LOG!%COLOR_RESET%
-    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Si un ancien MSI manque, restaurer le paquet Microsoft de cette version puis reessayer.%COLOR_RESET%
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%MSI ancien manquant : reparer avec le paquet de cette version.%COLOR_RESET%
     set "VC_ARCH="
     set "VC_FILE="
     set "VC_LOG="
@@ -6003,7 +6003,7 @@ if !errorlevel! EQU 0 goto :INSTALL_STR_COMMIT
 :INSTALL_STR_FAILURE
 if exist "%STR_TMP%" del /f /q "%STR_TMP%" >nul 2>&1
 if exist "%STR_DIR%" rmdir "%STR_DIR%" >nul 2>&1
-echo [ERREUR] SetTimerResolution : telechargement impossible avec curl, BITS et PowerShell.
+echo [ERREUR] SetTimerResolution : echec avec curl, BITS et PowerShell.
 set "STR_TMP="
 set "STR_DOWNLOAD_URL="
 exit /b 1
@@ -6065,7 +6065,7 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Services\%~1" /v Start /t REG_DWORD /d %~
 reg query "HKLM\SYSTEM\CurrentControlSet\Services\%~1" /v Start 2>nul | findstr /R /C:"REG_DWORD[ ]*0x%~2[ ]*$" >nul
 if !errorlevel! EQU 0 exit /b 0
 set /a "SERVICE_CONFIG_FAILED+=1"
-echo [ERREUR] Demarrage du service %~1 non confirme : Start attendu %~2.
+echo %COLOR_RED%[ERREUR]%COLOR_RESET% Demarrage du service %~1 non confirme : Start attendu %~2.
 exit /b 1
 
 :SET_DEVICE_MSI_PROFILE
@@ -6188,10 +6188,10 @@ exit /b 1
 if not exist "%LOCALAPPDATA%\VALORANT\Saved\Config\" exit /b 0
 setlocal
 set "WINOPT_VAL_SOURCE=!WINOPT_SELF_BACKUP_SOURCE!"
-echo [EN COURS] Valorant : profil performances sur tous les comptes, resolution conservee.
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% Valorant : profil sur tous les comptes, resolution conservee.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; try{$lines=[IO.File]::ReadAllLines($env:WINOPT_VAL_SOURCE); $code=@($lines | Where-Object { $_.StartsWith('::VALPS ') } | ForEach-Object { $_.Substring(8) }); if($code.Count -lt 50){throw 'Helper Valorant incomplet'}; & ([scriptblock]::Create($code -join [Environment]::NewLine))}catch{Write-Host ('[ERREUR] '+$_.Exception.Message); exit 1}"
 set "WINOPT_VAL_RC=!errorlevel!"
-if not "!WINOPT_VAL_RC!"=="0" echo [AVERTISSEMENT] Valorant : profil incomplet ou non applique. Fermez le jeu et relancez WindowsOptimizer.
+if not "!WINOPT_VAL_RC!"=="0" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Valorant : profil incomplet. Fermez le jeu puis reessayez.
 endlocal & exit /b %WINOPT_VAL_RC%
 
 :: Helper Valorant embarque, extrait uniquement par APPLIQUER_VALORANT.
