@@ -2,11 +2,11 @@
 
 # WINDOWS OPTIMIZER
 
-### 🚀 Optimisation modulaire pour Windows 10 & 11
+### 🚀 Optimisation modulaire pour Windows 11
 
 *Choisissez des profils clairs pour les performances, la latence et la confidentialité.*
 
-![Windows](https://img.shields.io/badge/Windows-10%20%7C%2011-0078D6?style=for-the-badge&logo=windows&logoColor=white)![Version](https://img.shields.io/badge/Version-2026.08-orange?style=for-the-badge)![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+![Windows](https://img.shields.io/badge/Windows-11-0078D6?style=for-the-badge&logo=windows&logoColor=white)![Version](https://img.shields.io/badge/Version-2026.08-orange?style=for-the-badge)![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 **Conçu pour le jeu, le multitâche et la confidentialité.**<br />*Code source public • Script unique • Réglages explicites*
 
@@ -25,9 +25,11 @@
 
 ## 📖 À propos du projet
 
-**Windows Optimizer** regroupe dans un batch portable des profils de performance et des outils de maintenance pour Windows 10 et 11.
+**Windows Optimizer** regroupe dans un batch portable des profils de performance et des outils de maintenance pour Windows 11.
 
-Ce script privilégie une configuration lisible et des profils explicites pour Windows 10 et 11. Le résultat dépend toutefois de la version de Windows, des pilotes, du matériel et des logiciels installés. Créez un point de restauration et lisez les avertissements avant les options sensibles (sécurité, Edge, OneDrive et nettoyage avancé).
+Windows 11 est la seule cible prise en charge.
+
+Ce script privilégie une configuration lisible et des profils explicites pour Windows 11. Le résultat dépend toutefois de la version de Windows, des pilotes, du matériel et des logiciels installés. Créez un point de restauration et lisez les avertissements avant les options sensibles (sécurité, Edge, OneDrive et nettoyage avancé).
 
 ---
 
@@ -70,7 +72,7 @@ Le parcours recommandé préserve Defender, SmartScreen, l'UAC, VBS/HVCI, les pi
 |---|---|
 | Confidentialité | Diagnostics facultatifs, identifiant publicitaire, personnalisation, suggestions et highlights de recherche réduits. `AllowTelemetry=1` sur Home/Pro et `0` sur Enterprise/Education ; un `0` préexistant est conservé. Home et certaines stratégies ont des limites d'application. Edge `DiagnosticData=0` et `PersonalizationReportingEnabled=0`, Chrome `MetricsReportingEnabled=0`. Cela ne prouve pas l'absence de toute collecte. |
 | Navigateurs | Edge : démarrage rapide et arrière-plan coupés, préchargements limités. Chrome : mode arrière-plan coupé. Les extensions/notifications après fermeture peuvent s'arrêter et l'ouverture suivante peut être plus lente. WebView2 reste disponible pour les applications. |
-| Widgets | Stratégie Windows 11 `Dsh\AllowNewsAndInterests=0` ; Windows 10 `Windows Feeds\EnableFeeds=0`. Sur certaines versions, Windows refuse l'écriture même en administrateur : le script le signale, sans désactiver une protection pour forcer le réglage. |
+| Widgets | Stratégie Windows 11 `Dsh\AllowNewsAndInterests=0`. Sur certaines versions, Windows refuse l'écriture même en administrateur : le script le signale, sans désactiver une protection pour forcer le réglage. |
 | Runtimes, facultatifs | Vérification/installation des redistribuables Visual C++ et DirectX officiels signés. Les logiciels installés ne sont pas annulés par la restauration des valeurs. |
 
 **[G] → [9] → [1]** restaure uniquement les valeurs ou absences sauvegardées par ce nouveau parcours. La première capture est conservée sous `%ProgramData%\WindowsOptimizer\Backups\recommended-<SID>.json`, même après restauration, pour permettre un nouvel essai. Elle est liée au PC et à l'utilisateur du processus élevé, même lorsque les valeurs sauvegardées sont communes à tous les comptes. Une capture manquante, incompatible ou illisible bloque l'action ; un type de registre inattendu est préservé et signalé. Cette sauvegarde ne remplace pas les sauvegardes de fichiers ni un point de restauration. Chaque valeur est sauvegardée à sa première application, puis n'est plus renouvelée : un groupe choisi lors d'un passage ultérieur est capturé dans son état de ce moment-là.
