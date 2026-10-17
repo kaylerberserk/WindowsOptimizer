@@ -8,6 +8,14 @@ Optimiseur Windows 11 tenu en **trois fichiers** : `All in One.cmd` (un batch un
 
 Ce projet n'a pas de suite de tests : les controles ci-dessous en tiennent lieu. Les executer avant de conclure.
 
+Sur hp-dev, depuis la racine du worktree, le controle statique seul est disponible sans SSH ni commande VM :
+
+```bash
+REPO="$PWD" ~/vms/winopt-lab/check.sh --local
+```
+
+Il verifie ASCII/CRLF et la structure du batch (labels, cibles et parentheses). Cette preuve partielle ne valide ni PowerShell, ni le launcher, ni une execution dans Windows invite ; les controles correspondants ci-dessous restent necessaires.
+
 **Contrat de format.** Sur la copie de travail, ASCII 7 bits et CRLF : la commande doit retourner `0`.
 
 ```powershell
@@ -60,7 +68,7 @@ Comptage courant des invocations PowerShell, hors commentaires `REM`/`::` sans t
 
 ## Gardes
 
-- **Ne pas lancer `All in One.cmd` sur une vraie machine** pour le tester : il applique de vrais reglages systeme. Les executions completes du perimetre courant se font dans la VM de test `~/vms/win11/`. Windows 10 est hors perimetre ; ses anciens resultats restent historiques. Ne jamais faire tourner `~/vms/win11/` et `~/vms/win10/` simultanement. Outils communs dans `~/vms/winopt-lab/`, utiliser `VM=win11` (valeur par defaut) : `vm.sh start|stop|status`, `lab.sh reset|prep|state|snapshot`, `suite.sh <nom> "<motif=>touche | ...>" [reset|reset=rt] [reboot]`, `cmp.py <tagA> <tagB>`, et `check.sh` qui rejoue tous les controles ci-dessus, y compris dans la VM si elle tourne (`REPO=/chemin/du/worktree ~/vms/winopt-lab/check.sh --local` pour les controles statiques seuls, sans SSH, reseau ni commande VM ; preuve partielle, sans PowerShell, launcher ni copie publiee), qui revient a un instantane neuf. Instantane `rt` (win11, 2026-10-10) : Windows neuf plus VC++ 14.51 et DirectX June 2010 officiels, prepare par `~/vms/winopt-lab/rt_install.ps1` ; il saute les runtimes pour iterer vite (`G4_rt` : 423 s contre 732 s pour `G3_final_stock`). Mesures de duree et tout changement des runtimes : toujours `stock`. `-VerifyOnly` et les controles ci-dessus sont sans effet de bord.
+- **Ne pas lancer `All in One.cmd` sur une vraie machine** pour le tester : il applique de vrais reglages systeme. Les executions completes du perimetre courant se font dans la VM de test `~/vms/win11/`. Windows 10 est hors perimetre ; ses anciens resultats restent historiques. Ne jamais faire tourner `~/vms/win11/` et `~/vms/win10/` simultanement. Outils communs dans `~/vms/winopt-lab/`, utiliser `VM=win11` (valeur par defaut) : `vm.sh start|stop|status`, `lab.sh reset|prep|state|snapshot`, `suite.sh <nom> "<motif=>touche | ...>" [reset|reset=rt] [reboot]`, `cmp.py <tagA> <tagB>`, et `check.sh` qui rejoue tous les controles ci-dessus, y compris dans la VM si elle tourne (pour le controle statique seul `--local`, voir la section Verification), qui revient a un instantane neuf. Instantane `rt` (win11, 2026-10-10) : Windows neuf plus VC++ 14.51 et DirectX June 2010 officiels, prepare par `~/vms/winopt-lab/rt_install.ps1` ; il saute les runtimes pour iterer vite (`G4_rt` : 423 s contre 732 s pour `G3_final_stock`). Mesures de duree et tout changement des runtimes : toujours `stock`. `-VerifyOnly` et les controles ci-dessus sont sans effet de bord.
 - Demander une confirmation explicite, si l'action n'est pas deja autorisee dans le perimetre courant, avant toute action difficile a reverser ou visible ailleurs : `git push`, `commit --amend` sur un commit publie, `reset --hard`, suppression de fichier, et toute operation touchant `main` ou une ressource distante. `main` est la branche de publication.
 - Ne pas contourner un controle de securite pour aller plus vite, et ne pas ecarter un fichier inconnu : c'est peut-etre un travail en cours.
 - Ne pas changer une valeur ni un axe de l'auteur sans le lui signaler, meme quand la logique interne du script plaide pour l'autre choix.
