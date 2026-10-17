@@ -219,12 +219,12 @@ call :PROGRESS_BAR %LOAD_STEP% %LOAD_TOTAL% "Preparation de l'interface"
 set "LOAD_STEP="
 set "LOAD_TOTAL="
 
-:: Ecran d'information : le parcours recommande est commun au jeu et au bureau.
+:: Un seul parcours principal : questions simples, recapitulatif puis application.
 call :SCREEN_HEADER " WINDOWS OPTIMIZER - BIENVENUE"
-echo %COLOR_WHITE%Pour jouer et utiliser le PC au quotidien : [O] puis [1] Recommande.%COLOR_RESET%
-echo %COLOR_GREEN%Un recapitulatif a valider ; personnalisation facultative.%COLOR_RESET%
-echo %COLOR_WHITE%Sauvegarde automatique et retour arriere disponibles.%COLOR_RESET%
-echo %COLOR_WHITE%Les profils Gaming/Normal et Max/Eco sont reserves au mode avance.%COLOR_RESET%
+echo %COLOR_WHITE%[O] Tout optimiser : repondez aux questions sur votre usage.%COLOR_RESET%
+echo %COLOR_GREEN%Choisissez l'energie et les options Windows, puis validez le resume.%COLOR_RESET%
+echo %COLOR_WHITE%[M] annule avant le lancement ; aucun profil n'est applique avant.%COLOR_RESET%
+echo %COLOR_WHITE%Le retour arriere est partiel : creez un point de restauration [R].%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- CLAVIER ---%COLOR_RESET%
 echo Appuyez sur la touche indiquee, sans Entree. [M] permet de revenir.
@@ -359,14 +359,14 @@ echo %STYLE_BOLD%%COLOR_WHITE% %~1%COLOR_RESET%
 echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
-echo %COLOR_WHITE%Quel usage voulez-vous privilegier ?%COLOR_RESET%
+echo %COLOR_WHITE%Utilisez-vous ce PC pour jouer ?%COLOR_RESET%
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%GAMING%COLOR_RESET% : Tous types de jeux, reactivite et latence reduite
-echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_CYAN%NORMAL%COLOR_RESET% : Bureautique, multimedia, creation et stabilite
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%OUI - GAMING%COLOR_RESET% : Jeux, meme avec du travail au quotidien
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_CYAN%NON - NORMAL%COLOR_RESET% : Bureautique, multimedia ou creation sans jeu
 echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au menu precedent%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le script adaptera automatiquement ses reglages a cet usage.%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les reglages GPU, entrees et reseau suivent ce choix.%COLOR_RESET%
 echo.
 <nul set /p ="%STYLE_BOLD%%COLOR_YELLOW%Choisissez votre usage [1=Gaming / 2=Normal / M=Retour] : %COLOR_RESET%"
 call :AZCHOICE 12M
@@ -401,11 +401,12 @@ if "%DETECTE_PORTABLE%"=="1" (
 )
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%ECO%COLOR_RESET% : Autonomie, temperature et economies d'energie Windows actives
-echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%Performance max%COLOR_RESET% : Plus de performances, chauffe et consommation accrues
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%ECO / EQUILIBRE%COLOR_RESET% : Moins de chauffe, autonomie sur portable
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%PERFORMANCE MAX%COLOR_RESET% : Priorite performance, consommation accrue
 echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au menu precedent%COLOR_RESET%
 echo.
-echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Ce choix ne change pas l'usage Gaming ou Normal selectionne.%COLOR_RESET%
+echo %COLOR_WHITE%Eco utilise le plan Equilibre, aussi adapte a un PC fixe.%COLOR_RESET%
+echo %COLOR_WHITE%Performance max modifie l'energie et les pilotes ; gain non garanti.%COLOR_RESET%
 echo.
 <nul set /p ="%STYLE_BOLD%%COLOR_YELLOW%Choisissez l'energie [1=Eco / 2=Performance max / M=Retour] : %COLOR_RESET%"
 call :AZCHOICE 12M
@@ -607,7 +608,7 @@ if "%HAS_INTERNET%"=="1" (
 )
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- OPTIMISATION DU PC ---%COLOR_RESET%
-echo %COLOR_YELLOW%[O]%COLOR_RESET% %STYLE_BOLD%%COLOR_GREEN%Tout optimiser - recommande ou avance%COLOR_RESET%
+echo %COLOR_YELLOW%[O]%COLOR_RESET% %STYLE_BOLD%%COLOR_GREEN%Tout optimiser - questions puis recapitulatif%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- OPTIMISATIONS PAR SECTION - AVANCE ---%COLOR_RESET%
 echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Optimisations Systeme%COLOR_RESET%    %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Optimisations Memoire%COLOR_RESET%
@@ -720,9 +721,11 @@ echo.
 echo %STYLE_BOLD%%COLOR_BLUE%--- RECUPERATION ET JEUX ---%COLOR_RESET%
 echo %COLOR_YELLOW%[9]%COLOR_RESET% %COLOR_CYAN%Annuler les reglages ou corriger une ancienne optimisation%COLOR_RESET%
 echo %COLOR_YELLOW%[V]%COLOR_RESET% %COLOR_MAGENTA%Profil Valorant : appliquer ou restaurer%COLOR_RESET%
-call :SUBMENU_CHOICE "principal" "Choisissez une option [1-9, V, M] : " 123456789VM
+echo %COLOR_YELLOW%[P]%COLOR_RESET% %COLOR_CYAN%Confidentialite, navigateurs et Widgets : choix avec sauvegarde%COLOR_RESET%
+call :SUBMENU_CHOICE "principal" "Choisissez une option [1-9, V, P, M] : " 123456789VPM
 REM  Gestion des choix (EQU = egalite stricte, ordre sans importance)
-if !errorlevel! EQU 11 goto :MENU_PRINCIPAL
+if !errorlevel! EQU 12 goto :MENU_PRINCIPAL
+if !errorlevel! EQU 11 goto :PARCOURS_RECOMMANDE
 if !errorlevel! EQU 10 goto :MENU_VALORANT
 if !errorlevel! EQU 9 goto :MENU_RECUPERATION
 if !errorlevel! EQU 8  goto :SUPPRIMER_BLOATWARES
@@ -751,7 +754,7 @@ echo reduire la compatibilite applicative et augmenter chauffe/consommation.
 echo Les reductions de securite sont des choix distincts, deconseilles.
 echo Aucun gain universel de latence, de FPS ou de memoire n'est etabli.
 echo Normal/Eco applique des defauts ; ce n'est pas un retour arriere complet.
-echo Pour le jeu et le bureau au quotidien, choisissez le parcours recommande.
+echo Pour des changements limites avec sauvegarde : [G] puis [P].
 echo.
 call :ASK_CONFIRM "Continuer avec les reglages avances ? [O=Continuer / N=Annuler] : "
 exit /b !errorlevel!
@@ -760,12 +763,12 @@ exit /b !errorlevel!
 set "SAFE_PRIVACY=1"
 set "SAFE_BACKGROUND=1"
 set "SAFE_WIDGETS=0"
-set "SAFE_RUNTIMES=1"
-goto :RECAP_RECOMMANDE
+set "SAFE_RUNTIMES=0"
+goto :PERSONNALISER_RECOMMANDE
 
 :PERSONNALISER_RECOMMANDE
-call :SCREEN_HEADER " RECOMMANDE - ETAPE 1 / 4"
-echo Ajustez les quatre preferences, puis validez le recapitulatif.
+call :SCREEN_HEADER " PREFERENCES WINDOWS - ETAPE 1 / 4"
+echo Repondez aux quatre questions, puis validez le recapitulatif.
 echo Sauvegarde automatique ; retour arriere dans [G] puis [9].
 echo Chaque reglage garde sa premiere sauvegarde, meme apres plusieurs passages.
 echo Certains reglages et leur restauration concernent tous les comptes Windows.
@@ -780,25 +783,25 @@ echo [1/4] Reduire diagnostics facultatifs, publicites et suggestions Windows ?
 echo Les diagnostics requis peuvent rester actifs selon l'edition Windows.
 call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW%Confidentialite [O=Appliquer / N=Conserver / M=Annuler] : %COLOR_RESET%" SAFE_PRIVACY
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
-call :SCREEN_HEADER " RECOMMANDE - ETAPE 2 / 4"
+call :SCREEN_HEADER " PREFERENCES WINDOWS - ETAPE 2 / 4"
 echo [2/4] Limiter Edge et Chrome apres fermeture et les prechargements Edge ?
 echo Les extensions et notifications de ces navigateurs seront suspendues.
 echo Une prochaine ouverture peut etre plus lente. WebView2 reste disponible.
 call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW%Navigateurs [O=Limiter / N=Conserver / M=Annuler] : %COLOR_RESET%" SAFE_BACKGROUND
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
-call :SCREEN_HEADER " RECOMMANDE - ETAPE 3 / 4"
-echo [3/4] Desactiver les Widgets Windows ou Actualites sous Windows 10 ?
+call :SCREEN_HEADER " PREFERENCES WINDOWS - ETAPE 3 / 4"
+echo [3/4] Desactiver le panneau Widgets de Windows 11 ?
 echo Meteo/actualites du panneau seront indisponibles jusqu'a restauration.
 call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW%Widgets [O=Desactiver / N=Conserver / M=Annuler] : %COLOR_RESET%" SAFE_WIDGETS
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
-call :SCREEN_HEADER " RECOMMANDE - ETAPE 4 / 4"
+call :SCREEN_HEADER " PREFERENCES WINDOWS - ETAPE 4 / 4"
 echo [4/4] Installer/verifier Visual C++ et DirectX pour les jeux ?
 echo Telechargements Microsoft signes ; les runtimes installes ne sont pas annules.
 call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW%Runtimes [O=Verifier / N=Ignorer / M=Annuler] : %COLOR_RESET%" SAFE_RUNTIMES
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
 
 :RECAP_RECOMMANDE
-call :SCREEN_HEADER " RECOMMANDE - PRET A APPLIQUER"
+call :SCREEN_HEADER " PREFERENCES WINDOWS - PRET A APPLIQUER"
 echo Aucun reglage applique avant validation. Personnalisez si besoin.
 echo.
 echo %STYLE_BOLD%%COLOR_CYAN%VOS CHOIX :%COLOR_RESET%
@@ -855,7 +858,7 @@ goto :MENU_PRINCIPAL
 
 :MENU_RECUPERATION
 call :SCREEN_HEADER " SAUVEGARDES ET RECUPERATION"
-echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Annuler les reglages du parcours recommande%COLOR_RESET%
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Annuler les preferences Windows sauvegardees%COLOR_RESET%
 echo     Certaines strategies et leur restauration touchent tous les comptes.
 echo     Restaure la sauvegarde initiale de ce compte, conservee pour reessai.
 echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Corriger les anciens blocages Store et taches fonctionnelles%COLOR_RESET%
@@ -872,7 +875,7 @@ if !errorlevel! EQU 4 goto :RECUPERATION_DEFENDER
 if !errorlevel! EQU 3 goto :RECUPERATION_PROTECTIONS
 if !errorlevel! EQU 2 goto :RECUPERATION_LEGACY
 if !errorlevel! NEQ 1 goto :MENU_GESTION_WINDOWS
-call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Restaurer les valeurs capturees du parcours recommande ? [O/N] : %COLOR_RESET%"
+call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Restaurer les preferences Windows sauvegardees ? [O/N] : %COLOR_RESET%"
 if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
 call :SAFE_SETTINGS restore
 if !errorlevel! EQU 0 echo %COLOR_GREEN%[OK]%COLOR_RESET% Valeurs capturees restaurees et relues.
@@ -1090,24 +1093,11 @@ endlocal & exit /b %errorlevel%
 ::SAFEPS     if($lock){$lock.Dispose()}
 ::SAFEPS }
 
+REM Le parcours principal commence directement par les deux questions de profil.
 :TOUT_OPTIMISER
-call :SCREEN_HEADER " TOUT OPTIMISER - CHOISIR LE PARCOURS"
-echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%RECOMMANDE - Gaming, bureau et usage general%COLOR_RESET%
-echo     Confidentialite et activite en arriere-plan, avec sauvegarde ciblee.
-echo     Preserve pilotes, reseau, veille, securite et preferences d'affichage.
-echo.
-echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%AVANCE - Anciens profils Gaming/Normal et Performance max/Eco%COLOR_RESET%
-echo     Modifie pilotes, reseau, memoire, energie et preferences Windows.
-echo     Risques de compatibilite ; aucun gain de FPS ou de latence garanti.
-echo     Eco/Normal ne restaure pas integralement votre etat precedent.
-echo.
-call :SUBMENU_CHOICE "principal" "Parcours [1=Recommande / 2=Avance / M=Retour] : " 12M
-if !errorlevel! EQU 1 goto :PARCOURS_RECOMMANDE
-if !errorlevel! NEQ 2 goto :MENU_PRINCIPAL
-call :CONFIRMER_REGLAGES_AVANCES
+call :CHOISIR_PROFILS "TOUT OPTIMISER : VOTRE USAGE ET VOS PRIORITES" "BOTH"
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
-call :CHOISIR_PROFILS "TOUT OPTIMISER : CONFIGURATION" "BOTH"
-if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
+
 goto :TOUT_OPTIMISER_QUESTIONS
 
 :TOUT_OPTIMISER_QUESTIONS
@@ -1222,6 +1212,8 @@ echo %STYLE_BOLD%%COLOR_CYAN% CONFIGURATION%COLOR_RESET%
 echo %COLOR_WHITE%   Usage     : !AIO_USAGE_NAME!%COLOR_RESET%
 echo %COLOR_WHITE%   Energie   : !AIO_POWER_NAME!%COLOR_RESET%
 echo.
+echo Modifie globalement Windows et les pilotes ; compatibilite non garantie.
+echo Retour arriere partiel. Aucun gain universel de FPS ou latence etabli.
 echo %STYLE_BOLD%%COLOR_CYAN% OPTIONS WINDOWS%COLOR_RESET%
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 if "!APPLIQUER_SECURITE!"=="1" (
