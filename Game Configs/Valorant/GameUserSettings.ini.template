@@ -1,8 +1,8 @@
 ; Profil fourni par kayler : fusionner ces cles, ne pas remplacer le fichier complet.
 ; Cible : %LOCALAPPDATA%\VALORANT\Saved\Config\<compte>\Windows\GameUserSettings.ini
 ; Le sous-dossier peut varier : WindowsOptimizer recherche tous les GameUserSettings.ini.
-; Moniteur et resolution conserves ; plein ecran, qualite minimale.
-; All in One.cmd applique ce profil au lancement, sur tous les comptes presents avec sauvegarde.
+; Identifiant du moniteur et resolution conserves ; LastConfirmedDefaultMonitorIndex force a 0 ; plein ecran, qualite minimale.
+; Appliquer : All in One.cmd, menu [G] puis [V] puis [1], jeu ferme ; tous les comptes presents, sauvegarde .winopt-backup initiale conservee.
 
 [/Script/ShooterGame.ShooterGameUserSettings]
 LastConfirmedDefaultMonitorIndex=0

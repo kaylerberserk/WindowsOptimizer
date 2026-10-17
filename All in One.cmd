@@ -226,7 +226,7 @@ echo %COLOR_GREEN%Un recapitulatif a valider ; personnalisation facultative.%COL
 echo %COLOR_WHITE%Sauvegarde automatique et retour arriere disponibles.%COLOR_RESET%
 echo %COLOR_WHITE%Les profils Gaming/Normal et Max/Eco sont reserves au mode avance.%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%--- CLAVIER ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- CLAVIER ---%COLOR_RESET%
 echo Appuyez sur la touche indiquee, sans Entree. [M] permet de revenir.
 echo Clavier AZERTY : MAJ + chiffre en haut, ou pave numerique active.
 echo.
@@ -354,17 +354,17 @@ set "PROFILE_PROMPT=%~2"
 if not defined PROFILE_PROMPT set "PROFILE_PROMPT=BOTH"
 if /i "!PROFILE_PROMPT!"=="POWER" goto :CHOISIR_PROFILS_POWER
 cls
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% %~1%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_WHITE%Quel usage voulez-vous privilegier ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_GREEN%[1] GAMING%COLOR_RESET% : Tous types de jeux, reactivite et latence reduite
 echo %COLOR_CYAN%[2] NORMAL%COLOR_RESET% : Bureautique, multimedia, creation et stabilite
-echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au menu principal%COLOR_RESET%
+echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au menu precedent%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le script adaptera automatiquement ses reglages a cet usage.%COLOR_RESET%
 echo.
@@ -389,21 +389,21 @@ if /i "!PROFILE_PROMPT!"=="USAGE" goto :CHOISIR_PROFILS_DONE
 
 :CHOISIR_PROFILS_POWER
 cls
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% %~1%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 if "%DETECTE_PORTABLE%"=="1" (
     echo %COLOR_WHITE%PC portable detecte. Quel mode energie voulez-vous ?%COLOR_RESET%
 ) else (
     echo %COLOR_WHITE%Quel mode energie voulez-vous ?%COLOR_RESET%
 )
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_GREEN%[1] ECO%COLOR_RESET% : Autonomie, temperature et economies d'energie Windows actives
 echo %COLOR_RED%[2] Performance max%COLOR_RESET% : Plus de performances, chauffe et consommation accrues
-echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au menu principal%COLOR_RESET%
+echo %COLOR_YELLOW%[M]%COLOR_RESET% %COLOR_CYAN%Retour au menu precedent%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Ce choix ne change pas l'usage Gaming ou Normal selectionne.%COLOR_RESET%
 echo.
@@ -488,9 +488,9 @@ exit /b 1
 
 :FINISH_ACTION
 echo.
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% %STYLE_BOLD%%COLOR_WHITE%Fin de la section : %~1.%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 if not "!AIO_MODE!"=="1" if not "!SKIP_PAUSE!"=="1" echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour finaliser les changements.%COLOR_RESET%
 call :PROMPT_MANUAL_REBOOT
 exit /b
@@ -556,7 +556,7 @@ echo %STYLE_BOLD%%COLOR_WHITE% TOUT OPTIMISER - QUESTION %~1 / 5%COLOR_RESET%
 echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_CYAN% %~2%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 exit /b 0
 
@@ -606,18 +606,18 @@ if "%HAS_INTERNET%"=="1" (
     echo %STYLE_BOLD%%COLOR_WHITE%Internet: %COLOR_YELLOW%Hors ligne ou connexion filtree%COLOR_RESET%
 )
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%--- OPTIMISATION DU PC ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- OPTIMISATION DU PC ---%COLOR_RESET%
 echo %COLOR_YELLOW%[O]%COLOR_RESET% %STYLE_BOLD%%COLOR_GREEN%Tout optimiser - recommande ou avance%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%--- OPTIMISATIONS PAR SECTION - AVANCE ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- OPTIMISATIONS PAR SECTION - AVANCE ---%COLOR_RESET%
 echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Optimisations Systeme%COLOR_RESET%    %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Optimisations Memoire%COLOR_RESET%
 echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_GREEN%Optimisations Disques%COLOR_RESET%    %COLOR_YELLOW%[4]%COLOR_RESET% %COLOR_GREEN%Optimisations GPU%COLOR_RESET%
 echo %COLOR_YELLOW%[5]%COLOR_RESET% %COLOR_GREEN%Optimisations Reseau%COLOR_RESET%     %COLOR_YELLOW%[6]%COLOR_RESET% %COLOR_GREEN%Optimisations Clavier/Souris%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%--- ENERGIE ET PROTECTIONS - AVANCE ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- ENERGIE ET PROTECTIONS - AVANCE ---%COLOR_RESET%
 echo %COLOR_YELLOW%[7]%COLOR_RESET% %COLOR_RED%Gerer les economies d'energie%COLOR_RESET%   %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Gerer les protections Windows%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%--- OUTILS ET GESTION WINDOWS ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- OUTILS ET GESTION WINDOWS ---%COLOR_RESET%
 echo %COLOR_YELLOW%[R]%COLOR_RESET% %COLOR_CYAN%Creer un point de restauration%COLOR_RESET%
 echo %COLOR_YELLOW%[G]%COLOR_RESET% %COLOR_MAGENTA%Gestion Windows : Defender, UAC, applis, interface et recuperation%COLOR_RESET%
 echo %COLOR_YELLOW%[N]%COLOR_RESET% %COLOR_CYAN%Nettoyage avance de Windows%COLOR_RESET%
@@ -703,21 +703,21 @@ set "SKIP_PAUSE=0"
 call :SCREEN_HEADER " GESTION DES COMPOSANTS WINDOWS"
 echo %COLOR_WHITE%Securite, interface, applications et retour arriere.%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%--- SECURITE ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- SECURITE ---%COLOR_RESET%
 echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Gerer Windows Defender%COLOR_RESET%
 echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Gerer UAC, le controle du compte utilisateur%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%--- INTERFACE ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- INTERFACE ---%COLOR_RESET%
 echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_GREEN%Gerer les animations Windows%COLOR_RESET%
 echo %COLOR_YELLOW%[4]%COLOR_RESET% %COLOR_GREEN%Gerer Copilot, Widgets et Recall sous Windows 11%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%--- APPLICATIONS ET COMPOSANTS ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- APPLICATIONS ET COMPOSANTS ---%COLOR_RESET%
 echo %COLOR_YELLOW%[5]%COLOR_RESET% %COLOR_RED%Desinstaller OneDrive%COLOR_RESET%
 echo %COLOR_YELLOW%[6]%COLOR_RESET% %COLOR_RED%Desinstaller Edge%COLOR_RESET%
 echo %COLOR_YELLOW%[7]%COLOR_RESET% %COLOR_GREEN%Verifier/installer Visual C++ et DirectX pour les jeux%COLOR_RESET%
 echo %COLOR_YELLOW%[8]%COLOR_RESET% %COLOR_RED%Choisir les applications Windows a desinstaller%COLOR_RESET%
 echo.
-echo %STYLE_BOLD%%COLOR_CYAN%--- RECUPERATION ET JEUX ---%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%--- RECUPERATION ET JEUX ---%COLOR_RESET%
 echo %COLOR_YELLOW%[9]%COLOR_RESET% %COLOR_CYAN%Annuler les reglages ou corriger une ancienne optimisation%COLOR_RESET%
 echo %COLOR_YELLOW%[V]%COLOR_RESET% %COLOR_MAGENTA%Profil Valorant : appliquer ou restaurer%COLOR_RESET%
 call :SUBMENU_CHOICE "principal" "Choisissez une option [1-9, V, M] : " 123456789VM
@@ -767,7 +767,7 @@ goto :RECAP_RECOMMANDE
 call :SCREEN_HEADER " RECOMMANDE - ETAPE 1 / 4"
 echo Ajustez les quatre preferences, puis validez le recapitulatif.
 echo Sauvegarde automatique ; retour arriere dans [G] puis [9].
-echo Premiere sauvegarde conservee, meme apres plusieurs passages.
+echo Chaque reglage garde sa premiere sauvegarde, meme apres plusieurs passages.
 echo Certains reglages et leur restauration concernent tous les comptes Windows.
 echo Des sauvegardes de plusieurs comptes peuvent se contredire.
 echo Compte concerne pour les reglages personnels :
@@ -778,23 +778,23 @@ echo Securite, pilotes, reseau et veille preserves. Details dans le README.
 echo.
 echo [1/4] Reduire diagnostics facultatifs, publicites et suggestions Windows ?
 echo Les diagnostics requis peuvent rester actifs selon l'edition Windows.
-call :COMMON_YES_NO "Confidentialite [O=Appliquer / N=Conserver / M=Annuler] : " SAFE_PRIVACY
+call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW%Confidentialite [O=Appliquer / N=Conserver / M=Annuler] : %COLOR_RESET%" SAFE_PRIVACY
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
 call :SCREEN_HEADER " RECOMMANDE - ETAPE 2 / 4"
 echo [2/4] Limiter Edge et Chrome apres fermeture et les prechargements Edge ?
 echo Les extensions et notifications de ces navigateurs seront suspendues.
 echo Une prochaine ouverture peut etre plus lente. WebView2 reste disponible.
-call :COMMON_YES_NO "Navigateurs [O=Limiter / N=Conserver / M=Annuler] : " SAFE_BACKGROUND
+call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW%Navigateurs [O=Limiter / N=Conserver / M=Annuler] : %COLOR_RESET%" SAFE_BACKGROUND
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
 call :SCREEN_HEADER " RECOMMANDE - ETAPE 3 / 4"
 echo [3/4] Desactiver les Widgets Windows ou Actualites sous Windows 10 ?
 echo Meteo/actualites du panneau seront indisponibles jusqu'a restauration.
-call :COMMON_YES_NO "Widgets [O=Desactiver / N=Conserver / M=Annuler] : " SAFE_WIDGETS
+call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW%Widgets [O=Desactiver / N=Conserver / M=Annuler] : %COLOR_RESET%" SAFE_WIDGETS
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
 call :SCREEN_HEADER " RECOMMANDE - ETAPE 4 / 4"
 echo [4/4] Installer/verifier Visual C++ et DirectX pour les jeux ?
 echo Telechargements Microsoft signes ; les runtimes installes ne sont pas annules.
-call :COMMON_YES_NO "Runtimes [O=Verifier / N=Ignorer / M=Annuler] : " SAFE_RUNTIMES
+call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW%Runtimes [O=Verifier / N=Ignorer / M=Annuler] : %COLOR_RESET%" SAFE_RUNTIMES
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
 
 :RECAP_RECOMMANDE
@@ -815,14 +815,14 @@ if "!SAFE_BACKGROUND!"=="1" echo Apres fermeture : extensions/notifications coup
 if "!SAFE_RUNTIMES!"=="1" echo Telechargements Microsoft signes ; installations non annulees au retour.
 echo Securite, pilotes, reseau, veille et applications conserves.
 echo.
-echo Sauvegarde initiale conservee ; retour : [G] puis [9] puis [1].
+echo Premiere sauvegarde de chaque reglage conservee ; retour : [G], [9] puis [1].
 echo Elle capture votre etat actuel, meme s'il a deja ete optimise.
 echo Certaines strategies et leur restauration touchent tous les comptes.
 echo Compte personnel cible - celui de l'administrateur si l'UAC en utilise un :
 whoami
 echo Des sauvegardes de plusieurs comptes peuvent se contredire.
 echo.
-<nul set /p ="%COLOR_YELLOW%[O]%COLOR_RESET% %COLOR_GREEN%Appliquer%COLOR_RESET% / %COLOR_YELLOW%[P]%COLOR_RESET% %COLOR_CYAN%Personnaliser%COLOR_RESET% / %COLOR_YELLOW%[N]%COLOR_RESET% Annuler : "
+<nul set /p ="%COLOR_YELLOW%[O]%COLOR_RESET% %COLOR_GREEN%Appliquer%COLOR_RESET% / %COLOR_YELLOW%[P]%COLOR_RESET% %COLOR_CYAN%Personnaliser%COLOR_RESET% / %COLOR_YELLOW%[N]%COLOR_RESET% Annuler / %COLOR_YELLOW%[M]%COLOR_RESET% Retour : "
 call :AZCHOICE OPNM
 if !errorlevel! EQU 2 goto :PERSONNALISER_RECOMMANDE
 if !errorlevel! NEQ 1 goto :MENU_PRINCIPAL
@@ -833,9 +833,9 @@ if "!SAFE_WIDGETS!"=="1" set "WINOPT_SAFE_GROUPS=!WINOPT_SAFE_GROUPS! widgets"
 call :SAFE_SETTINGS apply
 set "SAFE_RC=!errorlevel!"
 if "!SAFE_RC!"=="0" (
-    echo [OK] Valeurs selectionnees sauvegardees et relues dans le registre.
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% Valeurs selectionnees sauvegardees et relues dans le registre.
 ) else (
-    echo [AVERTISSEMENT] Reglages partiels ou sauvegarde impossible. Voir les erreurs.
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Reglages partiels ou sauvegarde impossible. Voir les erreurs.
 )
 set "SKIP_PAUSE=1"
 if "!SAFE_RUNTIMES!"=="1" call :INSTALLER_VISUAL_REDIST
@@ -851,7 +851,7 @@ goto :MENU_PRINCIPAL
 :MENU_RECUPERATION
 call :SCREEN_HEADER " SAUVEGARDES ET RECUPERATION"
 echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Annuler les reglages du parcours recommande%COLOR_RESET%
-echo     Certaines strategies et leur restauration touchent tous les comptes Windows.
+echo     Certaines strategies et leur restauration touchent tous les comptes.
 echo     Restaure la sauvegarde initiale de ce compte, conservee pour reessai.
 echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Corriger les anciens blocages Store et taches fonctionnelles%COLOR_RESET%
 echo     Retire le refus Everyone ajoute par l'ancien script sur store.db.
@@ -864,25 +864,33 @@ call :SUBMENU_CHOICE "Gestion Windows" "Recuperation [1-5, M] : " 12345M
 if !errorlevel! EQU 6 goto :MENU_GESTION_WINDOWS
 if !errorlevel! EQU 5 goto :RECUPERATION_UAC
 if !errorlevel! EQU 4 goto :RECUPERATION_DEFENDER
-if !errorlevel! EQU 3 goto :TOGGLE_PROTECTIONS_NOYAU
+if !errorlevel! EQU 3 goto :RECUPERATION_PROTECTIONS
 if !errorlevel! EQU 2 goto :RECUPERATION_LEGACY
 if !errorlevel! NEQ 1 goto :MENU_GESTION_WINDOWS
-call :ASK_CONFIRM "Restaurer les valeurs capturees du parcours recommande ? [O/N] : "
+call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Restaurer les valeurs capturees du parcours recommande ? [O/N] : %COLOR_RESET%"
 if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
 call :SAFE_SETTINGS restore
-if !errorlevel! EQU 0 echo [OK] Valeurs capturees restaurees et relues.
-if !errorlevel! NEQ 0 echo [AVERTISSEMENT] Restauration incomplete ou aucune capture. Sauvegarde conservee.
+if !errorlevel! EQU 0 echo %COLOR_GREEN%[OK]%COLOR_RESET% Valeurs capturees restaurees et relues.
+if !errorlevel! NEQ 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Restauration incomplete ou aucune capture. Sauvegarde conservee.
 pause
 goto :MENU_RECUPERATION
 
+:RECUPERATION_PROTECTIONS
+echo Restaure la capture des protections ou applique la base Windows mesuree.
+call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Restaurer les protections Windows ? [O/N] : %COLOR_RESET%"
+if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
+call :RESTAURER_PROTECTIONS_SECURITE
+call :FINISH_ACTION "Mode Defaut Windows"
+goto :MENU_RECUPERATION
+
 :RECUPERATION_UAC
-call :ASK_CONFIRM "Reactiver UAC ? [O/N] : "
+call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Reactiver UAC ? [O/N] : %COLOR_RESET%"
 if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
 call :ACTIVER_UAC_SECTION
 goto :MENU_RECUPERATION
 
 :RECUPERATION_DEFENDER
-call :ASK_CONFIRM "Reactiver Defender et SmartScreen ? [O/N] : "
+call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Reactiver Defender et SmartScreen ? [O/N] : %COLOR_RESET%"
 if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
 call :ACTIVER_DEFENDER_SECTION
 goto :MENU_RECUPERATION
@@ -890,7 +898,7 @@ goto :MENU_RECUPERATION
 :RECUPERATION_LEGACY
 echo L'etat d'avant l'ancien script n'a pas ete capture pour ces reglages.
 echo Des refus Everyone personnalises sur store.db seraient aussi retires.
-call :ASK_CONFIRM "Appliquer ces corrections ciblees ? [O/N] : "
+call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Appliquer ces corrections ciblees ? [O/N] : %COLOR_RESET%"
 if !errorlevel! NEQ 0 goto :MENU_RECUPERATION
 set "LEGACY_ERRORS=0"
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=Join-Path $env:LOCALAPPDATA 'Packages\Microsoft.WindowsStore_8wekyb3d8bbwe\LocalState\store.db';if(Test-Path -LiteralPath $f){$a=Get-Acl -LiteralPath $f;$sid='S-1-1-0';foreach($r in @($a.Access)){if($r.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value-eq$sid-and$r.AccessControlType-eq'Deny'-and-not$r.IsInherited){[void]$a.RemoveAccessRuleSpecific($r)}};Set-Acl -LiteralPath $f -AclObject $a;$a=Get-Acl -LiteralPath $f;if(@($a.Access|Where-Object{$_.IdentityReference.Translate([Security.Principal.SecurityIdentifier]).Value-eq$sid-and$_.AccessControlType-eq'Deny'-and-not$_.IsInherited}).Count){exit 1}};exit 0}catch{Write-Host $_.Exception.Message;exit 1}"
@@ -929,7 +937,7 @@ whoami
 echo Si l'UAC a utilise un autre compte, ses fichiers sont cibles.
 echo Fermez le jeu. Tous les comptes Valorant de ce profil Windows sont concernes.
 echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%Appliquer le profil fourni - plein ecran, qualite minimale, VSync/HDR OFF%COLOR_RESET%
-echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%Restaurer les fichiers .winopt-backup - reglages ulterieurs remplaces%COLOR_RESET%
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%Restaurer les fichiers .winopt-backup - reglages ulterieurs remplaces%COLOR_RESET%
 call :SUBMENU_CHOICE "Gestion Windows" "Valorant [1=Appliquer / 2=Restaurer / M=Retour] : " 12M
 if !errorlevel! EQU 3 goto :MENU_GESTION_WINDOWS
 if !errorlevel! EQU 2 goto :RESTAURER_VALORANT
@@ -939,7 +947,7 @@ pause
 goto :MENU_VALORANT
 
 :RESTAURER_VALORANT
-call :ASK_CONFIRM "Remplacer les configurations par leur sauvegarde initiale ? [O/N] : "
+call :ASK_CONFIRM "%STYLE_BOLD%%COLOR_YELLOW%Remplacer les configurations par leur sauvegarde initiale ? [O/N] : %COLOR_RESET%"
 if !errorlevel! NEQ 0 goto :MENU_VALORANT
 powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{if(Get-Process -Name 'VALORANT','VALORANT-Win64-Shipping' -EA SilentlyContinue){throw 'Fermez Valorant avant restauration'};$d=Join-Path $env:LOCALAPPDATA 'VALORANT\Saved\Config';$fs=@(Get-ChildItem -LiteralPath $d -Filter 'GameUserSettings.ini.winopt-backup' -Recurse -File -EA Stop);if(-not$fs.Count){throw 'Aucune sauvegarde Valorant'};foreach($f in $fs){$t=$f.FullName.Substring(0,$f.FullName.Length-14);Copy-Item -LiteralPath $f.FullName -Destination $t -Force;if((Get-FileHash -LiteralPath $t).Hash-ne(Get-FileHash -LiteralPath $f.FullName).Hash){throw 'Verification de restauration echouee'}};Write-Host ('[OK] Configurations restaurees : '+$fs.Count);exit 0}catch{Write-Host ('[ERREUR] '+$_.Exception.Message);exit 1}"
 pause
@@ -1117,7 +1125,7 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_RED% [AVANCE]%COLOR_RESET% %COLOR_WHITE%Protection reduite ; compatibilite et gain non garantis.%COLOR_RESET%
     echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Modifiable ensuite depuis Gerer les protections Windows.%COLOR_RESET%
     echo.
-    echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+    echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
     echo %COLOR_GREEN% [O] APPLIQUER%COLOR_RESET%        - Adapter les protections Windows aux jeux
 ) else (
     echo %COLOR_WHITE% Vous avez choisi NORMAL pour un usage quotidien et stable.%COLOR_RESET%
@@ -1127,12 +1135,12 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_GREEN% [RECOMMANDE]%COLOR_RESET% %COLOR_WHITE%Adapte a un usage quotidien, stable et polyvalent.%COLOR_RESET%
     echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Modifiable ensuite depuis Gerer les protections Windows.%COLOR_RESET%
     echo.
-    echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+    echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
     echo %COLOR_GREEN% [O] APPLIQUER%COLOR_RESET%        - Utiliser la base de protections Windows
 )
 echo %COLOR_GREEN% [N] NE PAS MODIFIER%COLOR_RESET% - Garder les reglages actuels - conseille
 echo %COLOR_YELLOW% [M] ANNULER%COLOR_RESET%          - Retourner au menu principal
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW% Votre choix [O/N/M] : %COLOR_RESET%" APPLIQUER_SECURITE
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
@@ -1144,11 +1152,11 @@ echo.
 echo %COLOR_RED% [ATTENTION]%COLOR_RESET% %COLOR_WHITE%Ne le desactivez que si un autre antivirus protege le PC.%COLOR_RESET%
 echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Vous pourrez reactiver Defender depuis Gestion Windows.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_RED% [O] DESACTIVER%COLOR_RESET%        - Couper Defender et les protections associees
 echo %COLOR_GREEN% [N] NE PAS DESACTIVER%COLOR_RESET% - Laisser Defender tel quel %COLOR_GREEN%[RECOMMANDE]%COLOR_RESET%
 echo %COLOR_YELLOW% [M] ANNULER%COLOR_RESET%           - Retourner au menu principal
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW% Votre choix [O/N/M] : %COLOR_RESET%" DESACTIVER_DEFENDER
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
@@ -1159,29 +1167,29 @@ echo %COLOR_WHITE% Les retirer peut rendre un PC limite plus reactif.%COLOR_RESE
 echo.
 echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Ce reglage est reversible depuis le menu Gestion Windows.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_CYAN% [O] DESACTIVER%COLOR_RESET%      - Retirer les animations et la transparence
 echo %COLOR_GREEN% [N] NE PAS MODIFIER%COLOR_RESET% - Garder les effets visuels actuels
 echo %COLOR_YELLOW% [M] ANNULER%COLOR_RESET%         - Retourner au menu principal
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW% Votre choix [O/N/M] : %COLOR_RESET%" DESACTIVER_ANIMATIONS
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
 
 call :AIO_QUESTION_HEADER 4 "COPILOT, WIDGETS ET RECALL"
-echo %COLOR_WHITE% Cette option vise l'ancien Copilot, les Widgets et Recall.
-echo %COLOR_WHITE% L'application Copilot moderne demande un retrait separe via Gestion Windows.%COLOR_RESET%%COLOR_RESET%
+echo %COLOR_WHITE% Cette option vise l'ancien Copilot, l'IA du Bloc-notes, les Widgets et Recall.%COLOR_RESET%
+echo %COLOR_WHITE% L'application Copilot moderne demande un retrait separe via Gestion Windows.%COLOR_RESET%
 echo %COLOR_WHITE% Elle utilise les reglages disponibles sur votre version de Windows.%COLOR_RESET%
 echo.
 echo %COLOR_RED% [AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres seront SUPPRIMES du PC.%COLOR_RESET%
 echo %COLOR_WHITE%        C'est le comportement documente de Windows, pas un choix de ce script.%COLOR_RESET%
-echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Chaque fonction disponible pourra etre reactivee depuis Gestion Windows.%COLOR_RESET%
+echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Chaque fonction pourra etre reactivee depuis Gestion Windows.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_CYAN% [O] DESACTIVER%COLOR_RESET%      - Bloquer Copilot, Widgets et Recall
 echo %COLOR_GREEN% [N] NE PAS MODIFIER%COLOR_RESET% - Garder ces fonctions telles quelles
 echo %COLOR_YELLOW% [M] ANNULER%COLOR_RESET%         - Retourner au menu principal
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW% Votre choix [O/N/M] : %COLOR_RESET%" DESACTIVER_IA
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
@@ -1194,11 +1202,11 @@ echo %COLOR_RED% [ATTENTION]%COLOR_RESET% %COLOR_WHITE%Cela facilite aussi les a
 echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Vous pourrez reactiver l'UAC depuis Gestion Windows.%COLOR_RESET%
 echo %COLOR_YELLOW% [INFO]%COLOR_RESET% %COLOR_WHITE%Defender et SmartScreen ne seront pas modifies.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_RED% [O] DESACTIVER%COLOR_RESET%        - Supprimer les confirmations apres redemarrage
 echo %COLOR_GREEN% [N] NE PAS DESACTIVER%COLOR_RESET% - Laisser l'UAC tel quel %COLOR_GREEN%[RECOMMANDE]%COLOR_RESET%
 echo %COLOR_YELLOW% [M] ANNULER%COLOR_RESET%           - Retourner au menu principal
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :COMMON_YES_NO "%STYLE_BOLD%%COLOR_YELLOW% Votre choix [O/N/M] : %COLOR_RESET%" DESACTIVER_UAC
 if !errorlevel! EQU 2 goto :MENU_PRINCIPAL
@@ -1209,7 +1217,7 @@ echo %COLOR_WHITE%   Usage     : !AIO_USAGE_NAME!%COLOR_RESET%
 echo %COLOR_WHITE%   Energie   : !AIO_POWER_NAME!%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_CYAN% OPTIONS WINDOWS%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 if "!APPLIQUER_SECURITE!"=="1" (
     if "!PROFIL_USAGE!"=="0" (
         echo %COLOR_CYAN% [APPLIQUER]%COLOR_RESET% %COLOR_WHITE%Protections Windows adaptees aux jeux%COLOR_RESET%
@@ -1239,12 +1247,12 @@ if "!DESACTIVER_UAC!"=="1" (
 ) else (
     echo %COLOR_GREEN% [INCHANGE]%COLOR_RESET% %COLOR_WHITE%Confirmations UAC%COLOR_RESET%
 )
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_GREEN% [O] LANCER%COLOR_RESET%  - Demarrer l'optimisation avec ces choix
 echo %COLOR_CYAN% [R] REVOIR%COLOR_RESET%  - Recommencer les cinq questions
 echo %COLOR_YELLOW% [M] ANNULER%COLOR_RESET% - Retourner au menu principal
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 <nul set /p ="%STYLE_BOLD%%COLOR_YELLOW% Votre choix [O/R/M] : %COLOR_RESET%"
 call :AZCHOICE ORM
@@ -1321,7 +1329,7 @@ goto :MENU_PRINCIPAL
 :AFFICHER_RESUME_OPTIMISATION
 cls
 echo.
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     echo %STYLE_BOLD%%COLOR_WHITE% PARCOURS TERMINE : USAGE GAMING %COLOR_RESET%
 ) else (
@@ -1332,17 +1340,17 @@ if "!PROFIL_POWER!"=="0" (
 ) else (
     echo %STYLE_BOLD%%COLOR_WHITE% Energie : ECO%COLOR_RESET%
 )
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 
-echo %STYLE_BOLD%%COLOR_BLUE%-- PARCOURS EFFECTUE ------------------------------------------------------------%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%-- PARCOURS EFFECTUE ----------------------------------------------------------%COLOR_RESET%
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Systeme, Memoire, Disques et GPU executees.%COLOR_RESET%
-if not "!AIO_SYSTEM_RC!"=="0" echo [AVERTISSEMENT] Section Systeme partielle : voir les erreurs de taches.
+if not "!AIO_SYSTEM_RC!"=="0" echo [AVERTISSEMENT] Section Systeme partielle : voir les erreurs signalees.
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Reseau et Peripheriques executees.%COLOR_RESET%
 if "!AIO_RUNTIME_RC!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Runtimes Visual C++ et DirectX verifies.%COLOR_RESET%
 ) else (
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Visual C++ ou DirectX n'a pas pu etre installe/verifie completement.%COLOR_RESET%
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Visual C++ ou DirectX non installe ou verifie completement.%COLOR_RESET%
     if defined AIO_RUNTIME_LOG echo %COLOR_WHITE%Journal : !AIO_RUNTIME_LOG!%COLOR_RESET%
 )
 if "!PROFIL_POWER!"=="0" (
@@ -1353,7 +1361,7 @@ if "!PROFIL_POWER!"=="0" (
 )
 echo.
 
-echo %STYLE_BOLD%%COLOR_BLUE%-- OPTIONS COMPLEMENTAIRES ------------------------------------------------------%COLOR_RESET%
+echo %STYLE_BOLD%%COLOR_BLUE%-- OPTIONS COMPLEMENTAIRES ----------------------------------------------------%COLOR_RESET%
 if "!APPLIQUER_SECURITE!"=="1" (
     if "!PROFIL_USAGE!"=="0" (
         echo %COLOR_YELLOW%[DEMANDE]%COLOR_RESET% %COLOR_WHITE%Protections Windows adaptees aux jeux demandees.%COLOR_RESET%
@@ -1386,7 +1394,7 @@ if "!DESACTIVER_IA!"=="1" (
 )
 echo.
 
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage est recommande pour finaliser les reglages.%COLOR_RESET%
 echo.
@@ -1410,14 +1418,14 @@ exit /b
 set "SYSTEM_SECTION_ERROR=0"
 cls
 call :INIT_PROFILS
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% SECTION 1 : OPTIMISATIONS SYSTEME%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo %COLOR_WHITE%  Ajuste la reactivite, l'interface et la confidentialite,%COLOR_RESET%
 echo %COLOR_WHITE%  les services et le demarrage de Windows.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%GAMING%COLOR_RESET%%COLOR_WHITE% : Reactivite maximale%COLOR_RESET%
 ) else (
@@ -1734,6 +1742,7 @@ if "!IS_NORMAL_ECO_LAPTOP!"=="1" (
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Configuration demandee pour les services presents%COLOR_RESET%
 if !SERVICE_CONFIG_SKIPPED! GTR 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%!SERVICE_CONFIG_SKIPPED! service ou services absents ignores. Aucune entree inutile creee%COLOR_RESET%
 if !SERVICE_CONFIG_FAILED! GTR 0 echo [AVERTISSEMENT] Services non confirmes : !SERVICE_CONFIG_FAILED!.
+if !SERVICE_CONFIG_FAILED! GTR 0 set "SYSTEM_SECTION_ERROR=1"
 set "SERVICE_CONFIG_SKIPPED="
 set "SERVICE_CONFIG_FAILED="
 
@@ -1895,9 +1904,9 @@ exit /b !SYSTEM_SECTION_ERROR!
 :OPTIMISATIONS_MEMOIRE
 cls
 call :INIT_PROFILS
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% SECTION 2 : OPTIMISATIONS MEMOIRE%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo %COLOR_WHITE%  Configure la RAM, le fichier d'echange, Prefetch, FTH et la%COLOR_RESET%
 echo %COLOR_WHITE%  compression memoire selon le profil d'energie et la RAM detectee.%COLOR_RESET%
@@ -1908,7 +1917,7 @@ if "!PROFIL_POWER!"=="0" (
 ) else (
     echo %COLOR_WHITE%  Energie active : %STYLE_BOLD%ECO%COLOR_RESET%%COLOR_WHITE% : Compression memoire activee pour favoriser l'autonomie%COLOR_RESET%
 )
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 
 REM  2.1 - Memory Management
@@ -1953,7 +1962,7 @@ call :SCREEN_HEADER " SECTION 3 : OPTIMISATIONS DISQUES ET STOCKAGE"
 echo %COLOR_WHITE%  Cette section conserve le TRIM et la maintenance Windows,%COLOR_RESET%
 echo %COLOR_WHITE%  puis adapte les chemins longs au profil choisi.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 
 REM  3.1 - TRIM et restauration des heuristiques NTFS
@@ -2029,14 +2038,14 @@ exit /b 0
 :OPTIMISATIONS_GPU
 cls
 call :INIT_PROFILS
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% SECTION 4 : OPTIMISATIONS GPU%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo %COLOR_WHITE%  Ameliore la reactivite des jeux et reduit les captures en arriere-plan.%COLOR_RESET%
 echo %COLOR_WHITE%  Les reglages s'adaptent a votre profil et a votre carte graphique.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_WHITE%  Profil actif : %STYLE_BOLD%GAMING%COLOR_RESET%%COLOR_WHITE% : Priorite a la latence et a la reactivite du GPU%COLOR_RESET%
@@ -2262,14 +2271,14 @@ exit /b 0
 cls
 call :INIT_PROFILS
 set "NETWORK_SECTION_ERROR=0"
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% SECTION 5 : OPTIMISATIONS RESEAU ET INTERNET%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo %COLOR_WHITE%  Ameliore la reactivite et la stabilite de la connexion.%COLOR_RESET%
 echo %COLOR_WHITE%  Regle aussi l'energie USB selon le profil choisi.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 
 if "!SKIP_PAUSE!"=="0" if "!DETECTE_PORTABLE!"=="1" (
     echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%PC portable detecte.%COLOR_RESET%
@@ -2569,14 +2578,14 @@ exit /b !NETWORK_SECTION_ERROR!
 :OPTIMISATIONS_PERIPHERIQUES
 cls
 call :INIT_PROFILS
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% SECTION 6 : OPTIMISATIONS CLAVIER ET SOURIS%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo %COLOR_WHITE%  Configure la souris, le clavier, l'affichage DPI et les interruptions USB.%COLOR_RESET%
 echo %COLOR_WHITE%  Desactive aussi certains raccourcis d'accessibilite selon le profil.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 
 REM  Sur portable Normal+Eco, conserver le comportement pointeur Windows.
 REM  Les autres profils gardent le tuning historique sans acceleration.
@@ -2718,6 +2727,7 @@ exit /b 0
 :TOGGLE_ECONOMIES_ENERGIE
 call :CONFIRMER_REGLAGES_AVANCES
 if !errorlevel! NEQ 0 goto :MENU_PRINCIPAL
+:MENU_ENERGIE
 set "SKIP_PAUSE=0"
 call :SCREEN_HEADER " GERER LE MODE ENERGIE"
 echo %COLOR_WHITE%  Choisissez entre performances et economies d'energie.%COLOR_RESET%
@@ -2734,18 +2744,18 @@ call :SUBMENU_CHOICE "principal" "Choisissez une option [1, 2, M] : " 12M
 if !errorlevel! EQU 3 goto :MENU_PRINCIPAL
 if !errorlevel! EQU 2 goto :DO_DESACTIVER_ECONOMIES
 if !errorlevel! EQU 1 goto :DO_RESTAURER_ECONOMIES
-goto :TOGGLE_ECONOMIES_ENERGIE
+goto :MENU_ENERGIE
 
 :DO_RESTAURER_ECONOMIES
 call :RESTAURER_ECONOMIES_ENERGIE
-goto :TOGGLE_ECONOMIES_ENERGIE
+goto :MENU_ENERGIE
 
 :DO_DESACTIVER_ECONOMIES
 set "PROFIL_POWER=0"
 call :CHOISIR_PROFILS "CONFIGURATION PROFILS - ENERGIE" "USAGE"
-if !errorlevel! NEQ 0 goto :TOGGLE_ECONOMIES_ENERGIE
+if !errorlevel! NEQ 0 goto :MENU_ENERGIE
 call :DESACTIVER_ECONOMIES_ENERGIE
-goto :TOGGLE_ECONOMIES_ENERGIE
+goto :MENU_ENERGIE
 
 :DESACTIVER_ECONOMIES_ENERGIE
 set "PROFIL_POWER=0"
@@ -2756,7 +2766,7 @@ echo %COLOR_WHITE%  Le stockage, l'USB, le PCIe et le reseau restent plus reacti
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Consommation, temperature et bruit peuvent augmenter.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le mode Eco limite la consommation et l'action reste reversible.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 
 REM  7.1 - Activation du plan Ultimate Performance
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation du plan Ultimate Performance...%COLOR_RESET%
@@ -3052,7 +3062,7 @@ call :SCREEN_HEADER " APPLICATION DU MODE ECO"
 echo %COLOR_WHITE%  Applique le plan Equilibre et les economies d'energie Windows.%COLOR_RESET%
 echo %COLOR_WHITE%  Les surcharges du mode Performance max sont supprimees.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 
 REM  Numerotation 7.x locale a cette branche : le mode Performance max possede sa propre sequence.
 REM  7.0 - Activer Equilibre sans effacer les plans OEM/personnalises.
@@ -3494,7 +3504,7 @@ echo %COLOR_WHITE%Windows reprendra son comportement par defaut.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Defaut Windows permet de restaurer la base de securite.%COLOR_RESET%
 echo %COLOR_WHITE%Certaines protections, dont CFG et LSA, restent conservees.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %STYLE_BOLD%%COLOR_YELLOW%Appliquer malgre la protection reduite ?%COLOR_RESET%
 <nul set /p ="%STYLE_BOLD%%COLOR_YELLOW%Votre choix [O=Appliquer / N=Annuler] : %COLOR_RESET%"
@@ -3637,9 +3647,9 @@ exit /b !DEFENDER_ACTION_ERROR!
 :DESACTIVER_DEFENDER_SECTION
 if not "!SKIP_PAUSE!"=="0" goto :DESACTIVER_DEFENDER_RUN
 cls
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_WHITE%Voulez-vous vraiment desactiver Windows Defender ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%La desactivation retire l'antivirus et l'analyse en temps reel.%COLOR_RESET%
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Plusieurs protections associees seront aussi reduites.%COLOR_RESET%
@@ -3655,7 +3665,7 @@ if !errorlevel! NEQ 0 exit /b
 call :SCREEN_HEADER " DESACTIVATION DE WINDOWS DEFENDER"
 echo %COLOR_WHITE%  Desactive Windows Defender, SmartScreen et les taches planifiees associees.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification de la protection contre les modifications...%COLOR_RESET%
 powershell -NoProfile -Command "if ((Get-MpComputerStatus).IsTamperProtected -eq $true) { exit 1 } else { exit 0 }" >nul 2>&1
 if !errorlevel! NEQ 0 (
@@ -3752,7 +3762,7 @@ call :SCREEN_HEADER " ACTIVATION DE L'UAC"
 echo %COLOR_WHITE%  Reactive le Controle de compte utilisateur.%COLOR_RESET%
 echo %COLOR_WHITE%  Les confirmations administrateur seront de nouveau affichees.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les demandes de confirmation administrateur seront de nouveau affichees.%COLOR_RESET%
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de l'UAC...%COLOR_RESET%
@@ -3778,7 +3788,7 @@ echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les applications pourr
 echo %COLOR_WHITE%sans demander de confirmation.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Effectif apres redemarrage et reversible depuis ce menu.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'UAC...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v EnableLUA /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'UAC demandee.%COLOR_RESET%
@@ -3810,7 +3820,7 @@ goto :TOGGLE_ANIMATIONS
 call :SCREEN_HEADER " ACTIVATION DES ANIMATIONS WINDOWS"
 echo %COLOR_WHITE%  Reactive les animations, la transparence et les effets visuels Windows.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation des animations et effets visuels...%COLOR_RESET%
 
@@ -3863,7 +3873,7 @@ echo %COLOR_WHITE%  Desactive les animations et effets visuels pour reduire la c
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Interface moins animee et transparence desactivee.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Reversible depuis ce menu ; reconnexion parfois necessaire.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des animations et effets visuels...%COLOR_RESET%
 
 REM  VisualFXSetting=3 (Personnalise) pour que Windows utilise uniquement les cles
@@ -3928,10 +3938,12 @@ goto :MENU_IA_WIDGETS_RECALL
 :MENU_IA_OPTION_8_GATE
 if not "!SKIP_PAUSE!"=="0" goto :MENU_IA_OPTION_8
 cls
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_WHITE%Confirmer la desactivation de Copilot, Widgets et Recall ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
+echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les instantanes Recall deja enregistres seront SUPPRIMES du PC.%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Copilot inclut l'IA du Bloc-notes, pour tous les comptes.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage peut etre necessaire.%COLOR_RESET%
 echo.
 call :ASK_IF_INTERACTIVE "%STYLE_BOLD%%COLOR_YELLOW%Desactiver les trois fonctions ? [O=Desactiver / N=Annuler] : %COLOR_RESET%"
@@ -3950,7 +3962,7 @@ setlocal EnableDelayedExpansion
 call :SCREEN_HEADER " DESACTIVATION DE COPILOT / WIDGETS / RECALL"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Application des restrictions Copilot, Widgets et Recall.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 set "STEP_ERRORS=0"
 call :CORE_DESACTIVER_COPILOT
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
@@ -3966,9 +3978,9 @@ endlocal & exit /b %AI_SECTION_RC%
 :MENU_IA_OPTION_6_GATE
 if not "!SKIP_PAUSE!"=="0" goto :MENU_IA_OPTION_6
 cls
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_WHITE%Voulez-vous vraiment desactiver Recall ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_WHITE%Recall peut enregistrer des instantanes de votre activite.%COLOR_RESET%
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les instantanes deja enregistres seront SUPPRIMES du PC.%COLOR_RESET%
@@ -3981,7 +3993,7 @@ call :SCREEN_HEADER " DESACTIVATION DE RECALL"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de Recall...%COLOR_RESET%
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Suppression des instantanes existants en cours.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_DESACTIVER_RECALL
 if !errorlevel! EQU 0 (
@@ -3997,7 +4009,7 @@ call :SCREEN_HEADER " ACTIVATION DE RECALL"
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Recall pourra de nouveau enregistrer des instantanes.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un redemarrage peut etre necessaire.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_ACTIVER_RECALL
 set "AI_ACTION_RC=!errorlevel!"
@@ -4021,9 +4033,9 @@ goto :MENU_IA_WIDGETS_RECALL
 :MENU_IA_OPTION_4_GATE
 if not "!SKIP_PAUSE!"=="0" goto :MENU_IA_OPTION_4
 cls
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_WHITE%Voulez-vous vraiment desactiver les Widgets ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Desactiver les Widgets retire actualites et meteo.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Reactivable depuis ce menu ; redemarrage parfois necessaire.%COLOR_RESET%
@@ -4034,7 +4046,7 @@ if !errorlevel! NEQ 0 goto :MENU_IA_WIDGETS_RECALL
 call :SCREEN_HEADER " DESACTIVATION DES WIDGETS"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des Widgets dans la barre des taches.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_DESACTIVER_WIDGETS
 if !errorlevel! EQU 0 (
@@ -4049,7 +4061,7 @@ goto :MENU_IA_WIDGETS_RECALL
 call :SCREEN_HEADER " ACTIVATION DES WIDGETS"
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les actualites et la meteo reviendront dans la barre des taches.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_ACTIVER_WIDGETS
 if !errorlevel! EQU 0 echo [FAIT] Activation Widgets demandee.
@@ -4060,11 +4072,12 @@ goto :MENU_IA_WIDGETS_RECALL
 :MENU_IA_OPTION_2_GATE
 if not "!SKIP_PAUSE!"=="0" goto :MENU_IA_OPTION_2
 cls
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %COLOR_WHITE%Voulez-vous vraiment desactiver Copilot ?%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Desactiver Copilot retire ses suggestions et integrations Edge.%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Desactive aussi l'IA du Bloc-notes, pour tous les comptes.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Reactivable depuis ce menu ; redemarrage parfois necessaire.%COLOR_RESET%
 echo.
 call :ASK_IF_INTERACTIVE "%STYLE_BOLD%%COLOR_YELLOW%Desactiver Copilot ? [O=Desactiver / N=Annuler] : %COLOR_RESET%"
@@ -4073,7 +4086,7 @@ if !errorlevel! NEQ 0 goto :MENU_IA_WIDGETS_RECALL
 call :SCREEN_HEADER " DESACTIVATION DE COPILOT"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de Copilot et de ses integrations Edge.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_DESACTIVER_COPILOT
 if !errorlevel! EQU 0 (
@@ -4088,7 +4101,7 @@ goto :MENU_IA_WIDGETS_RECALL
 call :SCREEN_HEADER " ACTIVATION DE COPILOT"
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Reactiver Copilot restaure son bouton et ses suggestions IA.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :CORE_ACTIVER_COPILOT
 if !errorlevel! EQU 0 echo [FAIT] Activation Copilot legacy demandee. L application moderne est distincte.
@@ -4437,9 +4450,9 @@ echo.
 call :AZCHOICE ON
 if !errorlevel! NEQ 1 goto :MENU_GESTION_WINDOWS
 echo.
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% SUPPRESSION DES DONNEES UTILISATEUR%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 
 echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%La suppression efface toutes les donnees locales du profil.%COLOR_RESET%
@@ -4584,7 +4597,7 @@ if exist "%ProgramFiles%\Microsoft\Edge\Application\msedge.exe" set "EDGE_REMOVE
 if defined ProgramFiles(x86) if exist "%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe" set "EDGE_REMOVE_OK=0"
 
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 if "!EDGE_REMOVE_OK!"=="1" (
     echo  %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Verification : Microsoft Edge n'est plus installe.%COLOR_RESET%
 ) else (
@@ -4962,9 +4975,9 @@ set "CLEAN_TOTAL="
 REM CLEAN_SCRIPT_PATH supprime : voir le commentaire de l'ETAPE 1 (WINOPT_SELF_BACKUP_SOURCE)
 
 echo.
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% %STYLE_BOLD%%COLOR_WHITE%Nettoyage avance termine%COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo   %COLOR_WHITE%Espace avant :%COLOR_RESET% %COLOR_YELLOW%%SPACE_BEFORE_GB% Go%COLOR_RESET%
 echo   %COLOR_WHITE%Espace apres :%COLOR_RESET% %COLOR_GREEN%%SPACE_AFTER_GB% Go%COLOR_RESET%
@@ -4986,7 +4999,7 @@ goto :MENU_PRINCIPAL
 :START_AIO_RUNTIMES
 set "AIO_RUNTIME_LOG="
 set "AIO_RUNTIME_JOB=%TEMP%\WinOpt_Runtimes_%RANDOM%_%RANDOM%"
-set "AIO_RUNTIME_SCRIPT=%~f0"
+set "AIO_RUNTIME_SCRIPT=!WINOPT_SELF_BACKUP_SOURCE!"
 set "AIO_RUNTIME_PID="
 mkdir "%AIO_RUNTIME_JOB%" >nul 2>&1
 if not exist "%AIO_RUNTIME_JOB%\" goto :AIO_RUNTIME_FOREGROUND
@@ -5146,9 +5159,9 @@ goto :INSTALLER_DIRECTX_SECTION
 :INSTALLER_DIRECTX_SECTION
 cls
 echo.
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% INSTALLATION DE DIRECTX RUNTIME JUNE 2010%COLOR_RESET%
-echo %COLOR_CYAN%---------------------------------------------------------------------------------%COLOR_RESET%
+echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 call :INSTALLER_DIRECTX
 set "DX_SECTION_RESULT=!errorlevel!"
@@ -5308,7 +5321,7 @@ echo %COLOR_WHITE%Calculatrice, Store, Photos et Notes.%COLOR_RESET%
 echo.
 <nul set /p ="%COLOR_YELLOW%Desinstaller cette liste d'applications ? [O=Desinstaller / N=Annuler] : %COLOR_RESET%"
 call :AZCHOICE ON
-if !errorlevel! NEQ 1 goto :MENU_GESTION_WINDOWS
+if !errorlevel! NEQ 1 goto :SUPPRIMER_BLOATWARES
 
 call :SCREEN_HEADER " EXECUTION - SUPPRESSION DES APPLICATIONS PREINSTALLEES"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Recherche et suppression des applications preinstallees...%COLOR_RESET%
@@ -5358,14 +5371,14 @@ goto :MENU_GESTION_WINDOWS
 REM  Sans expansion retardee : evite que les "!" dans les textes ([EN COURS], AU REVOIR!, etc.) cassent la fin du script
 setlocal DisableDelayedExpansion
 cls
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo %STYLE_BOLD%%COLOR_WHITE% AU REVOIR ! %COLOR_RESET%
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 echo.
 echo %COLOR_GREEN%[TERMINE]%COLOR_RESET% %COLOR_WHITE%Merci d'avoir utilise le script d'optimisation.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Si un reglage le demande, redemarrez pour le prendre en compte.%COLOR_RESET%
 echo.
-echo %COLOR_CYAN%=================================================================================%COLOR_RESET%
+echo %COLOR_CYAN%===============================================================================%COLOR_RESET%
 REM 'timeout' echoue silencieusement des que l'entree standard est redirigee ;
 REM le fichier possede deja l'idiome toujours actif 'ping -n N 127.0.0.1'.
 ping -n 4 127.0.0.1 >nul
@@ -5459,7 +5472,7 @@ del /f /q "%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%" "%WINOPT_RUNAS_BAC
 exit /b 0
 
 :CAPTURE_SECURITY_BASELINE
-set "WINOPT_SECURITY_SOURCE=%~f0"
+set "WINOPT_SECURITY_SOURCE=!WINOPT_SELF_BACKUP_SOURCE!"
 if exist "%WINOPT_SECURITY_BACKUP%" if exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 0
 if exist "%WINOPT_SECURITY_BACKUP%" exit /b 1
 if exist "%WINOPT_SECURITY_BCD_BACKUP%" exit /b 1
@@ -6174,7 +6187,7 @@ exit /b 1
 :APPLIQUER_VALORANT
 if not exist "%LOCALAPPDATA%\VALORANT\Saved\Config\" exit /b 0
 setlocal
-set "WINOPT_VAL_SOURCE=%~f0"
+set "WINOPT_VAL_SOURCE=!WINOPT_SELF_BACKUP_SOURCE!"
 echo [EN COURS] Valorant : profil performances sur tous les comptes, resolution conservee.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; try{$lines=[IO.File]::ReadAllLines($env:WINOPT_VAL_SOURCE); $code=@($lines | Where-Object { $_.StartsWith('::VALPS ') } | ForEach-Object { $_.Substring(8) }); if($code.Count -lt 50){throw 'Helper Valorant incomplet'}; & ([scriptblock]::Create($code -join [Environment]::NewLine))}catch{Write-Host ('[ERREUR] '+$_.Exception.Message); exit 1}"
 set "WINOPT_VAL_RC=!errorlevel!"
