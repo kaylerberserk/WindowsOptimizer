@@ -1212,7 +1212,8 @@ echo %STYLE_BOLD%%COLOR_CYAN% CONFIGURATION%COLOR_RESET%
 echo %COLOR_WHITE%   Usage     : !AIO_USAGE_NAME!%COLOR_RESET%
 echo %COLOR_WHITE%   Energie   : !AIO_POWER_NAME!%COLOR_RESET%
 echo.
-echo Modifie globalement Windows et les pilotes ; compatibilite non garantie.
+echo Reseau : coupure possible. Gaming : VRR et AutoHDR modifies.
+echo Windows et pilotes modifies ; compatibilite non garantie.
 echo Retour arriere partiel. Aucun gain universel de FPS ou latence etabli.
 echo %STYLE_BOLD%%COLOR_CYAN% OPTIONS WINDOWS%COLOR_RESET%
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
