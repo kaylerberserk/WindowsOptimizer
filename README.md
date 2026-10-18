@@ -12,6 +12,8 @@
 
 Windows 11 est la seule cible prise en charge.
 
+> Le script modifie réellement Windows. Certaines options réduisent les protections ; les désinstallations et le nettoyage peuvent supprimer des données. Un point de restauration ne remplace pas une sauvegarde de vos fichiers.
+
 ## 🚀 Démarrage rapide
 
 Collez cette commande dans **PowerShell**, puis acceptez la demande d'administration :
@@ -25,19 +27,22 @@ Le lanceur télécharge la version publiée du script et l'ouvre dans une fenêt
 ### Premier parcours
 
 1. Créez un point de restauration avec **[R]**.
-2. Choisissez **[O] Tout optimiser** : les questions commencent directement, sans choix préalable « Recommandé / Avancé ».
-3. Indiquez si vous jouez sur ce PC, puis votre priorité d'énergie : **Eco / Équilibré** pour limiter la chauffe et préserver l'autonomie sur portable, ou **Performance Max** pour privilégier la performance. Les deux choix restent indépendants, sur PC fixe comme portable.
-4. Répondez aux cinq questions sur les protections Windows, Defender, les animations, l'IA et l'UAC. **N** conserve l'option concernée ; **M** annule. Les réductions de sécurité restent déconseillées et demandées séparément.
-5. Vérifiez le récapitulatif : **O** lance les sections avec ces choix, **R** repose les cinq questions, **M** annule. Aucun profil ni option de ce parcours n'est appliqué avant cette validation. Les profils modifient des réglages globaux Windows/pilotes et n'offrent pas un retour arrière complet ; aucun gain universel de performances n'est établi.
-6. Pour ne régler que la confidentialité, les navigateurs, les Widgets et les composants de jeux, **[G] → [P]** pose quatre questions, puis affiche un récapitulatif. Ces réglages de registre disposent de la sauvegarde ciblée décrite ci-dessous. Les sections **[1] à [7]** restent accessibles séparément, après avertissement.
+2. Choisissez **[O] Tout optimiser**, puis indiquez votre usage et votre priorité d'énergie. Les [profils](#usage-et-énergie--tout-optimiser) sont indépendants, sur PC fixe comme portable.
+3. Répondez aux cinq questions : protections Windows, Defender, animations, IA et UAC. **N** conserve l'option concernée ; **M** annule. Gardez les protections actuelles en cas de doute.
+4. Vérifiez le récapitulatif : **O** lance, **R** repose les cinq questions, **M** annule. Aucun choix de ce parcours n'est appliqué avant confirmation.
+
+Pour des préférences limitées avec sauvegarde ciblée, utilisez **[G] → [P]** ci-dessous. Les sections **[1] à [7]** restent accessibles séparément, après avertissement. Les profils globaux n'offrent pas de retour arrière complet ni de gain universel établi.
 
 ### Préférences Windows avec sauvegarde — [G] → [P]
 
-Certains choix de confidentialité, de navigateurs et de Widgets utilisent des stratégies **pour tous les comptes Windows**. La capture appartient au compte qui exécute le processus élevé ; sa restauration peut également modifier les réglages des autres comptes. Des captures prises par plusieurs comptes peuvent se contredire : elles ne constituent pas des états indépendants pour chaque utilisateur.
+Les stratégies de confidentialité, de navigateurs et de Widgets peuvent concerner **tous les comptes Windows**. Une restauration peut donc modifier les réglages d'autres comptes ; des captures prises par plusieurs comptes peuvent se contredire.
 
-Les valeurs `HKCU`, les applications retirées individuellement et les fichiers Valorant visent le **compte qui exécute le processus élevé**, affiché avant les choix. Si l'UAC utilise les identifiants d'un autre administrateur, c'est son profil qui est concerné, pas celui de la personne connectée. Utilisez le compte dont le profil doit changer.
+Les valeurs `HKCU`, les applications retirées individuellement et les fichiers Valorant visent le **compte du processus élevé**, affiché avant les choix. Si l'UAC demande les identifiants d'un autre administrateur, c'est son profil qui change. Utilisez le compte à modifier.
 
-Le parcours **[G] → [P]** préserve Defender, SmartScreen, l'UAC, VBS/HVCI, les pilotes GPU/réseau, les préférences d'affichage et d'accessibilité, les plans d'alimentation, la compression mémoire et la veille. Il ne supprime aucune application, ne désactive aucun service ni tâche, et ne modifie pas `hosts` ou le nettoyage automatique.
+<details>
+<summary>Effets des quatre choix, sauvegarde et récupération de l’ancien script</summary>
+
+**[G] → [P]** pose quatre questions puis demande confirmation. Il préserve les protections Windows, les pilotes, l'affichage, l'accessibilité, les plans d'alimentation, la compression mémoire et la veille. Il ne supprime aucune application, ne désactive aucun service ni tâche, et ne modifie ni `hosts` ni le nettoyage automatique.
 
 | Choix | Effet et limite |
 |---|---|
@@ -46,25 +51,28 @@ Le parcours **[G] → [P]** préserve Defender, SmartScreen, l'UAC, VBS/HVCI, le
 | Widgets | Stratégie Windows 11 `Dsh\AllowNewsAndInterests=0`. Sur certaines versions, Windows refuse l'écriture même en administrateur : le script le signale, sans désactiver une protection pour forcer le réglage. |
 | Runtimes, facultatifs | Vérification/installation des redistribuables Visual C++ et DirectX officiels signés. Les logiciels installés ne sont pas annulés par la restauration des valeurs. |
 
-**[G] → [9] → [1]** restaure uniquement les valeurs ou absences sauvegardées par ce parcours de préférences. La première capture est conservée sous `%ProgramData%\WindowsOptimizer\Backups\recommended-<SID>.json`, même après restauration, pour permettre un nouvel essai. Elle est liée au PC et à l'utilisateur du processus élevé, même lorsque les valeurs sauvegardées sont communes à tous les comptes. Une capture manquante, incompatible ou illisible bloque l'action ; un type de registre inattendu est préservé et signalé. Cette sauvegarde ne remplace pas les sauvegardes de fichiers ni un point de restauration. Chaque valeur est sauvegardée à sa première application, puis n'est plus renouvelée : un groupe choisi lors d'un passage ultérieur est capturé dans son état de ce moment-là.
+**[G] → [9] → [1]** restaure les valeurs ou absences sauvegardées par ce parcours. Chaque valeur est capturée à sa première application : un groupe choisi plus tard est capturé à ce moment-là. La capture reste sous `%ProgramData%\WindowsOptimizer\Backups\recommended-<SID>.json`, même après restauration. Elle est liée au PC et au compte élevé, y compris pour les stratégies communes à tous les comptes. Une capture absente, incompatible ou illisible bloque la restauration ; un type de registre inattendu est préservé et signalé.
 
-**Pour un PC ayant déjà exécuté l'ancien script**, cette capture décrit son état déjà modifié. **[G] → [9] → [2]** propose de retirer le refus NTFS Everyone sur `store.db` et de réactiver les tâches fonctionnelles précédemment ciblées : famille, synchronisation, Work Folders, licences et diagnostics utiles. Sans capture ancienne, ce sont des corrections proposées, pas une restauration exacte. Les refus Everyone personnalisés sur ce fichier seraient aussi retirés ; la confirmation le précise. Les autres anciens réglages restent à traiter séparément. Defender, UAC et protections noyau ont chacun leur action de récupération distincte. Aucun mode ne récupère les données supprimées.
+Sur un PC déjà modifié par l'ancien script, la capture conserve cet état modifié. **[G] → [9] → [2]** propose de retirer le refus NTFS Everyone sur `store.db` et de réactiver les tâches fonctionnelles anciennement ciblées : famille, synchronisation, Work Folders, licences et diagnostics utiles. Ce sont des corrections, sans restauration exacte ni traitement des autres anciens réglages. La confirmation avertit que les refus Everyone personnalisés seraient aussi retirés. Defender, UAC et protections noyau ont des actions de récupération distinctes. Aucun mode ne récupère les données supprimées.
 
-**Tout optimiser** installe toujours les runtimes manquants sans question supplémentaire : détection et installation s'exécutent en arrière-plan pendant les sections système/mémoire/disques/GPU, puis le parcours attend avant le réseau. Les signatures Microsoft sont vérifiées avant exécution. Les journaux d'échec restent sous `%TEMP%\WinOpt_Runtimes_*\runtime.log`. Le menu runtimes et les préférences **[G] → [P]** utilisent le premier plan. Visual C++ est considéré présent à partir de la version 14.40 pour chaque architecture, DirectX June 2010 seulement si toutes ses DLL sont présentes (d3dx9/10/11, D3DCompiler, XAudio2, XInput…) ; sinon l'installateur officiel est lancé.
+</details>
 
----
+### Installation des runtimes
 
-## 🛠️ Guide des fonctionnalités
+<details>
+<summary>Installation automatique, contrôles et journaux</summary>
 
-Si les composants ne peuvent pas être installés en arrière-plan, le script reprend au premier plan. Les contrôles de signature et d’installation restent actifs ; en cas d’échec, le résumé indique le journal conservé dans `%TEMP%\WinOpt_Runtimes_*\runtime.log`. Le menu **[7] Runtimes** conserve son affichage détaillé au premier plan.
+**Tout optimiser** installe les composants manquants en arrière-plan pendant les sections système/mémoire/disques/GPU, puis attend leur fin avant le réseau. Si ce lancement échoue, il reprend au premier plan, comme les menus runtimes et **[G] → [P]**. Les signatures Microsoft et l'installation restent contrôlées ; les échecs indiquent le journal `%TEMP%\WinOpt_Runtimes_*\runtime.log`.
 
-> Le script modifie réellement Windows. Les options de sécurité réduisent certaines protections ; les désinstallations et le nettoyage peuvent supprimer des données. Un point de restauration ne remplace pas une sauvegarde de vos fichiers.
+Visual C++ est considéré présent à partir de 14.40 pour chaque architecture ; DirectX June 2010 exige toutes ses DLL. Sinon, l'installateur officiel est lancé. Ces installations ne sont pas annulées par la restauration des préférences.
+
+</details>
 
 ## 🛠️ Profils et fonctionnalités
 
 ### Usage et énergie — Tout optimiser
 
-**[O] Tout optimiser** pose directement les questions d’usage et d’énergie, puis les cinq questions Windows. Les sections **[1] à [7]** demandent les profils utiles à leur section. Ces profils changent des réglages globaux Windows/pilotes ; les conséquences sont indiquées avant validation. Les deux axes Usage/Énergie sont indépendants et disponibles sur PC fixe comme portable.
+Usage et énergie se choisissent séparément. Les profils changent des réglages globaux Windows et pilotes ; les sections **[1] à [7]** demandent seulement les profils utiles.
 
 | Choix | Rôle |
 |---|---|
@@ -73,7 +81,7 @@ Si les composants ne peuvent pas être installés en arrière-plan, le script re
 | **Eco** | Utilise le plan Équilibré et privilégie les économies d'énergie. |
 | **Performance Max** | Privilégie les performances, avec davantage de consommation et de chaleur possibles. Le réglage des minuteries système reste expérimental. |
 
-Vous pouvez combiner Gaming avec Eco, ou Normal avec Performance Max. **Normal + Eco** est la combinaison la plus conservatrice parmi ces profils. Changer de profil restaure les réglages exclusifs pris en charge, mais ne remet pas tout Windows à zéro et ne réinstalle pas les applications supprimées.
+Gaming convient aussi à un PC utilisé pour jouer et travailler. Vous pouvez le combiner avec Eco, ou choisir Normal avec Performance Max. **Normal + Eco** est le choix le plus conservateur parmi ces profils ; changer de profil ne restaure que ses réglages exclusifs pris en charge, sans remettre Windows à zéro ni réinstaller les applications.
 
 ### Effets à connaître dans les profils
 
@@ -105,7 +113,7 @@ Vous pouvez combiner Gaming avec Eco, ou Normal avec Performance Max. **Normal +
 
 ### Protections Windows — menu [8]
 
-Le profil d'énergie **Performance Max** et le mode de sécurité du même nom sont deux choix distincts.
+Le profil d'énergie **Performance Max** et le mode de sécurité du même nom sont deux choix distincts. Gardez les protections actuelles pour un usage courant.
 
 | Mode | Effet |
 |---|---|
@@ -150,7 +158,7 @@ Windows 11 uniquement. Certaines options dépendent de la version de Windows, du
 <details>
 <summary><strong>Quel profil choisir ?</strong></summary>
 
-Choisissez **[O] Tout optimiser**, puis répondez aux questions. **Gaming** convient aussi à un PC qui sert à jouer et à travailler ; **Normal** vise un usage sans jeu. **Eco / Équilibré** préserve les économies d'énergie ; **Performance Max** peut augmenter la chauffe et réduire l'autonomie. Gardez Defender, l'UAC et les protections actuelles en cas de doute. Les réglages globaux de ces profils ne sont pas tous réversibles ; pour seulement modifier des préférences avec sauvegarde ciblée, utilisez **[G] → [P]**. Le mode de sécurité Performance Max reste un choix séparé du menu **[8]**, déconseillé pour un usage courant.
+**Gaming** convient au jeu, même si vous travaillez aussi sur ce PC ; **Normal** vise un usage sans jeu. **Eco / Équilibré** préserve les économies d'énergie ; **Performance Max** peut augmenter la chauffe et réduire l'autonomie. Voir les [profils et leurs effets](#usage-et-énergie--tout-optimiser).
 
 </details>
 
@@ -185,7 +193,7 @@ Non, ces choix sont facultatifs. Gardez l'antivirus et les confirmations adminis
 <details>
 <summary><strong>Puis-je relancer le script ou changer de profil ?</strong></summary>
 
-Oui. Les profils remplacent leurs réglages exclusifs pris en charge. Relancer le script ne restaure toutefois pas les fichiers ou applications supprimés et réapplique les actions automatiques décrites ci-dessous.
+Oui, mais cela réapplique aussi les [outils automatiques](#outils-automatiques) et ne restaure pas les fichiers ou applications supprimés. Voir les limites du [retour arrière](#retour-arrière).
 
 </details>
 
@@ -210,17 +218,24 @@ Il ne cible pas les dossiers Documents, Images ou Vidéos actuels, mais vide la 
 
 </details>
 
+<a id="outils-automatiques"></a>
+
 <details>
 <summary><strong>Quels outils se lancent automatiquement ?</strong></summary>
 
-L'ouverture du script ne modifie pas Valorant. **[G] → [V]** permet d'appliquer le profil fourni, jeu fermé, à tous les comptes Valorant du profil Windows élevé affiché : plein écran, qualité minimale, VSync/HDR désactivés, résolution et clés non ciblées conservées. La restauration remplace les fichiers entiers par leur première sauvegarde `.winopt-backup` et écrase les modifications ultérieures. En Gaming, NVIDIA Profile Inspector et son profil peuvent être exécutés sur un GPU NVIDIA compatible. Avec le profil d'énergie Performance Max, SetTimerResolution peut être installé, lancé et ajouté au démarrage avec `--resolution 5275` (0,5275 ms demandée, réglage expérimental) ; Eco retire ce démarrage automatique. Les ressources O&O, Fortnite et les autres outils Timer & Interrupt ne sont pas exécutés automatiquement.
+- **Valorant** ne change qu'avec **[G] → [V]**, jeu fermé : tous les comptes Valorant du profil Windows élevé reçoivent plein écran, qualité minimale et VSync/HDR coupés. Résolution et clés non ciblées sont conservées. La restauration remplace les fichiers entiers par leur première sauvegarde `.winopt-backup`, écrasant les modifications ultérieures.
+- **Gaming** peut lancer NVIDIA Profile Inspector et son profil sur un GPU NVIDIA compatible.
+- **Performance Max** peut installer, lancer et ajouter SetTimerResolution au démarrage avec `--resolution 5275`, soit 0,5275 ms demandée, expérimental. Eco retire ce démarrage.
+- O&O, Fortnite et les autres outils Timer & Interrupt ne sont pas exécutés automatiquement.
 
 </details>
+
+<a id="retour-arrière"></a>
 
 <details>
 <summary><strong>Puis-je revenir en arrière ?</strong></summary>
 
-**[G] → [9] → [1]** restaure les valeurs sauvegardées des préférences **[G] → [P]**. Les profils avancés Normal/Eco et Défaut Windows restaurent seulement les réglages qu'ils prennent en charge. Ils ne remettent pas tout Windows à zéro. Un point de restauration peut aider pour les changements système ; les fichiers supprimés, la corbeille vidée et les données retirées lors d'une désinstallation nécessitent une sauvegarde pour être récupérés.
+**[G] → [9] → [1]** restaure les préférences sauvegardées par **[G] → [P]**. Normal/Eco et Défaut Windows ne restaurent que leurs réglages pris en charge. Aucun parcours ne remet tout Windows à zéro ; les fichiers supprimés et données perdues lors d'une désinstallation exigent une sauvegarde.
 
 </details>
 
