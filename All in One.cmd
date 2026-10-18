@@ -1643,6 +1643,9 @@ if "!HOSTS_RC!"=="0" (
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Fichier hosts non modifie. Les autres reglages continuent.%COLOR_RESET%
 )
 if not "!AIO_MODE!"=="1" ipconfig /flushdns >nul 2>&1
+REM  Le bloc ecrit fait signaler le fichier hosts par Defender ; l exclusion
+REM  n est posee que si l ecriture a reussi, et ne couvre que ce fichier.
+if "!HOSTS_RC!"=="0" call :ENSURE_HOSTS_EXCLUSION
 set "HOSTS_RC="
 set "HOSTS="
 set "HOSTS_BACKUP_RC="
@@ -3576,6 +3579,19 @@ reg delete "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenEnabled" /f >n
 reg delete "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /f >nul 2>&1
 exit /b
 
+:ENSURE_HOSTS_EXCLUSION
+REM  Microsoft documente cette exclusion pour un fichier hosts modifie volontairement :
+REM  sans elle, Defender signale le bloc comme SettingsModifier:Win32/PossibleHostsFileHijack.
+REM  Le chemin vise le seul fichier hosts, jamais le dossier etc ni un dossier parent.
+REM  Code 10 : l'exclusion est deja posee, il n'y a rien a faire.
+powershell -NoProfile -Command "try{$h=Join-Path $env:SystemRoot 'System32\drivers\etc\hosts';if((Get-MpPreference).ExclusionPath -contains $h){exit 10};Add-MpPreference -ExclusionPath $h -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! EQU 10 exit /b 0
+if !errorlevel! NEQ 0 (
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Exclusion Defender du fichier hosts impossible ; Defender peut le signaler.%COLOR_RESET%
+    exit /b 1
+)
+echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Fichier hosts exclu de l'analyse Defender.%COLOR_RESET%
+exit /b 0
 :TOGGLE_DEFENDER
 set "SKIP_PAUSE=0"
 call :SCREEN_HEADER " GERER WINDOWS DEFENDER"
@@ -3585,8 +3601,13 @@ echo %COLOR_WHITE%  Dans ce cas, certaines actions du script seront bloquees.%CO
 echo.
 echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%REACTIVER DEFENDER%COLOR_RESET% : Antivirus et SmartScreen
 echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_RED%DESACTIVER DEFENDER%COLOR_RESET% : Protection fortement reduite
-call :SUBMENU_CHOICE "Gestion Windows" "Choisissez une option [1, 2, M] : " 12M
-if !errorlevel! EQU 3 goto :MENU_GESTION_WINDOWS
+echo %COLOR_YELLOW%[3]%COLOR_RESET% %COLOR_GREEN%PROFIL PERFORMANCE DEFENDER%COLOR_RESET% : Actif, charge minimale
+call :SUBMENU_CHOICE "Gestion Windows" "Choisissez une option [1, 2, 3, M] : " 123M
+if !errorlevel! EQU 4 goto :MENU_GESTION_WINDOWS
+if !errorlevel! EQU 3 (
+  call :TOGGLE_DEFENDER_PERF
+  goto :TOGGLE_DEFENDER
+)
 if !errorlevel! EQU 2 (
   call :DESACTIVER_DEFENDER_SECTION
   goto :TOGGLE_DEFENDER
@@ -3747,6 +3768,73 @@ exit /b 1
 :DEFENDER_SECTION_END
 exit /b 1
 
+:TOGGLE_DEFENDER_PERF
+call :SCREEN_HEADER " PROFIL PERFORMANCE DEFENDER"
+echo %COLOR_WHITE%  Garde Defender actif et lui retire la charge inutile.%COLOR_RESET%
+echo %COLOR_WHITE%  Scans brides, priorite basse, analyse reseau et USB coupees.%COLOR_RESET%
+echo.
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les analyses planifiees sont desactivees par ce profil.%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%La protection temps reel n'est pas modifiee.%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les valeurs actuelles sont capturees avant application.%COLOR_RESET%
+echo.
+echo %COLOR_YELLOW%[1]%COLOR_RESET% %COLOR_GREEN%APPLIQUER LE PROFIL PERFORMANCE%COLOR_RESET%
+echo %COLOR_YELLOW%[2]%COLOR_RESET% %COLOR_GREEN%RESTAURER LES VALEURS PRECEDENTES%COLOR_RESET%
+call :SUBMENU_CHOICE "Gestion Windows" "Choisissez une option [1, 2, M] : " 12M
+if !errorlevel! EQU 3 exit /b 0
+if !errorlevel! EQU 2 (
+  call :RESTORE_DEFENDER_PERF_SECTION
+  goto :TOGGLE_DEFENDER_PERF
+)
+if !errorlevel! EQU 1 (
+  call :APPLY_DEFENDER_PERF_SECTION
+  goto :TOGGLE_DEFENDER_PERF
+)
+goto :TOGGLE_DEFENDER_PERF
+
+:APPLY_DEFENDER_PERF_SECTION
+if not "!SKIP_PAUSE!"=="0" goto :APPLY_DEFENDER_PERF_RUN
+call :SCREEN_HEADER " CONFIRMATION : PROFIL PERFORMANCE DEFENDER"
+echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les analyses reseau, USB et archives seront coupees.%COLOR_RESET%
+echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Les scans planifies sont desactives et la charge CPU bridee.%COLOR_RESET%
+echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%La protection temps reel reste inchangee.%COLOR_RESET%
+echo.
+call :ASK_IF_INTERACTIVE "%STYLE_BOLD%%COLOR_YELLOW%Appliquer le profil performance ? [O/N] : %COLOR_RESET%"
+if !errorlevel! NEQ 0 exit /b
+:APPLY_DEFENDER_PERF_RUN
+call :SCREEN_HEADER " APPLICATION DU PROFIL PERFORMANCE DEFENDER"
+set "DEFENDER_PERF_ERROR=0"
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Capture des valeurs actuelles...%COLOR_RESET%
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{$p=Get-MpPreference;$k='HKLM:\SOFTWARE\WindowsOptimizer\DefenderPerf';if(Test-Path $k){Remove-Item $k -Recurse -Force};New-Item -Path $k -Force|Out-Null;$t=$p.ScanScheduleQuickScanTime;if($t -is [datetime]){$q=$t.ToString('HH:mm:ss')}else{$q=$t.ToString()};$m=[ordered]@{ScanAvgCPULoadFactor=[int]$p.ScanAvgCPULoadFactor;EnableLowCpuPriority=[int]$p.EnableLowCpuPriority;DisableCpuThrottleOnIdleScans=[int]$p.DisableCpuThrottleOnIdleScans;ScanScheduleDay=[int]$p.ScanScheduleDay;DisableEmailScanning=[int]$p.DisableEmailScanning;DisableRemovableDriveScanning=[int]$p.DisableRemovableDriveScanning;DisableScanningNetworkFiles=[int]$p.DisableScanningNetworkFiles;DisableScanningMappedNetworkDrivesForFullScan=[int]$p.DisableScanningMappedNetworkDrivesForFullScan;EnableFileHashComputation=[int]$p.EnableFileHashComputation};foreach($n in $m.Keys){New-ItemProperty -Path $k -Name $n -Value $m[$n] -PropertyType DWord -Force|Out-Null};New-ItemProperty -Path $k -Name QuickScan -Value $q -PropertyType String -Force|Out-Null;New-ItemProperty -Path $k -Name Captured -Value 1 -PropertyType DWord -Force|Out-Null;exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! NEQ 0 set "DEFENDER_PERF_ERROR=1"
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Application du profil...%COLOR_RESET%
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{Set-MpPreference -ScanAvgCPULoadFactor 5 -EnableLowCpuPriority $true -DisableCpuThrottleOnIdleScans $false -ScanScheduleDay 8 -DisableEmailScanning $true -DisableRemovableDriveScanning $true -DisableScanningNetworkFiles $true -DisableScanningMappedNetworkDrivesForFullScan $true -EnableFileHashComputation $false -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! NEQ 0 set "DEFENDER_PERF_ERROR=1"
+echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Verification par relecture des valeurs...%COLOR_RESET%
+powershell -NoProfile -Command "try{$p=Get-MpPreference;$n=0;if($p.ScanAvgCPULoadFactor -eq 5){$n++};if($p.EnableLowCpuPriority -eq $true){$n++};if($p.DisableCpuThrottleOnIdleScans -eq $false){$n++};if($p.ScanScheduleDay -eq 8){$n++};if($p.DisableScanningNetworkFiles -eq $true){$n++};if($p.DisableEmailScanning -eq $true){$n++};if($p.DisableRemovableDriveScanning -eq $true){$n++};if($p.EnableFileHashComputation -eq $false){$n++};if($n -eq 8){exit 0};exit 1}catch{exit 1}" >nul 2>&1
+if !errorlevel! NEQ 0 set "DEFENDER_PERF_ERROR=1"
+if "!DEFENDER_PERF_ERROR!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Profil performance applique et verifie sur 8 valeurs.%COLOR_RESET%
+) else (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Profil partiellement applique ou refuse par Windows.%COLOR_RESET%
+)
+call :FINISH_ACTION "Profil performance Windows Defender"
+exit /b !DEFENDER_PERF_ERROR!
+
+:RESTORE_DEFENDER_PERF_SECTION
+call :SCREEN_HEADER " RESTAURATION DU PROFIL PERFORMANCE"
+echo %COLOR_WHITE%  Restaure les valeurs capturees avant application du profil.%COLOR_RESET%
+echo %COLOR_WHITE%  Sans capture, applique les valeurs par defaut documentees de Windows.%COLOR_RESET%
+echo.
+set "DEFENDER_PERF_ERROR=0"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{$k='HKLM:\SOFTWARE\WindowsOptimizer\DefenderPerf';$c=(Get-ItemProperty -Path $k -Name Captured -ErrorAction SilentlyContinue).Captured;if($c -eq 1){$r=Get-ItemProperty -Path $k}else{$r=[pscustomobject]@{ScanAvgCPULoadFactor=50;EnableLowCpuPriority=1;DisableCpuThrottleOnIdleScans=1;ScanScheduleDay=0;DisableEmailScanning=0;DisableRemovableDriveScanning=0;DisableScanningNetworkFiles=0;DisableScanningMappedNetworkDrivesForFullScan=0;EnableFileHashComputation=0;QuickScan='00:00:00'}};Set-MpPreference -ScanAvgCPULoadFactor ([int]$r.ScanAvgCPULoadFactor) -EnableLowCpuPriority ([bool]([int]$r.EnableLowCpuPriority)) -DisableCpuThrottleOnIdleScans ([bool]([int]$r.DisableCpuThrottleOnIdleScans)) -ScanScheduleDay ([int]$r.ScanScheduleDay) -DisableEmailScanning ([bool]([int]$r.DisableEmailScanning)) -DisableRemovableDriveScanning ([bool]([int]$r.DisableRemovableDriveScanning)) -DisableScanningNetworkFiles ([bool]([int]$r.DisableScanningNetworkFiles)) -DisableScanningMappedNetworkDrivesForFullScan ([bool]([int]$r.DisableScanningMappedNetworkDrivesForFullScan)) -EnableFileHashComputation ([bool]([int]$r.EnableFileHashComputation)) -ScanScheduleQuickScanTime $r.QuickScan -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
+if !errorlevel! NEQ 0 set "DEFENDER_PERF_ERROR=1"
+if "!DEFENDER_PERF_ERROR!"=="0" (
+    echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Valeurs precedentes restaurees.%COLOR_RESET%
+) else (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Restauration incomplete ou refusee par Windows.%COLOR_RESET%
+)
+call :FINISH_ACTION "Profil performance Windows Defender"
+exit /b !DEFENDER_PERF_ERROR!
 :TOGGLE_UAC
 set "SKIP_PAUSE=0"
 call :SCREEN_HEADER " GERER UAC : CONTROLE DE COMPTE UTILISATEUR"
