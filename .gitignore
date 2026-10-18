@@ -46,6 +46,3 @@ _commit_msg.txt
 
 # Agent lock files
 skills-lock.json
-
-# Optimizer Verify reports (local only, not pushed)
-reports/
