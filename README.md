@@ -10,7 +10,7 @@
 
 </div>
 
-Windows 11 est la seule cible prise en charge.
+Windows 11 est la seule cible prise en charge. Certaines options dépendent de la version de Windows, du matériel et des pilotes ; sur un PC professionnel ou géré par une organisation, des règles peuvent empêcher les modifications.
 
 > Le script modifie réellement Windows. Certaines options réduisent les protections ; les désinstallations et le nettoyage peuvent supprimer des données. Un point de restauration ne remplace pas une sauvegarde de vos fichiers.
 
@@ -28,10 +28,10 @@ Le lanceur télécharge la version publiée du script et l'ouvre dans une fenêt
 
 1. Créez un point de restauration avec **[R]**.
 2. Choisissez **[O] Tout optimiser**, puis indiquez votre usage et votre priorité d'énergie. Les [profils](#usage-et-énergie--tout-optimiser) sont indépendants, sur PC fixe comme portable.
-3. Répondez aux cinq questions : protections Windows, Defender, animations, IA et UAC. **N** conserve l'option concernée ; **M** annule. Gardez les protections actuelles en cas de doute.
+3. Répondez aux cinq questions : protections Windows, Defender, animations, IA et UAC. **N** conserve l'option concernée ; **M** annule. Gardez les protections actuelles en cas de doute, y compris pour Defender et l'UAC : les désactiver réduit la protection du PC.
 4. Vérifiez le récapitulatif : **O** lance, **R** repose les cinq questions, **M** annule. Aucun choix de ce parcours n'est appliqué avant confirmation.
 
-Pour des préférences limitées avec sauvegarde ciblée, utilisez **[G] → [P]** ci-dessous. Les sections **[1] à [7]** restent accessibles séparément, après avertissement. Les profils globaux n'offrent pas de retour arrière complet ni de gain universel établi.
+Pour des préférences limitées avec sauvegarde ciblée, utilisez **[G] → [P]** ci-dessous. Les sections **[1] à [7]** restent accessibles séparément, après avertissement. Les limites du [retour arrière](#retour-arrière) s'appliquent aux profils globaux.
 
 ### Préférences Windows avec sauvegarde — [G] → [P]
 
@@ -40,7 +40,7 @@ Les stratégies de confidentialité, de navigateurs et de Widgets peuvent concer
 Les valeurs `HKCU`, les applications retirées individuellement et les fichiers Valorant visent le **compte du processus élevé**, affiché avant les choix. Si l'UAC demande les identifiants d'un autre administrateur, c'est son profil qui change. Utilisez le compte à modifier.
 
 <details>
-<summary>Effets des quatre choix, sauvegarde et récupération de l’ancien script</summary>
+<summary>Effets des quatre choix, sauvegarde et récupération</summary>
 
 **[G] → [P]** pose quatre questions puis demande confirmation. Il préserve les protections Windows, les pilotes, l'affichage, l'accessibilité, les plans d'alimentation, la compression mémoire et la veille. Il ne supprime aucune application, ne désactive aucun service ni tâche, et ne modifie ni `hosts` ni le nettoyage automatique.
 
@@ -51,9 +51,11 @@ Les valeurs `HKCU`, les applications retirées individuellement et les fichiers 
 | Widgets | Stratégie Windows 11 `Dsh\AllowNewsAndInterests=0`. Sur certaines versions, Windows refuse l'écriture même en administrateur : le script le signale, sans désactiver une protection pour forcer le réglage. |
 | Runtimes, facultatifs | Vérification/installation des redistribuables Visual C++ et DirectX officiels signés. Les logiciels installés ne sont pas annulés par la restauration des valeurs. |
 
+La relecture du registre prouve le stockage, pas la prise en compte de toutes les politiques. Vérifiez aussi `edge://policy`, `chrome://policy` et les Paramètres Windows : les stratégies d'entreprise et certaines protections Windows peuvent imposer une autre valeur, sans contournement automatique.
+
 **[G] → [9] → [1]** restaure les valeurs ou absences sauvegardées par ce parcours. Chaque valeur est capturée à sa première application : un groupe choisi plus tard est capturé à ce moment-là. La capture reste sous `%ProgramData%\WindowsOptimizer\Backups\recommended-<SID>.json`, même après restauration. Elle est liée au PC et au compte élevé, y compris pour les stratégies communes à tous les comptes. Une capture absente, incompatible ou illisible bloque la restauration ; un type de registre inattendu est préservé et signalé.
 
-Sur un PC déjà modifié par l'ancien script, la capture conserve cet état modifié. **[G] → [9] → [2]** propose de retirer le refus NTFS Everyone sur `store.db` et de réactiver les tâches fonctionnelles anciennement ciblées : famille, synchronisation, Work Folders, licences et diagnostics utiles. Ce sont des corrections, sans restauration exacte ni traitement des autres anciens réglages. La confirmation avertit que les refus Everyone personnalisés seraient aussi retirés. Defender, UAC et protections noyau ont des actions de récupération distinctes. Aucun mode ne récupère les données supprimées.
+Sur un PC déjà modifié par une version précédente du script, la capture conserve cet état modifié. **[G] → [9] → [2]** propose de retirer le refus NTFS Everyone sur `store.db` et de réactiver les tâches fonctionnelles anciennement ciblées : famille, synchronisation, Work Folders, licences et diagnostics utiles. Ce sont des corrections, sans restauration exacte ni traitement des autres anciens réglages. La confirmation avertit que les refus Everyone personnalisés seraient aussi retirés. Defender, UAC et protections noyau ont des actions de récupération distinctes. Aucun mode ne récupère les données supprimées.
 
 </details>
 
@@ -64,7 +66,7 @@ Sur un PC déjà modifié par l'ancien script, la capture conserve cet état mod
 
 **Tout optimiser** installe les composants manquants en arrière-plan pendant les sections système/mémoire/disques/GPU, puis attend leur fin avant le réseau. Si ce lancement échoue, il reprend au premier plan, comme les menus runtimes et **[G] → [P]**. Les signatures Microsoft et l'installation restent contrôlées ; les échecs indiquent le journal `%TEMP%\WinOpt_Runtimes_*\runtime.log`.
 
-Visual C++ est considéré présent à partir de 14.40 pour chaque architecture ; DirectX June 2010 exige toutes ses DLL. Sinon, l'installateur officiel est lancé. Ces installations ne sont pas annulées par la restauration des préférences.
+Visual C++ est considéré présent à partir de 14.40 pour chaque architecture ; DirectX June 2010 exige toutes ses DLL. Sinon, l'installateur officiel est lancé.
 
 </details>
 
@@ -88,7 +90,7 @@ Gaming convient aussi à un PC utilisé pour jouer et travailler. Vous pouvez le
 - Système : réduit les suggestions, les fichiers récents de l'Explorateur, l'historique de recherche, AutoPlay et les diagnostics/personnalisation Edge ; coupe l'atténuation audio pendant les appels. Les Jump Lists, l'indexation et la recherche Windows restent disponibles. Normal/Eco ne rétablit pas tous ces réglages communs. Les tâches absentes et refusées sont distinguées ; un refus de service ou de tâche rend le bilan partiel. Les instances de tâches déjà lancées ne sont pas interrompues.
 - Navigateurs : accélération matérielle et QUIC activés, DNS sur HTTPS Cloudflare en mode automatic avec repli normal, préchargements Edge et activité Edge/Chrome après fermeture conservés. **[G] → [P]** permet de limiter cet arrière-plan.
 - Portable Normal + Eco : DiagLog et le service d'alimentation moderne sont préservés. Le refus NTFS sur la base du Store, les changements COM de F1, le nettoyage automatique et les modifications forcées d'hibernation/Modern Standby sont retirés des profils.
-- Réseau Gaming + Performance Max : économies d'énergie réduites et réglages de latence appliqués aux propriétés exposées par le pilote, dont MIMO sans économie, U-APSD désactivé et mode 40 MHz non bloqué sur les adaptateurs Intel compatibles. Le résultat dépend du pilote ; aucun gain universel n'est établi.
+- Réseau Gaming + Performance Max : économies d'énergie réduites et réglages de latence appliqués aux propriétés exposées par le pilote, dont MIMO sans économie, U-APSD désactivé et mode 40 MHz non bloqué sur les adaptateurs Intel compatibles. Le résultat dépend du pilote.
 - Performance Max : compression mémoire coupée au-delà de 8 Go de RAM, économies HIPM/DIPM et parking des disques désactivés ; Eco rend ces deux réglages de stockage à Windows. Le preset timer reste expérimental et réversible via Eco.
 
 ### Menu principal
@@ -149,20 +151,6 @@ Gaming et Performance Max conservent LSA Protection avec `RunAsPPL=2`, sans écr
 Cliquez sur une question pour afficher sa réponse.
 
 <details>
-<summary><strong>Avec quelles versions de Windows est-il compatible ?</strong></summary>
-
-Windows 11 uniquement. Certaines options dépendent de la version de Windows, du matériel et des pilotes. Sur un PC professionnel ou géré par une organisation, des règles peuvent empêcher les modifications.
-
-</details>
-
-<details>
-<summary><strong>Quel profil choisir ?</strong></summary>
-
-**Gaming** convient au jeu, même si vous travaillez aussi sur ce PC ; **Normal** vise un usage sans jeu. **Eco / Équilibré** préserve les économies d'énergie ; **Performance Max** peut augmenter la chauffe et réduire l'autonomie. Voir les [profils et leurs effets](#usage-et-énergie--tout-optimiser).
-
-</details>
-
-<details>
 <summary><strong>Quel gain de FPS attendre ?</strong></summary>
 
 Le résultat dépend du matériel, des pilotes, des logiciels et de la charge. Aucun gain de FPS n'est garanti : comparez vos jeux avant et après avec les mêmes réglages.
@@ -172,7 +160,7 @@ Le résultat dépend du matériel, des pilotes, des logiciels et de la charge. A
 <details>
 <summary><strong>Est-ce sans risque pour mon PC ?</strong></summary>
 
-Des incompatibilités sont possibles après des changements de services, de réseau ou de sécurité. Créez un point de restauration et sauvegardez vos fichiers avant de commencer. Vous pouvez appliquer les sections séparément et éviter les désinstallations ou les options sensibles dont vous n'avez pas besoin.
+Des incompatibilités sont possibles après des changements de services, de réseau ou de sécurité. Vous pouvez appliquer les sections séparément et éviter les désinstallations ou les options sensibles dont vous n'avez pas besoin.
 
 </details>
 
@@ -180,13 +168,6 @@ Des incompatibilités sont possibles après des changements de services, de rés
 <summary><strong>Est-ce compatible avec Valorant, FACEIT et les autres anti-cheats ?</strong></summary>
 
 La compatibilité dépend du jeu et des exigences de son anti-cheat. Le mode de sécurité Gaming active VBS et l'intégrité de la mémoire ; Performance Max les désactive et peut empêcher certains jeux de démarrer. Aucun mode ne garantit la compatibilité avec tous les jeux.
-
-</details>
-
-<details>
-<summary><strong>Faut-il désactiver Defender ou l'UAC ?</strong></summary>
-
-Non, ces choix sont facultatifs. Gardez l'antivirus et les confirmations administrateur actifs pour un usage courant : les désactiver réduit la protection du PC.
 
 </details>
 
@@ -226,7 +207,7 @@ Il ne cible pas les dossiers Documents, Images ou Vidéos actuels, mais vide la 
 - **Valorant** ne change qu'avec **[G] → [V]**, jeu fermé : tous les comptes Valorant du profil Windows élevé reçoivent plein écran, qualité minimale et VSync/HDR coupés. Résolution et clés non ciblées sont conservées. La restauration remplace les fichiers entiers par leur première sauvegarde `.winopt-backup`, écrasant les modifications ultérieures.
 - **Gaming** peut lancer NVIDIA Profile Inspector et son profil sur un GPU NVIDIA compatible.
 - **Performance Max** peut installer, lancer et ajouter SetTimerResolution au démarrage avec `--resolution 5275`, soit 0,5275 ms demandée, expérimental. Eco retire ce démarrage.
-- O&O, Fortnite et les autres outils Timer & Interrupt ne sont pas exécutés automatiquement.
+- Le profil O&O ShutUp10 (`Tools/`), GoInterruptPolicy, MeasureSleep et les modèles de `Game Configs/` sont fournis dans le dépôt mais ne sont ni exécutés ni appliqués automatiquement.
 
 </details>
 
@@ -272,15 +253,6 @@ Les commandes d'administration et les modifications de sécurité peuvent décle
 
 [**📥 Télécharger All in One.cmd**](https://github.com/kaylerberserk/WindowsOptimizer/blob/main/All%20in%20One.cmd)
 
+Contribuer ou travailler avec un agent : voir [AGENTS.md](AGENTS.md).
+
 </div>
-
-### Références vérifiées pour les changements
-
-Sources consultées le 16 octobre 2026 et confrontées aux réglages du script. Les essais Windows vérifient les chemins décrits, sans démontrer un gain de performances :
-
-- [Diagnostics Windows, niveaux et éditions](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-system#allowtelemetry) ; [gestion des connexions et de la personnalisation](https://learn.microsoft.com/en-us/windows/privacy/manage-connections-from-windows-operating-system-components-to-microsoft-services).
-- [Widgets](https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-newsandinterests) ; [Copilot actuel et limites de la politique legacy](https://learn.microsoft.com/en-us/windows/client-management/manage-windows-copilot).
-- [Diagnostics Edge](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/diagnosticdata), [personnalisation](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/personalizationreportingenabled), [arrière-plan](https://learn.microsoft.com/en-us/deployedge/microsoft-edge-policies/backgroundmodeenabled) et [Chrome BackgroundModeEnabled](https://chromeenterprise.google/policies/#BackgroundModeEnabled).
-- Croisement communautaire : [Win11Debloat](https://github.com/Raphire/Win11Debloat), [WinUtil](https://github.com/ChrisTitusTech/winutil). Leurs listes ne prouvent ni le besoin de désactiver une fonction ni un gain de performance.
-
-La relecture du registre prouve le stockage, pas la prise en compte de toutes les politiques ni un gain RAM/FPS. Vérifiez aussi `edge://policy`, `chrome://policy` et les Paramètres Windows. Les stratégies d'entreprise et certaines protections Windows peuvent imposer une autre valeur ; aucun contournement automatique n'est effectué.

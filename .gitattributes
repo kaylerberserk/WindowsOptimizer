@@ -1,5 +1,5 @@
 # Force CRLF line endings for Windows batch files
-# CMD.exe ne peut pas trouver les labels dans des fichiers avec des fins de ligne LF
+# Git stocke le batch en LF ; il se recopie en CRLF a l'execution (voir AGENTS.md, Contrat de format)
 *.cmd    text eol=crlf
 *.bat    text eol=crlf
 *.ps1    text eol=crlf
