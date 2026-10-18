@@ -237,6 +237,8 @@ Il ne cible pas les dossiers Documents, Images ou Vidéos actuels, mais vide la 
 
 **[G] → [9] → [1]** restaure les préférences sauvegardées par **[G] → [P]**. Normal/Eco et Défaut Windows ne restaurent que leurs réglages pris en charge. Aucun parcours ne remet tout Windows à zéro ; les fichiers supprimés et données perdues lors d'une désinstallation exigent une sauvegarde.
 
+Pour le menu « Devenir Propriétaire », une capture ancienne ou altérée dont la provenance ne peut pas être vérifiée est conservée, mais bloque tout nouvel ajout et toute restauration automatique de ce menu. Défaut Windows peut reprendre le nettoyage interrompu d’une restauration déjà vérifiée.
+
 </details>
 
 <details>
