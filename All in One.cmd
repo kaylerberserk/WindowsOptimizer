@@ -1281,10 +1281,12 @@ if "!PROFIL_USAGE!"=="0" (
 )
 echo.
 
+REM  1.0 - Surcharges BCD des timers : suppression pour tous les profils.
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des surcharges BCD de diagnostic des timers...%COLOR_RESET%
 call :RESET_BCD_TIMER_OVERRIDES
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Horloges platform et synchronisation TSC rendues a Windows.%COLOR_RESET%
 
+REM  1.1 - Priorites CPU et planification
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la reactivite du systeme...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\csrss.exe\PerfOptions" /v CpuPriorityClass /t REG_DWORD /d 3 /f >nul 2>&1
@@ -1299,6 +1301,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages de reactivite appliques%COLOR_RESET%
 
+REM  1.2 - Profil Gaming MMCSS SystemProfile\Tasks\Games
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration du profil de jeu et de la reactivite multimedia...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "Scheduling Category" /t REG_SZ /d "High" /f >nul 2>&1
@@ -1311,6 +1314,7 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProf
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games" /v "GPU Priority" /t REG_DWORD /d 8 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Profil de jeu et reactivite multimedia configures%COLOR_RESET%
 
+REM  1.3 - Interface Windows
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisation de l'interface Windows...%COLOR_RESET%
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "ShowTaskViewButton" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v "TaskbarMn" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1336,6 +1340,7 @@ reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer" /v ShowFrequen
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer" /v DesktopProcess /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings" /v TaskbarEndTask /t REG_DWORD /d 1 /f >nul 2>&1
 
+REM  1.4 - Telemetrie et vie privee
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de la telemetrie et des publicites...%COLOR_RESET%
 reg add "HKCU\Software\Microsoft\InputPersonalization" /v "RestrictImplicitInkCollection" /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\InputPersonalization" /v "RestrictImplicitTextCollection" /t REG_DWORD /d 1 /f >nul 2>&1
@@ -1356,6 +1361,7 @@ reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer" /v DisableThum
 reg add "HKCU\Control Panel\Desktop" /v JPEGImportQuality /t REG_DWORD /d 100 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Interface et confidentialite de base optimisees%COLOR_RESET%
 
+REM  1.5 - Telemetrie systeme et vie privee approfondie
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de la telemetrie et des traceurs...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v "AllowTelemetry" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection" /v "MaxTelemetryAllowed" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1463,6 +1469,7 @@ set "HOSTS_RC="
 set "HOSTS="
 set "HOSTS_BACKUP_RC="
 
+REM  1.6 - Services optimises
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation du reglage des services Windows...%COLOR_RESET%
 set "SERVICE_CONFIG_SKIPPED=0"
 set "SERVICE_CONFIG_FAILED=0"
@@ -1554,6 +1561,7 @@ set "SERVICE_CONFIG_FAILED="
 
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages des services demandes. Verifiez vos usages avant redemarrage%COLOR_RESET%
 
+REM  1.7 - Optimisations demarrage et systeme
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisations systeme diverses...%COLOR_RESET%
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" /v "StartupDelayInMSec" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize" /v "WaitForIdleState" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1563,6 +1571,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat" /v "AITEnable" /t R
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Configuration Manager" /v EnablePeriodicBackup /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Optimisations demarrage et stockage terminees%COLOR_RESET%
 
+REM  1.8 - Utilitaires et Bloatwares (Automatique)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Ajout de l'option Devenir Proprietaire au menu contextuel...%COLOR_RESET%
 call :CAPTURE_RUNAS_VERB
 set "RUNAS_CAPTURE_RC=!errorlevel!"
@@ -1603,6 +1612,7 @@ reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\PerfTrack" /v Disabled /t REG_
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Diagnostics\PerfTrack" /v Enabled /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages de confidentialite avances appliques%COLOR_RESET%
 
+REM  1.9 - Navigateurs
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisation navigateurs...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Edge" /v HideFirstRunExperience /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKCU\Software\Policies\Microsoft\Edge" /v StartupBoostEnabled /t REG_DWORD /d 1 /f >nul 2>&1
@@ -1625,31 +1635,39 @@ reg add "HKCU\Software\Policies\Google\Chrome" /v HardwareAccelerationModeEnable
 reg add "HKCU\Software\Policies\Google\Chrome" /v BackgroundModeEnabled /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Navigateurs optimises%COLOR_RESET%
 
+REM  1.10 - Desactivation du stockage reserve
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation du stockage reserve Windows...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager" /v PassedPolicy /t REG_DWORD /d 0 /f >nul 2>&1
 powershell -NoProfile -Command "try { Set-WindowsReservedStorageState -State Disabled -ErrorAction SilentlyContinue } catch {}" >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Desactivation du stockage reserve demandee.%COLOR_RESET%
 echo %COLOR_WHITE%Windows appliquera ce reglage selon son etat.%COLOR_RESET%
 
+REM  1.11 - Desactivation P2P Windows Update (Delivery Optimization)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation du P2P Windows Update...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\DeliveryOptimization" /v DODownloadMode /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Mises a jour Windows telechargees depuis Microsoft uniquement%COLOR_RESET%
 
+REM  1.12 - Le Store reste accessible. Ancien refus NTFS retire du profil.
 
+REM  1.13 - Affichage du code erreur BSoD
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de l'affichage des codes erreur BSoD...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl" /v DisplayParameters /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Codes d'erreur BSoD visibles pour faciliter le diagnostic%COLOR_RESET%
 
+REM  1.14 - F1 et les inscriptions COM restent intacts.
 
+REM  1.15 - Optimisations audio (latence)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'attenuation audio Windows...%COLOR_RESET%
 powershell -NoProfile -Command "$path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e96c-e325-11ce-bfc1-08002be10318}'; Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name 'DisableAudioEndpointDucking' -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null } " >nul 2>&1
 reg add "HKCU\Software\Microsoft\Multimedia\Audio" /v UserDuckingPreference /t REG_DWORD /d 3 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Attenuation audio desactivee, y compris pendant les appels%COLOR_RESET%
 
+REM  1.16 - Desactivation Windows Platform Binary Table (WPBT)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de WPBT pour limiter les logiciels preinstalles...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager" /v DisableWpbtExecution /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%WPBT desactive%COLOR_RESET%
 
+REM  1.17 - Intel Thread Director / Core Parking
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration de la planification des coeurs du processeur...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\93b8b6dc-0698-4d1c-9ee4-0644e900c85d" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318584" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
@@ -1694,12 +1712,14 @@ if "!PROFIL_POWER!"=="0" (
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 
+REM  2.1 - Memory Management
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisation de la gestion memoire...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "ClearPageFileAtShutdown" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v "SystemPages" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" /v LargeSystemCache /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion memoire optimisee%COLOR_RESET%
 
+REM  2.2 - Prefetch/SysMain
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration de Prefetch et SuperFetch...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" /v EnableBoottrace /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1730,6 +1750,7 @@ echo.
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 echo.
 
+REM  3.1 - TRIM et restauration des heuristiques NTFS
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation du TRIM et retour des reglages NTFS a Windows...%COLOR_RESET%
 fsutil behavior set disabledeletenotify 0 >nul 2>&1
 fsutil behavior set disabledeletenotify refs 0 >nul 2>&1
@@ -1748,6 +1769,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%TRIM actif et reglages NTFS confies a Windows%COLOR_RESET%
 
+REM  3.2 - Chemins longs NTFS
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation des chemins longs de plus de 260 caracteres...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem" /v LongPathsEnabled /t REG_DWORD /d 1 /f >nul 2>&1
@@ -1756,6 +1778,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Support des chemins longs active pour Gaming.%COLOR_RESET%) else (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Chemins longs rendus au stock Windows.%COLOR_RESET%)
 
+REM  3.3 - TRIM sur volumes SSD
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation de la verification du TRIM...%COLOR_RESET%
 set "TRIM_STATUS="
 for /f "usebackq delims=" %%a in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$stampDir=Join-Path $env:ProgramData 'WindowsOptimizer'; $oldStampDir=Join-Path $env:ProgramData 'OptimizerAllInOne'; $stampFile=Join-Path $stampDir 'last_retrim.txt'; $oldStampFile=Join-Path $oldStampDir 'last_retrim.txt'; if((Test-Path $oldStampFile) -and -not (Test-Path $stampFile)){ if(-not (Test-Path $stampDir)){ New-Item -ItemType Directory -Path $stampDir -Force | Out-Null }; Move-Item -Path $oldStampFile -Destination $stampFile -Force -ErrorAction SilentlyContinue }; $ssds=Get-PhysicalDisk -ErrorAction SilentlyContinue | Where-Object { $_.MediaType -ne 'HDD' -and $_.OperationalStatus -eq 'OK' -and $_.BusType -notin @('Virtual','FileBackedVirtual') }; if(-not $ssds -or $ssds.Count -eq 0){ 'NO_SSD'; exit 0 }; if((Test-Path $stampFile) -and ((Get-Date) - (Get-Item $stampFile).LastWriteTime).TotalDays -lt 30){ 'SKIP_RECENT'; exit 0 }; if(-not (Test-Path $stampDir)){ New-Item -ItemType Directory -Path $stampDir -Force | Out-Null }; $vols=Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.DriveLetter -and ($_.FileSystem -in @('NTFS','ReFS')) }; $done=$false; foreach($v in $vols){ $part=Get-Partition -DriveLetter $v.DriveLetter -ErrorAction SilentlyContinue; if($part){ $phys=Get-PhysicalDisk -ErrorAction SilentlyContinue | Where-Object { $_.DeviceId -eq $part.DiskNumber }; if($phys -and $phys.MediaType -ne 'HDD' -and $phys.BusType -notin @('Virtual','FileBackedVirtual')){ try { Optimize-Volume -DriveLetter $v.DriveLetter -ReTrim -ErrorAction Stop | Out-Null; $done=$true } catch {} } } }; if($done){ Set-Content -Path $stampFile -Value (Get-Date -Format s) -Force; 'TRIM_DONE' } else { 'NO_SSD' }" 2^>nul`) do set "TRIM_STATUS=%%a"
@@ -1772,6 +1795,7 @@ if not defined TRIM_STATUS (
 )
 set "TRIM_STATUS="
 
+REM  3.4 - Pile NVMe prise en charge par Windows
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Nettoyage des forcages NVMe experimentaux...%COLOR_RESET%
 reg delete "HKLM\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v 1853569164 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" /v 156965516 /f >nul 2>&1
@@ -1781,6 +1805,7 @@ reg delete "HKLM\SYSTEM\CurrentControlSet\Services\storport\Parameters" /v "IoRi
 reg delete "HKLM\SYSTEM\CurrentControlSet\Services\stornvme\Parameters" /v "MaxOutstandingIORequests" /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Pile NVMe laissee au pilote pris en charge par Windows%COLOR_RESET%
 
+REM  3.5 - Defragmentation automatique geree par Windows (TRIM automatique)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de la maintenance automatique des disques...%COLOR_RESET%
 schtasks /Change /TN "Microsoft\Windows\Defrag\ScheduledDefrag" /Enable >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Activation demandee : maintenance automatique des disques.%COLOR_RESET%
@@ -1807,6 +1832,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 echo.
 
+REM  4.1 - GameDVR desactive - Game Mode ON
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'enregistrement automatique de gameplay...%COLOR_RESET%
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v "AppCaptureEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\GameDVR" /v "AudioCaptureEnabled" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1825,6 +1851,7 @@ reg add "HKCU\System\GameConfigStore" /v GameDVR_HonorUserFSEBehaviorMode /t REG
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR" /v "AllowGameDVR" /t REG_DWORD /d 0 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%GameDVR desactive. Le mode Jeu reste actif pour les performances%COLOR_RESET%
 
+REM  4.2 - Preferences DirectX (profil-aware : Gaming=latence, Normal=confort visuel)
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglages graphiques Gaming : latence prioritaire.%COLOR_RESET%
     reg add "HKCU\Software\Microsoft\DirectX\UserGpuPreferences" /v "DirectXUserGlobalSettings" /t REG_SZ /d "AutoHDREnable=0;VRROptimizeEnable=0;SwapEffectUpgradeEnable=1;" /f >nul 2>&1
@@ -1835,6 +1862,7 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages DirectX rendus au comportement natif%COLOR_RESET%
 )
 
+REM  4.3 - Mode MSI (GPU) et telemetrie NVIDIA
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage des interruptions GPU...%COLOR_RESET%
 set "STEP_ERRORS=0"
 call :SET_DEVICE_MSI_PROFILE Display !PROFIL_USAGE!
@@ -1851,6 +1879,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 call :STEP_RESULT "Interruptions GPU reglees" "" "Reglage MSI GPU applique partiellement"
 
+REM  4.4 - Desactivation AMD telemetry
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de la telemetrie AMD...%COLOR_RESET%) else (echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des overrides de telemetrie AMD...%COLOR_RESET%)
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\AMD\CN" /v "CollectGIData" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -1861,6 +1890,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Telemetrie AMD desactivee%COLOR_RESET%) else (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Overrides AMD retires.%COLOR_RESET%)
 
+REM  4.5 - NVIDIA Low Latency
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Application des reglages NVIDIA pour reduire la latence...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
@@ -1883,6 +1913,7 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_WHITE%Veille du GPU reactivee.%COLOR_RESET%
 )
 
+REM  4.6 - HAGS Enable
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de la planification GPU acceleree...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers" /v HwSchMode /t REG_DWORD /d 2 /f >nul 2>&1
@@ -1893,6 +1924,7 @@ if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Pla
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le gain depend du GPU, du pilote et du jeu.%COLOR_RESET%
 echo %COLOR_WHITE%Des saccades sont possibles selon la configuration.%COLOR_RESET%
 
+REM  4.7 - Preemption GPU
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation de la gestion des priorites GPU...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler" /v EnablePreemption /t REG_DWORD /d 1 /f >nul 2>&1
@@ -1901,6 +1933,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage des priorites demande au pilote GPU.%COLOR_RESET%
 
+REM  4.8 - NVIDIA Profile Inspector
 if "!HAS_NVIDIA!"=="1" (
     if "!PROFIL_USAGE!"=="0" (
         echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation du profil GPU NVIDIA...%COLOR_RESET%
@@ -2032,6 +2065,7 @@ if "!IS_GAMING_ECO!"=="1" (
 )
 echo.
 
+REM  5.1 - MMCSS reseau
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la priorite reseau pour les applications multimedia...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v SystemResponsiveness /t REG_DWORD /d 10 /f >nul 2>&1
@@ -2041,6 +2075,7 @@ if "!PROFIL_USAGE!"=="0" (
 reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile" /v NetworkThrottlingIndex /t REG_DWORD /d 10 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Priorite reseau configuree selon l'usage.%COLOR_RESET%
 
+REM  5.2 - Pile TCP/IP Win11
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la connexion pour reduire les delais...%COLOR_RESET%
 netsh int tcp set global autotuninglevel=normal >nul 2>&1
 
@@ -2086,6 +2121,7 @@ if "!PROFIL_USAGE!"=="0" (
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Envoi des donnees ajuste pour limiter les ralentissements.%COLOR_RESET%
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Un reglage local reste desactive pour eviter certains bugs.%COLOR_RESET%
 
+REM  5.3 - Parametres TCP registre
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Parametres TCP registre...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\AFD\Parameters" /v FastSendDatagramThreshold /t REG_DWORD /d 65536 /f >nul 2>&1
@@ -2105,6 +2141,7 @@ if "!PROFIL_USAGE!"=="0" (
     for %%V in (Tcp1323Opts SackOpts EnablePMTUDiscovery TcpMaxDataRetransmissions) do reg delete "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters" /v "%%V" /f >nul 2>&1
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Registre TCP configure%COLOR_RESET%
+REM  5.4 - MSI Mode cartes reseau
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage des interruptions reseau...%COLOR_RESET%
 call :SET_DEVICE_MSI_PROFILE Net !PROFIL_USAGE!
 if !errorlevel! NEQ 0 (
@@ -2115,6 +2152,7 @@ if !errorlevel! NEQ 0 (
 )
 
 
+REM  5.5 - Optimisation BITS
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisation du service BITS...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\BITS" /v "EnableBypassProxyForLocal" /t REG_DWORD /d 1 /f >nul 2>&1
@@ -2123,6 +2161,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%BITS optimise%COLOR_RESET%) else (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Override BITS retire.%COLOR_RESET%)
 
+REM  5.6 - Nagle/DelACK (ECO/Normal->defaut natif, Gaming+MaxPerf->agressif)
 if "!PROFIL_POWER!"=="1" (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de la connexion pour le mode Eco...%COLOR_RESET%
     call :RESET_NAGLE_PROFILE
@@ -2137,6 +2176,7 @@ if "!PROFIL_POWER!"=="1" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Connexion reglee sur les valeurs du profil Normal.%COLOR_RESET%
 )
 
+REM  5.7 - Optimisation cartes reseau
 if "!PROFIL_POWER!"=="0" (
     if "!PROFIL_USAGE!"=="0" (
         echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la connexion pour Gaming et Performance max...
@@ -2166,6 +2206,7 @@ if !errorlevel! NEQ 0 (
     set "NETWORK_SECTION_ERROR=1"
     echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%La convergence des cartes reseau reste partielle.%COLOR_RESET%
 )
+REM  5.8 - Gestion energie USB (impacte adaptateurs Wi-Fi USB, clavier, souris)
 set "USB_POWER_DEFERRED=0"
 if "!AIO_MODE!"=="1" set "USB_POWER_DEFERRED=1"
 if "!USB_POWER_DEFERRED!"=="1" (
@@ -2186,6 +2227,7 @@ if "!USB_POWER_DEFERRED!"=="1" (
     )
 )
 set "USB_POWER_DEFERRED="
+REM  5.9 - QoS Fortnite DSCP 46 (Gaming uniquement)
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Priorite reseau pour Fortnite...%COLOR_RESET%
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\QoS" /v "Do not use NLA" /t REG_SZ /d "1" /f >nul 2>&1
@@ -2214,6 +2256,7 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Priorite Fortnite supprimee%COLOR_RESET%
 )
 
+REM  5.10 - Nettoyage des protocoles reseau
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration des composants reseau...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     powershell -NoProfile -Command "Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Up' -and $_.Virtual -eq $false } | ForEach-Object { Disable-NetAdapterBinding -Name $_.Name -ComponentID 'ms_lldp','ms_implat' -ErrorAction SilentlyContinue }" >nul 2>&1
@@ -2222,6 +2265,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%LLDP et Microsoft Network Adapter Multiplexor desactives.%COLOR_RESET%) else (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Bindings reseau rendus au stock mesure.%COLOR_RESET%)
 
+REM  5.11 - Desactivation NetBIOS over TCP/IP
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de NetBIOS sur TCP/IP...%COLOR_RESET%
 for /f "tokens=*" %%i in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces" /s ^| findstr /i /r "\\Tcpip_.*$" 2^>nul') do (
   if "!PROFIL_USAGE!"=="0" (
@@ -2232,6 +2276,7 @@ for /f "tokens=*" %%i in ('reg query "HKLM\SYSTEM\CurrentControlSet\Services\Net
 )
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%NetBIOS desactive%COLOR_RESET%) else (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%NetBIOS rendu au stock Windows%COLOR_RESET%)
 
+REM  5.12 - RssBaseCpu (interrupts NIC decales du core 0)
 if "!PROFIL_POWER!"=="0" (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Repartition des interruptions de la carte reseau...%COLOR_RESET%
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\Ndis\Parameters" /v RssBaseCpu /t REG_DWORD /d 1 /f >nul 2>&1
@@ -2279,6 +2324,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 echo.
 
+REM  6.1 - Souris optimisee
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation de la reactivite souris...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'acceleration de la souris...%COLOR_RESET%
@@ -2325,6 +2371,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Parametres souris et HID optimises%COLOR_RESET%
 
+REM  6.2 - Clavier optimise
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisation de la reactivite clavier...%COLOR_RESET%
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%File clavier reglee sur 20 pour le profil Gaming.%COLOR_RESET%
@@ -2332,6 +2379,7 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%File clavier non modifiee pour le profil Normal.%COLOR_RESET%
 )
 
+REM  6.3 - Win8 Scaling (Profil GAMING uniquement)
 if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la mise a l'echelle DPI Windows pour le profil Gaming...%COLOR_RESET%
     reg add "HKCU\Control Panel\Desktop" /v Win8DpiScaling /t REG_DWORD /d 1 /f >nul 2>&1
@@ -2344,6 +2392,7 @@ if "!PROFIL_USAGE!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Mise a l'echelle DPI demandee aux valeurs Windows.%COLOR_RESET%
 )
 
+REM  6.4 - MSI Mode Universel (Latence Peripheriques)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage des interruptions USB...%COLOR_RESET%
 set "STEP_ERRORS=0"
 call :SET_DEVICE_MSI_PROFILE USB !PROFIL_USAGE!
@@ -2352,6 +2401,7 @@ call :STEP_RESULT "Interruptions USB reglees" "" "Reglage MSI USB applique parti
 
 
 
+REM  6.5 - Raccourcis d'accessibilite selon le profil
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation des raccourcis d'accessibilite...%COLOR_RESET%) else (echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des raccourcis d'accessibilite...%COLOR_RESET%)
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKCU\Control Panel\Accessibility\StickyKeys" /v "Flags" /t REG_SZ /d "0" /f >nul 2>&1
@@ -2370,6 +2420,7 @@ if "!PROFIL_USAGE!"=="0" (
 )
 if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Raccourcis d'accessibilite desactives%COLOR_RESET%) else (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Raccourcis d'accessibilite rendus au stock Windows%COLOR_RESET%)
 
+REM  6.6 - HID parse optimise
 if "!PROFIL_USAGE!"=="0" (
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\hidparse\Parameters" /v "EnableInputDelayOptimization" /t REG_DWORD /d 1 /f >nul 2>&1
     reg add "HKLM\SYSTEM\CurrentControlSet\Services\hidparse\Parameters" /v "EnableBufferedInput" /t REG_DWORD /d 0 /f >nul 2>&1
@@ -2426,6 +2477,7 @@ echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le mode Eco limite la consom
 echo.
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 
+REM  7.1 - Activation du plan Ultimate Performance
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation du plan Ultimate Performance...%COLOR_RESET%
 set "POWER_PLAN_ALREADY_ACTIVE=0"
 if "!AIO_MODE!"=="1" if "!AIO_POWER_PRESELECTED!"=="1" set "POWER_PLAN_ALREADY_ACTIVE=1"
@@ -2442,6 +2494,7 @@ if "!POWER_PLAN_ALREADY_ACTIVE!"=="1" (
 )
 set "POWER_PLAN_ALREADY_ACTIVE="
 
+REM  7.2 - GPU Power Management (ULPS & PowerMizer)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la gestion d'energie du GPU AMD et NVIDIA...%COLOR_RESET%
 for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg add "%%K" /v EnableUlps /t REG_DWORD /d 0 /f >nul 2>&1
@@ -2455,6 +2508,7 @@ for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie du GPU reglee pour les performances.%COLOR_RESET%
 
+REM  7.3 - Parametres avances du plan d'alimentation (user standard)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration avancee du plan d'alimentation...%COLOR_RESET%
 set "STEP_ERRORS=0"
 
@@ -2479,6 +2533,7 @@ for %%S in ("44f3beca-a7c0-460e-9df2-bb8b99e0cba6 3619c3f2-afb2-4afc-b0e9-e7fef3
 
 call :STEP_RESULT "Parametres avances du plan d'alimentation appliques" "" "Parametres avances du plan d'alimentation partiellement appliques" "" "Windows a refuse certains reglages de ce materiel ; les autres restent actifs."
 
+REM  7.4 - Optimisations CPU (Intel Hybrid + AMD Core Parking)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Le processeur reste pret a repondre rapidement...%COLOR_RESET%
 set "STEP_ERRORS=0"
 
@@ -2491,6 +2546,7 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Le processeur evite la m
 call :SET_POWERCFG_ACDC 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318584 100
 call :STEP_RESULT "Reglage des coeurs demande" "" "Reglage des coeurs partiellement applique"
 
+REM  7.5 - Desactivation economies d'energie USB et peripheriques HID/USB
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reduction de la mise en veille des peripheriques...%COLOR_RESET%
 set "STEP_ERRORS=0"
 call :SET_USB_POWER 0 1
@@ -2498,11 +2554,13 @@ if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 call :STEP_RESULT "Mise en veille des peripheriques HID et USB reduite" "" "Mise en veille des peripheriques HID et USB partiellement reduite"
 
 
+REM  7.8 - Configuration generale du systeme d'alimentation
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration du systeme d'alimentation...%COLOR_RESET%
 reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\WcmSvc\GroupPolicy" /v fDisablePowerManagement /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v SleepStudyDisabled /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v SleepStudyDisabled /t REG_DWORD /d 1 /f >nul 2>&1
 
+REM  7.9 - Desactivation des Timer Coalescing et DPC
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Les interruptions du processeur sont reduites.%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v MinimumDpcRate /t REG_DWORD /d 1 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v DisableTsx /t REG_DWORD /d 1 /f >nul 2>&1
@@ -2522,6 +2580,7 @@ bcdedit /set disabledynamictick yes >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Preset timer Performance max demande.%COLOR_RESET%
 echo %COLOR_WHITE%Dynamic Tick coupe ; autres timers geres par Windows, HPET conserve actif.%COLOR_RESET%
 
+REM  7.10 - Installation SetTimerResolution
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration de SetTimerResolution...%COLOR_RESET%
 set "STR_DIR=%ProgramFiles%\SetTimerResolution"
 set "STR_OLD_DIR=%ProgramFiles%\OptimizerAllInOne"
@@ -2572,33 +2631,40 @@ if exist "%STR_EXE%" (
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le mode Eco permet de la desactiver.%COLOR_RESET%
 )
 
+REM  7.11 - Desactivation du PDC et Power Throttling
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Le processeur ne sera plus limite automatiquement.%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PDC\Activators\Default\VetoPolicy" /v "EA:EnergySaverEngaged" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PDC\Activators\28\VetoPolicy" /v "EA:PowerStateDischarging" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v PowerThrottlingOff /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage de la limitation automatique demande.%COLOR_RESET%
 
+REM  7.12 - Desactivation ASPM
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Le lien PCI Express evite les economies d'energie.%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Services\pci\Parameters" /v ASPMOptOut /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage PCI Express demande ; latence potentiellement reduite.%COLOR_RESET%
 
+REM  7.13 - Optimisations stockage et disques
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la gestion d'energie du stockage...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /t REG_DWORD /d 0 /f >nul 2>&1
 call :FOR_STORAGE_CLASS foreach($n in @('EnableHIPM','EnableDIPM','EnableHDDParking','IoLatencyCap')){New-ItemProperty -Path $p -Name $n -PropertyType DWord -Value 0 -Force}
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie du stockage reglee pour les performances.%COLOR_RESET%
 
+REM  7.14 - Optimisations avancees des services : IoLatencyCap, ecrit ci-dessus
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Limites de latence stockage supprimees%COLOR_RESET%
 
+REM  7.15 - GPU PreferMaxPerf
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Configuration GPU en mode performances maximales...%COLOR_RESET%
 for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg add "%%K" /v PreferMaxPerf /t REG_DWORD /d 1 /f >nul 2>&1
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%GPU configure en mode performances maximales%COLOR_RESET%
 
+REM  7.16 - PCI & peripheriques reseau
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de la mise en veille des peripheriques PCI...%COLOR_RESET%
 for /f "tokens=*" %%K in ('%WINOPT_QUERY_PCIE_CLASS%') do (
   reg add "%%K" /v D3ColdSupported /t REG_DWORD /d 0 /f >nul 2>&1
 )
+REM  7.17 - Energie PCIe
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation gestion d'energie PCIe...%COLOR_RESET%
 set "STEP_ERRORS=0"
 call :SET_POWERCFG_ACDC 501a4d13-42af-4429-9fd1-a8218c268e20 ee12f906-d277-404b-b6da-e5fa1a576df5 0
@@ -2611,6 +2677,7 @@ for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%GPU optimise%COLOR_RESET%
 
+REM  7.18 - Convergence reseau du profil Energie (parcours manuel uniquement)
 set "NIC_PROFILE_ERROR=0"
 if not "!AIO_MODE!"=="1" (
     echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Synchronisation du profil reseau avec Performance max...%COLOR_RESET%
@@ -2661,6 +2728,7 @@ echo %COLOR_WHITE%  Les surcharges du mode Performance max sont supprimees.%COLO
 echo.
 echo %COLOR_CYAN%-------------------------------------------------------------------------------%COLOR_RESET%
 
+REM  7.0 - Activer Equilibre sans effacer les plans OEM/personnalises.
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Les plans personnalises sont conserves.%COLOR_RESET%
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Activation du plan Equilibre Windows...%COLOR_RESET%
 set "POWER_PLAN_ALREADY_ACTIVE=0"
@@ -2679,12 +2747,14 @@ if "!POWER_PLAN_ALREADY_ACTIVE!"=="1" (
 set "POWER_PLAN_ALREADY_ACTIVE="
 
 
+REM  7.3 - USB Selective Suspend
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reactivation de la mise en veille selective USB...%COLOR_RESET%
 set "STEP_ERRORS=0"
 call :SET_USB_POWER 1
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 call :STEP_RESULT "Restauration de la gestion d'energie USB demandee" "" "Restauration de la gestion d'energie USB partiellement effectuee"
 
+REM  7.4 - Timer Coalescing
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des surcharges Timer Coalescing...%COLOR_RESET%
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v MinimumDpcRate /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Kernel" /v DisableTsx /f >nul 2>&1
@@ -2705,6 +2775,7 @@ bcdedit /deletevalue disabledynamictick >nul 2>&1
 powershell -NoProfile -Command "Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.InstanceId -like 'ACPI\PNP0103\*' -and $_.Problem -eq 22 } | Enable-PnpDevice -Confirm:$false -ErrorAction SilentlyContinue" >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Timer Coalescing, BCD des timers et HPET rendus a Windows.%COLOR_RESET%
 
+REM  7.5 - SetTimerResolution de la connexion
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression de SetTimerResolution de la connexion...%COLOR_RESET%
 call :REMOVE_STR_AUTOSTART_TASK
 taskkill /f /im SetTimerResolution.exe >nul 2>&1
@@ -2716,21 +2787,26 @@ set "STR_STARTUP_LNK=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Set
 if exist "%STR_STARTUP_LNK%" del /f /q "%STR_STARTUP_LNK%" >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Autolancement SetTimerResolution supprime.%COLOR_RESET%
 
+REM  7.6 - Restaurer Intel Thread Director (visibilite panneau)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Windows peut a nouveau regler la repartition des taches.%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\93b8b6dc-0698-4d1c-9ee4-0644e900c85d" /v Attributes /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage de la repartition des taches demande.%COLOR_RESET%
 
+REM  7.7 - Restaurer Core Parking (powercfg + visibilite panneau)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Les coeurs peuvent de nouveau se mettre en veille.%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318584" /v Attributes /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Mise en veille des coeurs rendue au plan Equilibre.%COLOR_RESET%
 
+REM  7.8 - Power Throttling
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Windows peut de nouveau limiter le processeur si necessaire.%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PDC\Activators\Default\VetoPolicy" /v "EA:EnergySaverEngaged" /t REG_DWORD /d 0 /f >nul 2>&1
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PDC\Activators\28\VetoPolicy" /v "EA:PowerStateDischarging" /t REG_DWORD /d 0 /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerThrottling" /v PowerThrottlingOff /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Limitation automatique rendue a Windows.%COLOR_RESET%
 
+REM  7.9 - Seuils d'economie d'energie (20 %% dans le plan Equilibre, pas de restauration necessaire)
 
+REM  7.10 - ULPS (AMD) et PowerMizer (Auto)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de la gestion d'energie des GPU AMD et NVIDIA...%COLOR_RESET%
 for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg delete "%%K" /v EnableUlps /f >nul 2>&1
@@ -2745,6 +2821,7 @@ for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg delete "%%K" /v RMForcedMaxPerf /f >nul 2>&1
 )
 
+REM  7.11 - Economies d'energie reseau (NIC)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des economies d'energie de la carte reseau...%COLOR_RESET%
 set "NIC_ECO_PROFILE_ERROR=0"
 if not "!AIO_MODE!"=="1" (
@@ -2761,46 +2838,57 @@ if "!NIC_ECO_PROFILE_ERROR!"=="1" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages d'economie de la carte reseau demandes%COLOR_RESET%
 )
 
+REM  7.12 - Visibilite des parametres processeur dans le panneau
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de la visibilite des parametres processeur...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\54533251-82be-4824-96c1-47b60b740d00\0cc5b647-c1df-4637-891a-dec35c318583" /v Attributes /t REG_DWORD /d 1 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Visibilite des parametres restauree%COLOR_RESET%
 
+REM  7.13 - ASPM (PCI Express)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de la gestion d'energie PCI Express...%COLOR_RESET%
 reg delete "HKLM\SYSTEM\CurrentControlSet\Services\pci\Parameters" /v ASPMOptOut /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion PCI Express rendue a Windows et au pilote.%COLOR_RESET%
 
+REM  7.14 - Mise en veille des disques et stockage
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des parametres de stockage...%COLOR_RESET%
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /f >nul 2>&1
 call :FOR_STORAGE_CLASS Remove-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking','IoLatencyCap' -ErrorAction SilentlyContinue
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Parametres de stockage restaures%COLOR_RESET%
 
+REM  7.15 - Limites de latence I/O : IoLatencyCap, retire ci-dessus
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Limites de latence I/O restaurees%COLOR_RESET%
 
+REM  7.16 - Gestion d'energie GPU
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de la gestion d'energie GPU...%COLOR_RESET%
 for /f "tokens=*" %%K in ('%WINOPT_QUERY_GPU_CLASS%') do (
   reg delete "%%K" /v PreferMaxPerf /f >nul 2>&1
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie GPU restauree%COLOR_RESET%
+REM  7.17 - Gestion d'energie PCI
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Suppression des surcharges d'energie PCI...%COLOR_RESET%
 for /f "tokens=*" %%K in ('%WINOPT_QUERY_PCIE_CLASS%') do (
   reg delete "%%K" /v D3ColdSupported /f >nul 2>&1
 )
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie PCI rendue aux pilotes.%COLOR_RESET%
 
+REM  7.18 - Systeme d'alimentation
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration du systeme d'alimentation...%COLOR_RESET%
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WcmSvc\GroupPolicy" /v fDisablePowerManagement /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Power" /v SleepStudyDisabled /f >nul 2>&1
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power" /v SleepStudyDisabled /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Systeme d'alimentation restaure%COLOR_RESET%
 
+REM  7.19 - Peripheriques ACPI/HID/PCI/USB
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de l'economie des peripheriques...%COLOR_RESET%
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Parametres d'economie des peripheriques restaures%COLOR_RESET%
 
+REM  7.20 - Gestion d'energie PCIe (visibilite panneau)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration de la visibilite PCIe...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\501a4d13-42af-4429-9fd1-a8218c268e20\ee12f906-d277-404b-b6da-e5fa1a576df5" /v Attributes /t REG_DWORD /d 2 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Visibilite PCIe restauree%COLOR_RESET%
 
+REM  7.21 - Energie PCIe GPU (ASPM restaure en 7.13, valeurs powercfg via 7.0)
 
+REM  7.22 - Les surcharges de l'optimiseur ont ete annulees sans toucher aux autres plans.
 
 set "STR_STARTUP_LNK="
 set "ENERGY_SECTION_RC=0"

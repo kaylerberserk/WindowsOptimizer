@@ -83,6 +83,8 @@ These are maintenance constraints transferred from authored code explanations; h
 - External tools: download to an admin-only named ProgramData subdirectory to prevent same-user substitution before execution. MAS/WinUtil lack Authenticode signatures; the URL allowlist is the trust boundary, and signature checking only rejects an invalid certificate. Never overstate that protection.
 - Valorant: refuse writes while the game can save settings; never force termination. Preserve here-string settings, first backup, encoding detection, read-only attribute and write verification. The separate template is not an extraction source.
 
+Numbered `REM n.n - ...` lines are catalogue metadata consumed by winopt-bench, not explanatory comments. Preserve their text and placement until producer and consumer share a replacement contract; unchanged batch execution alone does not prove catalogue/coverage compatibility.
+
 ## Sources
 
 Consulted 2026-10-16 and compared with settings; Windows tests establish paths/storage, not RAM/FPS gains or universal policy support.
