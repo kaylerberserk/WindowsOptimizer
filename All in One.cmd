@@ -1769,16 +1769,27 @@ REM  "runas" est ici le verbe du menu contextuel de tous les fichiers et des
 REM  dossiers. Son etat est capture AVANT d'etre remplace, pour que "Defaut
 REM  Windows" puisse le rendre, ou le supprimer s'il n'existait pas.
 call :CAPTURE_RUNAS_VERB
-if !errorlevel! EQU 3 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le verbe runas est deja ecrase sur cette machine : rien a capturer.%COLOR_RESET%
-reg add "HKCR\*\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1
-reg add "HKCR\*\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKCR\*\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /d y || takeown /f \"%%1\" /d o && icacls \"%%1\" /grant *S-1-5-32-544:F" /f >nul 2>&1
-reg add "HKCR\*\shell\runas" /v "IsolatedCommand" /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /d y || takeown /f \"%%1\" /d o && icacls \"%%1\" /grant *S-1-5-32-544:F" /f >nul 2>&1
-reg add "HKCR\Directory\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1
-reg add "HKCR\Directory\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1
-reg add "HKCR\Directory\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d y || takeown /f \"%%1\" /r /d o && icacls \"%%1\" /grant *S-1-5-32-544:F /t" /f >nul 2>&1
-reg add "HKCR\Directory\shell\runas" /v "IsolatedCommand" /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d y || takeown /f \"%%1\" /r /d o && icacls \"%%1\" /grant *S-1-5-32-544:F /t" /f >nul 2>&1
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Option Devenir Proprietaire ajoutee au menu contextuel.%COLOR_RESET%
+set "RUNAS_CAPTURE_RC=!errorlevel!"
+if "!RUNAS_CAPTURE_RC!"=="0" (
+    set "RUNAS_APPLY_RC=0"
+    reg add "HKCR\*\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1 || set "RUNAS_APPLY_RC=1"
+    reg add "HKCR\*\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1 || set "RUNAS_APPLY_RC=1"
+    reg add "HKCR\*\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /d y || takeown /f \"%%1\" /d o && icacls \"%%1\" /grant *S-1-5-32-544:F" /f >nul 2>&1 || set "RUNAS_APPLY_RC=1"
+    reg add "HKCR\*\shell\runas" /v "IsolatedCommand" /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /d y || takeown /f \"%%1\" /d o && icacls \"%%1\" /grant *S-1-5-32-544:F" /f >nul 2>&1 || set "RUNAS_APPLY_RC=1"
+    reg add "HKCR\Directory\shell\runas" /ve /t REG_SZ /d "Devenir Proprietaire" /f >nul 2>&1 || set "RUNAS_APPLY_RC=1"
+    reg add "HKCR\Directory\shell\runas" /v "NoWorkingDirectory" /t REG_SZ /d "" /f >nul 2>&1 || set "RUNAS_APPLY_RC=1"
+    reg add "HKCR\Directory\shell\runas\command" /ve /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d y || takeown /f \"%%1\" /r /d o && icacls \"%%1\" /grant *S-1-5-32-544:F /t" /f >nul 2>&1 || set "RUNAS_APPLY_RC=1"
+    reg add "HKCR\Directory\shell\runas" /v "IsolatedCommand" /t REG_SZ /d "cmd.exe /c takeown /f \"%%1\" /r /d y || takeown /f \"%%1\" /r /d o && icacls \"%%1\" /grant *S-1-5-32-544:F /t" /f >nul 2>&1 || set "RUNAS_APPLY_RC=1"
+    if "!RUNAS_APPLY_RC!"=="0" (
+        echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Option Devenir Proprietaire ajoutee au menu contextuel.%COLOR_RESET%
+    ) else (
+        echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Verbe runas : ajout incomplet, capture conservee.%COLOR_RESET%
+    )
+) else (
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Verbe runas inchange : capture incomplete ou ancien etat inconnu.%COLOR_RESET%
+)
+set "RUNAS_CAPTURE_RC="
+set "RUNAS_APPLY_RC="
 
 REM  Desactivation des Co-installateurs tiers (Razer/Logitech Popup)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation du reglage des installateurs tiers...%COLOR_RESET%
@@ -5406,70 +5417,18 @@ set "WINOPT_HOSTS_BACKUP_RC=!errorlevel!"
 set "WINOPT_HOSTS_SOURCE="
 exit /b !WINOPT_HOSTS_BACKUP_RC!
 
-:: Capture les deux cles du verbe "runas" du menu contextuel AVANT que la
-:: section 1.8 ne les ecrase. reg export est utilise plutot qu'un .reg ecrit a
-:: la main : il restitue fidelement tous les types de valeurs.
-:: Une cle absente est notee par un fichier temoin ".absent" : la restauration
-:: la supprimera au lieu de laisser "Devenir Proprietaire" en place.
-:: Capture unique : un fichier existant n'est jamais reecrit, donc seule la
-:: premiere capture - la seule qui decrive l'etat de Windows - compte.
+REM  Capture les deux verbes avant ajout. Une paire incomplete bloque l'ajout ;
+REM  chaque export est publie apres verification, sans ecraser une capture.
 :CAPTURE_RUNAS_VERB
-if exist "%WINOPT_RUNAS_BACKUP%" exit /b 0
-if exist "%WINOPT_RUNAS_BACKUP%.absent" exit /b 0
-REM  Ne jamais capturer un verbe deja ecrase. Sur une machine ou une
-REM  version anterieure a deja applique "Devenir Proprietaire", la capture
-REM  ne contiendrait que l'etat du script : la restauration afficherait
-REM  [FAIT] sans rien ramener. Rc = 3.
-reg query "HKCR\*\shell\runas" /v * 2>nul | findstr /I /C:"Devenir Proprietaire" >nul
-if !errorlevel! EQU 0 exit /b 3
-reg query "HKCR\*\shell\runas" >nul 2>&1
-if !errorlevel! NEQ 0 (
-    echo absent> "%WINOPT_RUNAS_BACKUP%.absent"
-) else (
-    reg export "HKCR\*\shell\runas" "%WINOPT_RUNAS_BACKUP%" /y >nul 2>&1
-    if !errorlevel! NEQ 0 exit /b 1
-)
-reg query "HKCR\Directory\shell\runas" >nul 2>&1
-if !errorlevel! NEQ 0 (
-    echo absent> "%WINOPT_DIR_RUNAS_BACKUP%.absent"
-) else (
-    reg export "HKCR\Directory\shell\runas" "%WINOPT_DIR_RUNAS_BACKUP%" /y >nul 2>&1
-    if !errorlevel! NEQ 0 exit /b 1
-)
-exit /b 0
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';$tmp=$null;try{$rows=@(@('*\shell\runas',$env:WINOPT_RUNAS_BACKUP),@('Directory\shell\runas',$env:WINOPT_DIR_RUNAS_BACKUP));foreach($row in $rows){$k=$row[0];$p=$row[1];$a=$p+'.absent';if([string]::IsNullOrWhiteSpace($p)){throw 'Backup path missing'};if((Test-Path -LiteralPath $p)-and(Test-Path -LiteralPath $a)){throw 'Conflicting capture'};if(Test-Path -LiteralPath $p){$s=[IO.File]::ReadAllText($p);if(-not$s.StartsWith('Windows Registry Editor Version 5.00')-or-not$s.Contains('[HKEY_CLASSES_ROOT\'+$k+']')){throw 'Invalid capture'};continue};if(Test-Path -LiteralPath $a){if([IO.File]::ReadAllText($a).Trim()-cne'absent'){throw 'Invalid absence marker'};continue};$key=[Microsoft.Win32.Registry]::ClassesRoot.OpenSubKey($k);try{$present=$null-ne$key;if($present-and$key.GetValue('')-eq'Devenir Proprietaire'){exit 3}}finally{if($key){$key.Dispose()}};$tmp=$p+'.pending-'+[guid]::NewGuid().ToString('N');if($present){& reg.exe export ('HKCR\'+$k) $tmp /y *> $null;if($LASTEXITCODE-ne0-or-not[IO.File]::Exists($tmp)){throw 'Export failed'};$s=[IO.File]::ReadAllText($tmp);if(-not$s.StartsWith('Windows Registry Editor Version 5.00')-or-not$s.Contains('[HKEY_CLASSES_ROOT\'+$k+']')){throw 'Incomplete export'};$dst=$p}else{[IO.File]::WriteAllText($tmp,'absent',[Text.Encoding]::ASCII);if([IO.File]::ReadAllText($tmp)-cne'absent'){throw 'Marker write failed'};$dst=$a};Move-Item -LiteralPath $tmp -Destination $dst -ErrorAction Stop;$tmp=$null};exit 0}catch{exit 1}finally{if($tmp){Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue}}" >nul 2>&1
+exit /b !errorlevel!
 
-:: Restaure les deux cles. "reg import" ajoute et remplace mais ne supprime
-:: rien : apres un premier import qui prouve que la capture est lisible, la
-:: cle est supprimee puis reimportee, ce qui retire aussi les valeurs et la
-:: sous-cle "command" ajoutees par le script. Une cle notee absente est
-:: supprimee. En cas d'echec les captures restent pour un nouvel essai.
+REM  Une suppression refusee ou une relecture differente conserve les captures.
+REM  Le contenu exporte doit correspondre avant tout retrait des preuves.
+REM  reg import peut ecrire son succes sur stderr : verifier son code natif.
 :RESTORE_RUNAS_VERB
-set "RUNAS_RESTORE_RC=2"
-for %%F in ("%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%") do (
-    if exist "%%~F" set "RUNAS_RESTORE_RC=0"
-    if exist "%%~F.absent" set "RUNAS_RESTORE_RC=0"
-)
-if "!RUNAS_RESTORE_RC!"=="2" exit /b 2
-for %%F in ("%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%") do if exist "%%~F" (
-    reg import "%%~F" >nul 2>&1
-    if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
-)
-if "!RUNAS_RESTORE_RC!"=="1" exit /b 1
-if exist "%WINOPT_RUNAS_BACKUP%" (
-    reg delete "HKCR\*\shell\runas" /f >nul 2>&1
-    reg import "%WINOPT_RUNAS_BACKUP%" >nul 2>&1
-    if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
-)
-if exist "%WINOPT_DIR_RUNAS_BACKUP%" (
-    reg delete "HKCR\Directory\shell\runas" /f >nul 2>&1
-    reg import "%WINOPT_DIR_RUNAS_BACKUP%" >nul 2>&1
-    if !errorlevel! NEQ 0 set "RUNAS_RESTORE_RC=1"
-)
-if "!RUNAS_RESTORE_RC!"=="1" exit /b 1
-if exist "%WINOPT_RUNAS_BACKUP%.absent" reg delete "HKCR\*\shell\runas" /f >nul 2>&1
-if exist "%WINOPT_DIR_RUNAS_BACKUP%.absent" reg delete "HKCR\Directory\shell\runas" /f >nul 2>&1
-del /f /q "%WINOPT_RUNAS_BACKUP%" "%WINOPT_DIR_RUNAS_BACKUP%" "%WINOPT_RUNAS_BACKUP%.absent" "%WINOPT_DIR_RUNAS_BACKUP%.absent" >nul 2>&1
-exit /b 0
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';$tmp=$null;try{$rows=@(@('*\shell\runas',$env:WINOPT_RUNAS_BACKUP),@('Directory\shell\runas',$env:WINOPT_DIR_RUNAS_BACKUP));$any=$false;foreach($row in $rows){if((Test-Path -LiteralPath $row[1])-or(Test-Path -LiteralPath ($row[1]+'.absent'))){$any=$true}};if(-not$any){exit 2};foreach($row in $rows){$p=$row[1];$has=Test-Path -LiteralPath $p;$absent=Test-Path -LiteralPath ($p+'.absent');if($has-eq$absent){throw 'Incomplete capture'};if($has){$s=[IO.File]::ReadAllText($p);if(-not$s.StartsWith('Windows Registry Editor Version 5.00')-or-not$s.Contains('[HKEY_CLASSES_ROOT\'+$row[0]+']')){throw 'Invalid capture'}}elseif([IO.File]::ReadAllText($p+'.absent').Trim()-cne'absent'){throw 'Invalid absence marker'}};foreach($row in $rows){$k=$row[0];$p=$row[1];if(Test-Path -LiteralPath $p){$rc=& {$ErrorActionPreference='Continue';& reg.exe import $p *> $null;$LASTEXITCODE};if($rc-ne0){throw 'Import refused'}};[Microsoft.Win32.Registry]::ClassesRoot.DeleteSubKeyTree($k,$false);$key=[Microsoft.Win32.Registry]::ClassesRoot.OpenSubKey($k);if($key){$key.Dispose();throw 'Delete not verified'};if(Test-Path -LiteralPath $p){$rc=& {$ErrorActionPreference='Continue';& reg.exe import $p *> $null;$LASTEXITCODE};if($rc-ne0){throw 'Restore failed'};$tmp=$p+'.verify-'+[guid]::NewGuid().ToString('N');& reg.exe export ('HKCR\'+$k) $tmp /y *> $null;if($LASTEXITCODE-ne0){throw 'Readback failed'};$expected=[IO.File]::ReadAllText($p).Replace([string][char]13,'').TrimEnd();$actual=[IO.File]::ReadAllText($tmp).Replace([string][char]13,'').TrimEnd();if(-not[string]::Equals($expected,$actual,[StringComparison]::Ordinal)){throw 'Restore mismatch'};Remove-Item -LiteralPath $tmp -Force;$tmp=$null}};foreach($row in $rows){foreach($p in @($row[1],($row[1]+'.absent'))){if(Test-Path -LiteralPath $p){Remove-Item -LiteralPath $p -Force -ErrorAction Stop}}};exit 0}catch{exit 1}finally{if($tmp){Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue}}" >nul 2>&1
+exit /b !errorlevel!
 
 :CAPTURE_SECURITY_BASELINE
 set "WINOPT_SECURITY_SOURCE=!WINOPT_SELF_BACKUP_SOURCE!"
