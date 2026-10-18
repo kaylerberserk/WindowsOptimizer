@@ -1,5 +1,4 @@
 param(
-    # Source officielle : branche main (derniere publication disponible).
     [string]$BaseUrl = "https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/main",
     [switch]$VerifyOnly
 )
@@ -72,8 +71,6 @@ if ($hasInvalidEncoding) {
 }
 
 $scriptContent = [Text.Encoding]::ASCII.GetString($scriptBytes)
-# raw.githubusercontent.com sert le blob Git en LF. Les gros batchs LF peuvent rendre
-# les labels :CALL introuvables sous cmd.exe : reecrire explicitement le fichier en CRLF.
 try {
     $scriptContent = [regex]::Replace($scriptContent, "\r\n|\r|\n", "`r`n")
     [IO.File]::WriteAllText($scriptPath, $scriptContent, [Text.Encoding]::ASCII)
@@ -103,8 +100,6 @@ if ($VerifyOnly) {
     exit 0
 }
 
-# Precharger le timer avant l'elevation : un proxy ou une session utilisateur peut
-# ne pas etre disponible dans le processus RunAs. Le batch garde ses propres secours.
 $timerTemp = "$timerPath.download"
 $timerOrigin = "$BaseUrl/Tools/Timer%20%26%20Interrupt/SetTimerResolution.exe"
 try {
@@ -125,7 +120,6 @@ try {
 
 $exitCode = 1
 try {
-    # Le batch utilise la meme source de publication pour ses ressources optionnelles.
     $env:WINOPT_RELEASE_BASE_URL = $BaseUrl
     $quote = [char]34
     $cmdArguments = "/d /e:on /v:off /s /c $quote$quote$scriptPath$quote$quote"
@@ -140,7 +134,6 @@ try {
     if (!([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
         $start.Verb = "RunAs"
     }
-    # Fenetre CMD dediee avec elevation directe : meme comportement qu'un batch ouvert manuellement.
     $process = Start-Process @start
     $exitCode = $process.ExitCode
 } catch {
