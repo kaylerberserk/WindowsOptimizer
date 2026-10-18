@@ -92,6 +92,7 @@ Gaming convient aussi à un PC utilisé pour jouer et travailler. Vous pouvez le
 - Portable Normal + Eco : DiagLog et le service d'alimentation moderne sont préservés. Le refus NTFS sur la base du Store, les changements COM de F1, le nettoyage automatique et les modifications forcées d'hibernation/Modern Standby sont retirés des profils.
 - Réseau Gaming + Performance Max : économies d'énergie réduites et réglages de latence appliqués aux propriétés exposées par le pilote, dont MIMO sans économie, U-APSD désactivé et mode 40 MHz non bloqué sur les adaptateurs Intel compatibles. Le résultat dépend du pilote.
 - Performance Max : compression mémoire coupée au-delà de 8 Go de RAM, économies HIPM/DIPM et parking des disques désactivés ; Eco rend ces deux réglages de stockage à Windows. Le preset timer reste expérimental et réversible via Eco.
+- Performance Max applique aussi un profil de charge Defender : facteur CPU minimal, priorité basse, scans planifiés coupés, analyse réseau, USB et archives désactivée. Les valeurs précédentes sont capturées avant application ; le mode Défaut Windows les rend, ou applique les valeurs par défaut documentées si la capture manque. La protection temps réel n'est pas modifiée.
 - Fichier hosts : le bloc de télémétrie fait signaler `hosts` par Defender comme `SettingsModifier:Win32/PossibleHostsFileHijack`, un faux positif documenté par Microsoft. Quand l'écriture du bloc réussit, le script exclut ce seul fichier de l'analyse Defender ; l'exclusion ne couvre ni le dossier `etc` ni un dossier parent, et n'est pas retirée par la restauration.
 
 ### Menu principal
@@ -134,7 +135,7 @@ Gaming et Performance Max conservent LSA Protection avec `RunAsPPL=2`, sans écr
 
 | Touche | Option | Effet |
 |---|---|---|
-| **[1]** | Windows Defender | Active ou désactive les protections ; un état partiel est signalé si toutes les modifications ne sont pas appliquées. Un profil performance garde Defender actif en réduisant sa charge : scans planifiés coupés, charge CPU bridée, analyse réseau, USB et archives désactivée, priorité basse. Les valeurs précédentes sont capturées avant application ; sans capture, la restauration applique les valeurs par défaut de Windows. |
+| **[1]** | Windows Defender | Active ou désactive les protections ; un état partiel est signalé si toutes les modifications ne sont pas appliquées. |
 | **[2]** | UAC | Modifie les notifications du contrôle de compte utilisateur. |
 | **[3]** | Animations | Active ou désactive les animations de l'interface. |
 | **[4]** | IA et Widgets | Gère Copilot, l'IA du Bloc-notes, les Widgets et Recall selon la version de Windows. Désactiver Recall supprime ses instantanés enregistrés. |
