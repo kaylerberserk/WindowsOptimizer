@@ -91,7 +91,7 @@ Choisissez un usage et un niveau d'énergie. Les sections **[1] à [7]** ne dema
 - **Navigateurs** : accélération matérielle et QUIC activés, DNS sécurisé Cloudflare avec repli automatique. Edge et Chrome peuvent encore tourner en arrière-plan : **[G] → [P]** permet de le limiter.
 - **Portable en Normal + Eco** : le journal de batterie et la page Alimentation et batterie des Paramètres restent fonctionnels. Aucun profil ne modifie l'hibernation ni le démarrage rapide.
 - **Réseau, Gaming + Performance Max** : économies d'énergie de la carte réseau réduites et réglages de latence, selon ce que propose le pilote.
-- **Performance Max** : compression mémoire coupée au-delà de 8 Go de RAM, économies d'énergie des disques coupées (Eco les rétablit). Le réglage des minuteries est expérimental ; Eco l'annule.
+- **Performance Max** : compression mémoire coupée au-delà de 8 Go de RAM, économies d'énergie des disques coupées (Eco les rétablit).
 - **Defender, Performance Max** : analyses plus légères (priorité basse, aucune analyse planifiée, ni réseau, ni USB, ni archives). La protection en temps réel reste active. Le mode **Défaut Windows** du menu [8] rétablit les valeurs d'origine.
 - **Fichier hosts** : Defender signale à tort le blocage de télémétrie (`PossibleHostsFileHijack`). Le script exclut ce seul fichier de l'analyse ; l'exclusion reste après une restauration.
 

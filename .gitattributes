@@ -1,10 +1,6 @@
-# Force CRLF line endings for Windows batch files
-# Git stocke le batch en LF ; il se recopie en CRLF a l'execution (voir AGENTS.md, Contrat de format)
 *.cmd    text eol=crlf
 *.bat    text eol=crlf
 *.ps1    text eol=crlf
-
-# Other text files
 *.md     text eol=lf
 *.txt    text eol=lf
 *.gitignore text eol=lf
