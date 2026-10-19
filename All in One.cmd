@@ -2023,8 +2023,50 @@ if "!HAS_NVIDIA!"=="1" (
     echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%NVIDIA Profile Inspector ignore. Aucun GPU NVIDIA detecte.%COLOR_RESET%
 )
 
+REM  4.9 - Pilote NVIDIA : PhysX et chemin GR535
+set "NVIDIA_SERVICE=0"
+if "!HAS_NVIDIA!"=="1" reg query "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm" >nul 2>&1 && set "NVIDIA_SERVICE=1"
+if "!NVIDIA_SERVICE!"=="1" (
+    set "NVIDIA_DRIVER_ERROR=0"
+    if "!PROFIL_USAGE!"=="0" (
+        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA...%COLOR_RESET%
+        reg add "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v NvCplPhysxAuto /t REG_DWORD /d 0 /f >nul 2>&1
+        call :NVIDIA_VERIFY "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" NvCplPhysxAuto 0
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v EnableGR535 /t REG_DWORD /d 0 /f >nul 2>&1
+        call :NVIDIA_VERIFY "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" EnableGR535 0
+        reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v EnableGR535 /t REG_DWORD /d 0 /f >nul 2>&1
+        call :NVIDIA_VERIFY "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" EnableGR535 0
+        if "!NVIDIA_DRIVER_ERROR!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA appliques.%COLOR_RESET%) else (echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA appliques partiellement.%COLOR_RESET%)
+    ) else (
+        echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des reglages du pilote NVIDIA...%COLOR_RESET%
+        reg delete "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v NvCplPhysxAuto /f >nul 2>&1
+        call :NVIDIA_VERIFY_ABSENT "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" NvCplPhysxAuto
+        reg query "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" >nul 2>&1 && reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" /v EnableGR535 /t REG_DWORD /d 1 /f >nul 2>&1
+        reg query "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" >nul 2>&1 && call :NVIDIA_VERIFY "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS" EnableGR535 1
+        reg query "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" >nul 2>&1 && reg add "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" /v EnableGR535 /t REG_DWORD /d 1 /f >nul 2>&1
+        reg query "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" >nul 2>&1 && call :NVIDIA_VERIFY "HKLM\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS" EnableGR535 1
+        if "!NVIDIA_DRIVER_ERROR!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA rendus au comportement natif.%COLOR_RESET%) else (echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Restauration du pilote NVIDIA partielle.%COLOR_RESET%)
+    )
+) else (
+    echo %COLOR_CYAN%[IGNORE]%COLOR_RESET% %COLOR_WHITE%Reglages du pilote NVIDIA ignores. Aucun GPU NVIDIA detecte ou pilote nvlddmkm absent.%COLOR_RESET%
+)
+
 call :FINISH_ACTION "Reglages GPU"
 exit /b 0
+
+:NVIDIA_VERIFY
+reg query "%~1" /v %~2 2>nul | findstr /R /C:"REG_DWORD[ ]*0x%~3[ ]*$" >nul
+if !errorlevel! EQU 0 exit /b 0
+set "NVIDIA_DRIVER_ERROR=1"
+echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Valeur NVIDIA %~2 non confirmee : %~3 attendu.%COLOR_RESET%
+exit /b 1
+
+:NVIDIA_VERIFY_ABSENT
+reg query "%~1" /v %~2 >nul 2>&1
+if !errorlevel! NEQ 0 exit /b 0
+set "NVIDIA_DRIVER_ERROR=1"
+echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Valeur NVIDIA %~2 toujours presente.%COLOR_RESET%
+exit /b 1
 
 :OPTIMISATIONS_RESEAU
 cls
