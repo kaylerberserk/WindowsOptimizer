@@ -74,26 +74,26 @@ Visual C++ est considéré présent à partir de 14.40 pour chaque architecture 
 
 ### Usage et énergie — Tout optimiser
 
-Usage et énergie se choisissent séparément. Les profils changent des réglages globaux Windows et pilotes ; les sections **[1] à [7]** demandent seulement les profils utiles.
+Choisissez un usage et un niveau d'énergie. Les sections **[1] à [7]** ne demandent que les profils dont elles ont besoin.
 
-| Choix | Rôle |
+| Choix | Effet |
 |---|---|
-| **Gaming** | Applique les réglages orientés jeu et latence pour la carte graphique, le clavier, la souris et le réseau. |
-| **Normal** | Restaure les réglages exclusifs gérés par le profil Gaming. |
-| **Eco** | Utilise le plan Équilibré et privilégie les économies d'énergie. |
-| **Performance Max** | Privilégie les performances, avec davantage de consommation et de chaleur possibles. Le réglage des minuteries système reste expérimental. |
+| **Gaming** | Réglages jeu et latence : carte graphique, clavier, souris, réseau. Convient aussi à un PC qui sert à jouer et à travailler. |
+| **Normal** | Annule les réglages propres à Gaming. |
+| **Eco** | Plan Équilibré et économies d'énergie. |
+| **Performance Max** | Performances maximales, au prix de plus de consommation et de chaleur. Allège aussi Defender (voir plus bas). |
 
-Gaming convient aussi à un PC utilisé pour jouer et travailler. Vous pouvez le combiner avec Eco, ou choisir Normal avec Performance Max. **Normal + Eco** est le choix le plus conservateur parmi ces profils ; changer de profil ne restaure que ses réglages exclusifs pris en charge, sans remettre Windows à zéro ni réinstaller les applications.
+**Normal + Eco** est la combinaison la plus prudente. Changer de profil annule seulement les réglages propres à l'ancien profil : Windows n'est pas remis à zéro.
 
 ### Effets à connaître dans les profils
 
-- Système : réduit les suggestions, les fichiers récents de l'Explorateur, l'historique de recherche, AutoPlay et les diagnostics/personnalisation Edge ; coupe l'atténuation audio pendant les appels. Les Jump Lists, l'indexation et la recherche Windows restent disponibles. Normal/Eco ne rétablit pas tous ces réglages communs. Les tâches absentes et refusées sont distinguées ; un refus de service ou de tâche rend le bilan partiel. Les instances de tâches déjà lancées ne sont pas interrompues.
-- Navigateurs : accélération matérielle et QUIC activés, DNS sur HTTPS Cloudflare en mode automatic avec repli normal, préchargements Edge et activité Edge/Chrome après fermeture conservés. **[G] → [P]** permet de limiter cet arrière-plan.
-- Portable Normal + Eco : DiagLog et le service d'alimentation moderne sont préservés. Le refus NTFS sur la base du Store, les changements COM de F1, le nettoyage automatique et les modifications forcées d'hibernation/Modern Standby sont retirés des profils.
-- Réseau Gaming + Performance Max : économies d'énergie réduites et réglages de latence appliqués aux propriétés exposées par le pilote, dont MIMO sans économie, U-APSD désactivé et mode 40 MHz non bloqué sur les adaptateurs Intel compatibles. Le résultat dépend du pilote.
-- Performance Max : compression mémoire coupée au-delà de 8 Go de RAM, économies HIPM/DIPM et parking des disques désactivés ; Eco rend ces deux réglages de stockage à Windows. Le preset timer reste expérimental et réversible via Eco.
-- Performance Max applique aussi un profil de charge Defender : facteur CPU minimal, priorité basse, scans planifiés coupés, analyse réseau, USB et archives désactivée. Les valeurs précédentes sont capturées avant application ; le mode Défaut Windows les rend, ou applique les valeurs par défaut documentées si la capture manque. La protection temps réel n'est pas modifiée.
-- Fichier hosts : le bloc de télémétrie fait signaler `hosts` par Defender comme `SettingsModifier:Win32/PossibleHostsFileHijack`, un faux positif documenté par Microsoft. Quand l'écriture du bloc réussit, le script exclut ce seul fichier de l'analyse Defender ; l'exclusion ne couvre ni le dossier `etc` ni un dossier parent, et n'est pas retirée par la restauration.
+- **Tous les profils** : moins de suggestions, d'historique (Explorateur, recherche) et de diagnostics Edge ; le son ne baisse plus pendant les appels. La recherche Windows reste disponible. Normal et Eco ne les rétablissent pas tous.
+- **Navigateurs** : accélération matérielle et QUIC activés, DNS sécurisé Cloudflare avec repli automatique. Edge et Chrome peuvent encore tourner en arrière-plan : **[G] → [P]** permet de le limiter.
+- **Portable en Normal + Eco** : le journal de batterie et la page Alimentation et batterie des Paramètres restent fonctionnels. Aucun profil ne modifie l'hibernation ni le démarrage rapide.
+- **Réseau, Gaming + Performance Max** : économies d'énergie de la carte réseau réduites et réglages de latence, selon ce que propose le pilote.
+- **Performance Max** : compression mémoire coupée au-delà de 8 Go de RAM, économies d'énergie des disques coupées (Eco les rétablit). Le réglage des minuteries est expérimental ; Eco l'annule.
+- **Defender, Performance Max** : analyses plus légères (priorité basse, aucune analyse planifiée, ni réseau, ni USB, ni archives). La protection en temps réel reste active. Le mode **Défaut Windows** du menu [8] rétablit les valeurs d'origine.
+- **Fichier hosts** : Defender signale à tort le blocage de télémétrie (`PossibleHostsFileHijack`). Le script exclut ce seul fichier de l'analyse ; l'exclusion reste après une restauration.
 
 ### Menu principal
 
@@ -117,19 +117,19 @@ Gaming convient aussi à un PC utilisé pour jouer et travailler. Vous pouvez le
 
 ### Protections Windows — menu [8]
 
-Le profil d'énergie **Performance Max** et le mode de sécurité du même nom sont deux choix distincts. Gardez les protections actuelles pour un usage courant.
+Ce mode est indépendant du profil d'énergie Performance Max. Pour un usage courant, gardez les protections actuelles.
 
 | Mode | Effet |
 |---|---|
-| **Défaut Windows** | Restaure les paramètres de sécurité capturés ; sans capture, applique les valeurs de repli prévues par le script. |
-| **Gaming** | Active la sécurité basée sur la virtualisation (VBS) et l'intégrité de la mémoire (HVCI), même si ces protections étaient coupées, tout en réduisant certaines autres protections. |
-| **Performance Max** | Désactive notamment VBS et HVCI et réduit d'autres protections. Ce mode est déconseillé pour un usage courant. |
+| **Défaut Windows** | Rétablit les réglages de sécurité capturés au premier changement, ou les valeurs par défaut si rien n'a été capturé. |
+| **Gaming** | Active VBS et l'intégrité de la mémoire (HVCI), mais réduit d'autres protections. |
+| **Performance Max** | Désactive VBS, HVCI et d'autres protections. Déconseillé au quotidien. |
 
-La compatibilité dépend du jeu et de l'anti-cheat : certains exigent VBS/HVCI, TPM ou Secure Boot. L'application dépend aussi du matériel et de Windows ; les règles d'entreprise et certains verrouillages peuvent empêcher des changements.
+Dans **Tout optimiser**, l'option Protections Windows applique Gaming pour l'usage Gaming, ou Défaut Windows pour l'usage Normal. Performance Max ne se choisit que dans le menu [8].
 
-Dans **Tout optimiser**, activer l'option Protections Windows applique **Gaming** pour l'usage Gaming ou **Défaut Windows** pour l'usage Normal. Le mode de sécurité Performance Max se choisit séparément dans le menu [8].
-
-Gaming et Performance Max conservent LSA Protection avec `RunAsPPL=2`, sans écrire de variable UEFI ; cette valeur n'est appliquée qu'à partir de Windows 11 22H2. La première modification des protections capture 32 valeurs ciblées et le réglage BCD ; Défaut Windows restaure cette capture, ou la base Windows mesurée si elle manque. Une ancienne valeur `RunAsPPL=1` peut avoir laissé un verrou UEFI : sa suppression nécessite une procédure Microsoft depuis la récupération. Defender et UAC restent des actions distinctes ; aucune restauration ne récupère les instantanés Recall supprimés.
+- Certains jeux et anti-cheats exigent VBS/HVCI, TPM ou Secure Boot. Les règles d'entreprise peuvent aussi bloquer certains changements.
+- La protection LSA reste active (à partir de Windows 11 22H2). Si un ancien réglage l'a verrouillée dans l'UEFI, seule une procédure Microsoft depuis la récupération peut retirer ce verrou.
+- Defender et UAC se règlent à part. Les instantanés Recall supprimés ne sont pas récupérables.
 
 ### Gestion Windows — menu [G]
 
