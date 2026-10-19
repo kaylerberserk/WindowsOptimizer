@@ -4,7 +4,7 @@ Read this owner through the root [AGENTS.md](../AGENTS.md#verification) before c
 
 ## Contract checks
 
-There is no repository test suite. Run the existing contract checks from the worktree root:
+There is no repository test suite. The command below uses external hp-dev lab tooling, not files supplied by a fresh clone. On hp-dev, first read the active host machine index (`~/.agents/MACHINE.md`, topic `machine.d/vm-charge.md`) to locate the lab, then run from the worktree root:
 
 ```bash
 REPO="$PWD" ~/vms/winopt-lab/check.sh --local
@@ -43,7 +43,7 @@ Run from the repository root with `f="All in One.cmd"`. Strip CR (`tr -d '\r'`) 
 
 ## Execution methods and traps
 
-Lab tools live in `~/vms/winopt-lab/` (`VM=win11` default): `vm.sh start|stop|status`, `lab.sh reset|prep|state|snapshot`, `suite.sh <name> "<pattern=>key | ...>" [reset|reset=rt] [reboot]`, `cmp.py`, `check.sh`. The full check can access/reset the guest; only `--local` is static. `rt` is fresh Windows plus official VC++/DirectX via `rt_install.ps1`; use `stock` for durations and any runtime change. Format and VerifyOnly checks do not apply tweaks; VerifyOnly still downloads and cleans temporary files.
+On hp-dev only, use the external lab located through the host topic above (`VM=win11` default): `vm.sh start|stop|status`, `lab.sh reset|prep|state|snapshot`, `suite.sh <name> "<pattern=>key | ...>" [reset|reset=rt] [reboot]`, `cmp.py`, `check.sh`. The full check can access/reset the guest; only `--local` is static. `rt` is fresh Windows plus official VC++/DirectX via `rt_install.ps1`; use `stock` for durations and any runtime change. Format and VerifyOnly checks do not apply tweaks; VerifyOnly still downloads and cleans temporary files.
 
 - Verify syntax, parentheses, encoding and logic by execution; a scratch-key helper test finds issues parsing cannot. Revalidate established methods; corroborate independent advice, but reproducible defects/costly limits need not recur before correction. Remove advice only with evidence of harm, replacement or uselessness.
 - Drive real console prompts key by key with `drive.py`: buffered input may be consumed by children; SSH choice.exe rejects digits and NIC restart kills SSH. UI calls such as SystemParametersInfo need interactive sessions (service/SSH error 1459; a temporary `/it` task can test them when authorized).
