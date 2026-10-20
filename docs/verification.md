@@ -51,3 +51,5 @@ On hp-dev only, use the external lab located through the host topic above (`VM=w
 - Verify stored state rather than exit codes: bcdedit deletion can return 1 for absence; UCPD/policy may reject writes without useful status. reg add creates missing paths, so absence is not a no-op proof; inspect the actual refusal.
 - Produce Windows files through heredocs/programs: shell redirection to nul may otherwise become a Unix path. Escape `^(`/`^)` in echo inside blocks; global balance misses premature closure. Test isolated blocks with echo substitutes.
 - Extract test fragments only by labels anchored at line start, never a call :LABEL match. Before sending one, check size, absence of HKLM/HKCR/powercfg, and that every call targets the fragment; unanchored extraction previously executed whole sections on pc-gaming.
+- Reset the VM by cold restore of the disk snapshot (`lab.sh reset`); a live `savevm` snapshot restores more slowly, so do not reintroduce it.
+- After the Gaming protections profile and a reboot, VBS/HVCI run in the VM and slow it. Account for that before blaming the script for a slow run.

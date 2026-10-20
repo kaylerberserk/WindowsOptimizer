@@ -1146,7 +1146,6 @@ if "!APPLIQUER_SECURITE!"=="1" (
 if "!DESACTIVER_DEFENDER!"=="1" (
     call :DESACTIVER_DEFENDER_SECTION
 )
-REM  Le profil de charge Defender suit le profil d energie PERFORMANCE MAX.
 if "!PROFIL_POWER!"=="0" call :APPLY_DEFENDER_PERF_SECTION
 if "!DESACTIVER_ANIMATIONS!"=="1" (
     call :DESACTIVER_ANIMATIONS_SECTION
@@ -1462,8 +1461,6 @@ if "!HOSTS_RC!"=="0" (
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Fichier hosts non modifie. Les autres reglages continuent.%COLOR_RESET%
 )
 if not "!AIO_MODE!"=="1" ipconfig /flushdns >nul 2>&1
-REM  Le bloc ecrit fait signaler le fichier hosts par Defender ; l exclusion
-REM  n est posee que si l ecriture a reussi, et ne couvre que ce fichier.
 if "!HOSTS_RC!"=="0" call :ENSURE_HOSTS_EXCLUSION
 set "HOSTS_RC="
 set "HOSTS="
@@ -3163,10 +3160,6 @@ reg delete "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /f
 exit /b
 
 :ENSURE_HOSTS_EXCLUSION
-REM  Microsoft documente cette exclusion pour un fichier hosts modifie volontairement :
-REM  sans elle, Defender signale le bloc comme SettingsModifier:Win32/PossibleHostsFileHijack.
-REM  Le chemin vise le seul fichier hosts, jamais le dossier etc ni un dossier parent.
-REM  Code 10 : l'exclusion est deja posee, il n'y a rien a faire.
 powershell -NoProfile -Command "try{$h=Join-Path $env:SystemRoot 'System32\drivers\etc\hosts';if((Get-MpPreference).ExclusionPath -contains $h){exit 10};Add-MpPreference -ExclusionPath $h -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
 if !errorlevel! EQU 10 exit /b 0
 if !errorlevel! NEQ 0 (
@@ -3341,8 +3334,6 @@ exit /b 1
 exit /b 1
 
 :APPLY_DEFENDER_PERF_SECTION
-REM  Applique le profil de charge Defender. Appele par Tout optimiser en
-REM  PERFORMANCE MAX : aucune confirmation, la question d'usage est deja posee.
 set "DEFENDER_PERF_ERROR=0"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Profil performance Defender...%COLOR_RESET%
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{$p=Get-MpPreference;$k='HKLM:\SOFTWARE\WindowsOptimizer\DefenderPerf';if(Test-Path $k){Remove-Item $k -Recurse -Force};New-Item -Path $k -Force|Out-Null;$t=$p.ScanScheduleQuickScanTime;if($t -is [datetime]){$q=$t.ToString('HH:mm:ss')}else{$q=$t.ToString()};$m=[ordered]@{ScanAvgCPULoadFactor=[int]$p.ScanAvgCPULoadFactor;EnableLowCpuPriority=[int]$p.EnableLowCpuPriority;DisableCpuThrottleOnIdleScans=[int]$p.DisableCpuThrottleOnIdleScans;ScanScheduleDay=[int]$p.ScanScheduleDay;DisableEmailScanning=[int]$p.DisableEmailScanning;DisableRemovableDriveScanning=[int]$p.DisableRemovableDriveScanning;DisableScanningNetworkFiles=[int]$p.DisableScanningNetworkFiles;DisableScanningMappedNetworkDrivesForFullScan=[int]$p.DisableScanningMappedNetworkDrivesForFullScan;EnableFileHashComputation=[int]$p.EnableFileHashComputation};foreach($n in $m.Keys){New-ItemProperty -Path $k -Name $n -Value $m[$n] -PropertyType DWord -Force|Out-Null};New-ItemProperty -Path $k -Name QuickScan -Value $q -PropertyType String -Force|Out-Null;New-ItemProperty -Path $k -Name Captured -Value 1 -PropertyType DWord -Force|Out-Null;exit 0}catch{exit 1}" >nul 2>&1
@@ -3359,8 +3350,6 @@ if "!DEFENDER_PERF_ERROR!"=="0" (
 exit /b !DEFENDER_PERF_ERROR!
 
 :RESTORE_DEFENDER_PERF_SECTION
-REM  Appele par le mode Defaut Windows : rend les valeurs capturees, ou les
-REM  valeurs par defaut documentees quand aucune capture n'existe.
 set "DEFENDER_PERF_ERROR=0"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des valeurs Defender...%COLOR_RESET%
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{$k='HKLM:\SOFTWARE\WindowsOptimizer\DefenderPerf';$c=(Get-ItemProperty -Path $k -Name Captured -ErrorAction SilentlyContinue).Captured;if($c -eq 1){$r=Get-ItemProperty -Path $k}else{$r=[pscustomobject]@{ScanAvgCPULoadFactor=50;EnableLowCpuPriority=1;DisableCpuThrottleOnIdleScans=1;ScanScheduleDay=0;DisableEmailScanning=0;DisableRemovableDriveScanning=0;DisableScanningNetworkFiles=0;DisableScanningMappedNetworkDrivesForFullScan=0;EnableFileHashComputation=0;QuickScan='00:00:00'}};Set-MpPreference -ScanAvgCPULoadFactor ([int]$r.ScanAvgCPULoadFactor) -EnableLowCpuPriority ([bool]([int]$r.EnableLowCpuPriority)) -DisableCpuThrottleOnIdleScans ([bool]([int]$r.DisableCpuThrottleOnIdleScans)) -ScanScheduleDay ([int]$r.ScanScheduleDay) -DisableEmailScanning ([bool]([int]$r.DisableEmailScanning)) -DisableRemovableDriveScanning ([bool]([int]$r.DisableRemovableDriveScanning)) -DisableScanningNetworkFiles ([bool]([int]$r.DisableScanningNetworkFiles)) -DisableScanningMappedNetworkDrivesForFullScan ([bool]([int]$r.DisableScanningMappedNetworkDrivesForFullScan)) -EnableFileHashComputation ([bool]([int]$r.EnableFileHashComputation)) -ScanScheduleQuickScanTime $r.QuickScan -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
