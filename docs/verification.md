@@ -4,7 +4,15 @@ Read this owner through the root [AGENTS.md](../AGENTS.md#verification) before c
 
 ## Contract checks
 
-There is no repository test suite. The command below uses external hp-dev lab tooling, not files supplied by a fresh clone. On hp-dev, first read the active host machine index (`~/.agents/MACHINE.md`, topic `machine.d/vm-charge.md`) to locate the lab, then run from the worktree root:
+The repository's only test is [`.github/check-batch.py`](../.github/check-batch.py), run by CI on every pull request and push to `main`, and before every push:
+
+```bash
+python3 .github/check-batch.py "All in One.cmd"
+```
+
+It applies the format contract below to the working copy (same exit codes `44`, `42`, `43`), then exits `1` on a duplicate label, a `goto`/`call :` target that does not exist, a dynamic (`%`/`!`) target, or a label that is neither referenced nor reached by fall-through from a line other than an unconditional `goto`/`exit`. `rem`, `::`, `echo` and `set` lines are ignored. It is static: no PowerShell, launcher or Windows execution.
+
+The command below uses external hp-dev lab tooling, not files supplied by a fresh clone. On hp-dev, first read the active host machine index (`~/.agents/MACHINE.md`, topic `machine.d/vm-charge.md`) to locate the lab, then run from the worktree root:
 
 ```bash
 REPO="$PWD" ~/vms/winopt-lab/check.sh --local
