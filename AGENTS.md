@@ -8,7 +8,12 @@ Before producing or citing measurements, gains, durations, VM or gaming-PC resul
 
 Before choosing validation, citing or producing metrics, or deciding batch/launcher structure changes, read [docs/verification.md](docs/verification.md). It owns the conditional contract checks, measurement methods and execution traps. The repository's only test is the static [`.github/check-batch.py`](.github/check-batch.py) (format and labels), run by CI and before every push; the external HP lab check is partial static proof, not PowerShell, launcher or Windows execution proof.
 
-`44` means non-ASCII/NUL, `42` invalid line endings, `43` unreadable file. The format contract exists three times: in the batch (using `%WINOPT_SELF%` and suppressed output), in [docs/verification.md](docs/verification.md#contract-checks) and in `.github/check-batch.py`. Update all three in the same commit. Published LF returning `42` is expected: `.gitattributes` stores LF in Git and checks out CRLF; raw GitHub serves LF. The batch validates before its first GOTO/CALL, normalizes a temporary copy, relaunches and propagates its exit code. The launcher also explicitly normalizes CRLF. Preserve both paths; `44` is rejected without repair. Do not change attributes to force CRLF blobs, add UTF-8/chcp 65001, accents or typographic quotes to the batch.
+Keep the batch ASCII/CRLF. Never force CRLF blobs through attributes or add
+UTF-8/chcp 65001, accents or typographic quotes. Before changing format checks,
+normalization, startup or launcher behavior, read the
+[format contract](docs/verification.md#format-contract); preserve both normalization
+paths and reject non-ASCII/NUL without repair. Update its three owners
+together.
 
 ## Project and publication contract
 
