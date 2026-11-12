@@ -1,6 +1,10 @@
 # Verification and measurement methods
 
-Read this owner through the root [AGENTS.md](../AGENTS.md#verification) before choosing validation, citing or producing metrics, or deciding batch/launcher structure changes. The root owns authorization, format and publication boundaries; these procedures grant no additional execution permission.
+Read this owner through the root [AGENTS.md](../AGENTS.md#verification) before choosing validation, citing or producing metrics, or deciding batch/launcher structure changes. The root owns authorization and publication boundaries; this file owns the detailed format contract; these procedures grant no additional execution permission.
+
+## Format contract
+
+`44` means non-ASCII/NUL, `42` invalid line endings, `43` unreadable file. The format contract exists three times: in the batch (using `%WINOPT_SELF%` and suppressed output), in [Contract checks](#contract-checks) and in `.github/check-batch.py`. Update all three in the same commit. Published LF returning `42` is expected: `.gitattributes` stores LF in Git and checks out CRLF; raw GitHub serves LF. The batch validates before its first GOTO/CALL, normalizes a temporary copy, relaunches and propagates its exit code. The launcher also explicitly normalizes CRLF. Preserve both paths; `44` is rejected without repair. Do not change attributes to force CRLF blobs, add UTF-8/chcp 65001, accents or typographic quotes to the batch.
 
 ## Contract checks
 
