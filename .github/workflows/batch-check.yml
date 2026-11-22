@@ -24,3 +24,28 @@ jobs:
           $e = $null
           [void][System.Management.Automation.Language.Parser]::ParseFile("launcher.ps1", [ref]$null, [ref]$e)
           if ($e) { $e; exit 1 }
+  windows-verify:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Verify launcher.ps1 against exact commit
+        shell: powershell
+        env:
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          $sha = if ($env:PR_SHA) { $env:PR_SHA } else { $env:GITHUB_SHA }
+          $dir = Join-Path $env:TEMP ("winopt-ci-{0}" -f [guid]::NewGuid().ToString("N"))
+          New-Item -ItemType Directory -Path $dir -Force | Out-Null
+          Copy-Item launcher.ps1 -Destination $dir
+          Push-Location $dir
+          try {
+            & "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -File .\launcher.ps1 -VerifyOnly -BaseUrl "https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/$sha"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          } finally {
+            Pop-Location
+            Remove-Item -LiteralPath $dir -Recurse -Force -ErrorAction SilentlyContinue
+          }

@@ -4,14 +4,15 @@ Read this owner through the root [AGENTS.md](../AGENTS.md#verification) before c
 
 ## Format contract
 
-`44` means non-ASCII/NUL, `42` invalid line endings, `43` unreadable file. The format contract exists three times: in the batch (using `%WINOPT_SELF%` and suppressed output), in [Contract checks](#contract-checks) and in `.github/check-batch.py`. Update all three in the same commit. Published LF returning `42` is expected: `.gitattributes` stores LF in Git and checks out CRLF; raw GitHub serves LF. The batch validates before its first GOTO/CALL, normalizes a temporary copy, relaunches and propagates its exit code. The launcher also explicitly normalizes CRLF. Preserve both paths; `44` is rejected without repair. Do not change attributes to force CRLF blobs, add UTF-8/chcp 65001, accents or typographic quotes to the batch.
+`44` means non-ASCII/NUL, `42` invalid line endings, `43` unreadable file. The format contract exists in three enforced owners: in the batch (using `%WINOPT_SELF%` and suppressed output), in [Contract checks](#contract-checks) and in `.github/check-batch.py` (with `.editorconfig` as editor CRLF guidance for `*.cmd`). Update the three enforced owners in the same commit. Published LF returning `42` is expected: `.gitattributes` stores LF in Git and checks out CRLF; raw GitHub serves LF. The batch validates before its first GOTO/CALL, normalizes a temporary copy, relaunches and propagates its exit code. The launcher also explicitly normalizes CRLF. Preserve both paths; `44` is rejected without repair. Do not change attributes to force CRLF blobs, add UTF-8/chcp 65001, accents or typographic quotes to the batch.
 
 ## Contract checks
 
-The repository's only test is [`.github/check-batch.py`](../.github/check-batch.py), run by CI on every pull request and push to `main`, and before every push:
+CI runs [`.github/check-batch.py`](../.github/check-batch.py) on every pull request and push to `main`, alongside its unit suite (`.github/test_check_batch.py`), PowerShell AST parsing of `launcher.ps1`, and `launcher.ps1 -VerifyOnly` on `windows-latest`; locally before every push, run:
 
 ```bash
 python3 .github/check-batch.py "All in One.cmd"
+python3 -B -m unittest discover -s .github -p 'test_*.py' -v
 ```
 
 It applies the format contract below to the working copy (same exit codes `44`, `42`, `43`), then exits `1` on a duplicate label, a `goto`/`call :` target that does not exist, a dynamic (`%`/`!`) target, or a label that is neither referenced nor reached by fall-through from a line other than an unconditional `goto`/`exit`. `rem`, `::`, `echo` and `set` lines are ignored. It is static: no PowerShell, launcher or Windows execution.

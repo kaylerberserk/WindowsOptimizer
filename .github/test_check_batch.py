@@ -19,7 +19,18 @@ class CheckBatchTests(unittest.TestCase):
             )
 
     def test_valid_batch_passes(self):
-        res = self._run(b"@echo off\r\ngoto :END\r\n:END\r\nexit /b 0\r\n")
+        res = self._run(
+            b"@echo off\r\n"
+            b"rem goto :NOWHERE\r\n"
+            b":: call :MISSING\r\n"
+            b"echo goto :FAKE\r\n"
+            b"set X=call :NOPE\r\n"
+            b"goto :STEP\r\n"
+            b":STEP\r\n"
+            b"echo step\r\n"
+            b":FALLTHROUGH\r\n"
+            b"exit /b 0\r\n"
+        )
         self.assertEqual(res.returncode, 0, res.stdout)
         self.assertIn("[OK] labels:", res.stdout)
 
@@ -43,6 +54,18 @@ class CheckBatchTests(unittest.TestCase):
         unreach = self._run(b"@echo off\r\nexit /b 0\r\n:DEAD\r\nexit /b 0\r\n")
         self.assertEqual(unreach.returncode, 1)
         self.assertIn("unreachable", unreach.stdout)
+
+        dyn = self._run(b"@echo off\r\ngoto :%TARGET%\r\n")
+        self.assertEqual(dyn.returncode, 1)
+        self.assertIn("dynamic goto target", dyn.stdout)
+
+    def test_unreadable_file_returns_43(self):
+        res = subprocess.run(
+            [sys.executable, "-B", str(CHECK), "/nonexistent/winopt/missing.cmd"],
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(res.returncode, 43)
 
 
 if __name__ == "__main__":
