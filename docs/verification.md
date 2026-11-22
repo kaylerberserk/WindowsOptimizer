@@ -13,6 +13,7 @@ CI runs [`.github/check-batch.py`](../.github/check-batch.py) on every pull requ
 ```bash
 python3 .github/check-batch.py "All in One.cmd"
 python3 -B -m unittest discover -s .github -p 'test_*.py' -v
+pwsh -NoProfile -Command '$e=$null;[void][Management.Automation.Language.Parser]::ParseFile("launcher.ps1",[ref]$null,[ref]$e);if($e){$e;exit 1}'
 ```
 
 It applies the format contract below to the working copy (same exit codes `44`, `42`, `43`), then exits `1` on a duplicate label, a `goto`/`call :` target that does not exist, a dynamic (`%`/`!`) target, or a label that is neither referenced nor reached by fall-through from a line other than an unconditional `goto`/`exit`. `rem`, `::`, `echo` and `set` lines are ignored. It is static: no PowerShell, launcher or Windows execution.

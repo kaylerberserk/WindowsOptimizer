@@ -6,9 +6,9 @@ Before producing or citing measurements, gains, durations, VM or gaming-PC resul
 
 ## Verification
 
-Before choosing validation, citing or producing metrics, or deciding batch/launcher structure changes, read [docs/verification.md](docs/verification.md). It owns the conditional contract checks, measurement methods and execution traps. CI and pre-push checks run [`.github/check-batch.py`](.github/check-batch.py) (format and labels), [`.github/test_check_batch.py`](.github/test_check_batch.py) (checker tests), PowerShell AST parsing of `launcher.ps1`, and on GitHub `windows-latest` `launcher.ps1 -VerifyOnly`; the external HP lab check is partial static proof, not PowerShell or batch execution proof.
+Before choosing validation, citing or producing metrics, or deciding batch/launcher structure changes, read [docs/verification.md](docs/verification.md). It owns the conditional contract checks, measurement methods and execution traps. CI runs [`.github/check-batch.py`](.github/check-batch.py) (format and labels), [`.github/test_check_batch.py`](.github/test_check_batch.py) (checker tests), PowerShell AST parsing of `launcher.ps1`, and on GitHub `windows-latest` `launcher.ps1 -VerifyOnly`; locally before every push run the three static checks listed in [docs/verification.md](docs/verification.md#contract-checks). The external HP lab check is partial static proof, not PowerShell or batch execution proof.
 
-Keep the batch strict 7-bit ASCII/CRLF (`.editorconfig` configures CRLF for `*.cmd`) and update its three enforced format-contract owners together; read the [format contract](docs/verification.md#format-contract) before changing format checks, normalization, startup or launcher behavior.
+Keep the batch strict 7-bit ASCII/CRLF (`.editorconfig` configures CRLF for `*.cmd`; never add UTF-8/`chcp 65001`, accents or typographic quotes, nor force CRLF blobs in `.gitattributes`) and update its three enforced format-contract owners together; read the [format contract](docs/verification.md#format-contract) before changing format checks, normalization, startup or launcher behavior.
 
 ## Project and publication contract
 

@@ -1,6 +1,6 @@
 # Batch and launcher constraints
 
-> **En bref :** Ce fichier regroupe les contraintes techniques transférées des anciens commentaires du code de `All in One.cmd` et `launcher.ps1`. Lire la section concernée avant toute modification ; [AGENTS.md](../AGENTS.md) détient le format, la publication et les gardes d'exécution. Les observations historiques ci-dessous ne sont pas de nouvelles mesures.
+> **TL;DR:** Technical constraints extracted from historical code comments for `All in One.cmd` and `launcher.ps1`. Read the relevant section before editing; [AGENTS.md](../AGENTS.md) owns format, publication and execution guards. Historical observations below are not fresh measurements.
 
 ## Startup/launcher
 
@@ -111,7 +111,7 @@
 ## Security
 
 - Internal Force PerfMax wins; Gaming keeps VBS/HVCI, Normal restores snapshot or the observed 25H2 fallback. Converge every managed option across previous profiles.
-- Microsoft “Configure added LSA protection” maps `RunAsPPL=1` to UEFI lock and `2` to protection without lock (Windows 11 22H2+ default).
+- Microsoft “Configure added LSA protection” maps `RunAsPPL=1` to UEFI lock and `2` to protection without lock (new Windows 11 22H2+ installations default).
 - Registry/policy cannot remove an existing UEFI variable; recovery needs Microsoft's `LsaPplConfig.efi`.
 - Keep `RunAsPPL=2`; captured `RunAsPPLBoot` may be `2`, fallback leaves it absent.
 - Restore only CFG/SEHOP choices without resetting unrelated mitigations; HVCI may keep the vulnerable-driver blocklist active.
