@@ -22,7 +22,7 @@ Collez cette commande dans **PowerShell**, puis acceptez la demande d'administra
 irm https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/main/launcher.ps1 | iex
 ```
 
-Le lanceur télécharge la version publiée du script et l'ouvre dans une fenêtre administrateur. Vous pouvez aussi [télécharger All in One.cmd](https://github.com/kaylerberserk/WindowsOptimizer/blob/main/All%20in%20One.cmd) et l'exécuter en tant qu'administrateur.
+Le lanceur télécharge la version publiée du script et l'ouvre dans une fenêtre administrateur. Vous pouvez aussi [télécharger All in One.cmd](https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/main/All%20in%20One.cmd) et l'exécuter en tant qu'administrateur.
 
 ### Premier parcours
 
@@ -253,7 +253,7 @@ Les commandes d'administration et les modifications de sécurité peuvent décle
 
 **Développé avec passion par Kayler**
 
-[**📥 Télécharger All in One.cmd**](https://github.com/kaylerberserk/WindowsOptimizer/blob/main/All%20in%20One.cmd)
+[**📥 Télécharger All in One.cmd**](https://raw.githubusercontent.com/kaylerberserk/WindowsOptimizer/main/All%20in%20One.cmd)
 
 Contribuer ou travailler avec un agent : voir [AGENTS.md](AGENTS.md).
 

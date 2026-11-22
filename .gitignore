@@ -3,7 +3,6 @@
 # IDE
 .idea/
 .vscode/
-.editorconfig
 
 # Environment
 .env
@@ -29,11 +28,6 @@ mcp.json
 
 # Logs
 *.log
-npm-debug.log*
-
-# Build outputs
-dist/
-build/
 
 # Temporary files
 *.tmp

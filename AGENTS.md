@@ -8,12 +8,7 @@ Before producing or citing measurements, gains, durations, VM or gaming-PC resul
 
 Before choosing validation, citing or producing metrics, or deciding batch/launcher structure changes, read [docs/verification.md](docs/verification.md). It owns the conditional contract checks, measurement methods and execution traps. The repository's only test is the static [`.github/check-batch.py`](.github/check-batch.py) (format and labels), run by CI and before every push; the external HP lab check is partial static proof, not PowerShell, launcher or Windows execution proof.
 
-Keep the batch ASCII/CRLF. Never force CRLF blobs through attributes or add
-UTF-8/chcp 65001, accents or typographic quotes. Before changing format checks,
-normalization, startup or launcher behavior, read the
-[format contract](docs/verification.md#format-contract); preserve both normalization
-paths and reject non-ASCII/NUL without repair. Update its three owners
-together.
+Keep the batch strict 7-bit ASCII/CRLF and update its three format-contract owners together; read the [format contract](docs/verification.md#format-contract) before changing format checks, normalization, startup or launcher behavior.
 
 ## Project and publication contract
 

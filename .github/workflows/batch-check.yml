@@ -17,3 +17,10 @@ jobs:
         with:
           persist-credentials: false
       - run: python3 .github/check-batch.py "All in One.cmd"
+      - run: python3 -B -m unittest discover -s .github -p 'test_*.py' -v
+      - name: Parse launcher.ps1
+        shell: pwsh
+        run: |
+          $e = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile("launcher.ps1", [ref]$null, [ref]$e)
+          if ($e) { $e; exit 1 }
