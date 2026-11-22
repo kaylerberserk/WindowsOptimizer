@@ -1,95 +1,182 @@
 # Batch and launcher constraints
 
-Read the matching area before changing `All in One.cmd` or `launcher.ps1`; the root [AGENTS.md](../AGENTS.md) owns format, publication and execution guards. These are maintenance constraints transferred from authored code explanations; historical observations below are not new measurements.
-
+> **TL;DR:** Technical constraints extracted from historical code comments for `All in One.cmd` and `launcher.ps1`. Read the relevant section before editing; [AGENTS.md](../AGENTS.md) owns format, publication and execution guards. Historical observations below are not fresh measurements.
 
 ## Startup/launcher
 
-Prefetch the timer before elevation because proxies/user sessions may be unavailable under RunAs; retain the batch fallback. The launcher destination must keep the batch lookup path relative to `WINOPT_SOURCE_DIR`: `Tools/Timer & Interrupt/SetTimerResolution.exe`. Pass the same publication base to optional resources and launch a dedicated elevated CMD window. Establish a valid local working directory after elevation. The worker inherits initialized parent context. Integrity-token SIDs `S-1-16-12288`/`16384` avoid the Server-service dependency of `net session`. Try child `prompt $E` before PowerShell for ESC; it leaves the caller's PROMPT unchanged. Missing ANSI uses empty colors. Hardware text uses the console code page, not UTF-8; replace typographic apostrophes unrepresentable in OEM. Read ProcessorNameString before WMI; NVIDIA detection excludes virtual GPUs/machines.
+- Prefetch the timer before elevation because proxies/user sessions may be unavailable under `RunAs`; retain the batch fallback.
+- The launcher destination must keep the batch lookup path relative to `WINOPT_SOURCE_DIR`: `Tools/Timer & Interrupt/SetTimerResolution.exe`.
+- Pass the same publication base to optional resources and launch a dedicated elevated CMD window.
+- Establish a valid local working directory after elevation; the worker inherits initialized parent context.
+- Integrity-token SIDs `S-1-16-12288`/`16384` avoid the Server-service dependency of `net session`.
+- Try child `prompt $E` before PowerShell for ESC; it leaves the caller's `PROMPT` unchanged, and missing ANSI uses empty colors.
+- Hardware text uses the console code page, not UTF-8; replace typographic apostrophes unrepresentable in OEM.
+- Read `ProcessorNameString` before WMI; NVIDIA detection excludes virtual GPUs/machines.
 
 ## Profiles
 
-`INIT_PROFILS` owns normalization/composite flags. Usage owns input/I/O/GPU latency; power owns energy/NIC/plan. Gaming+MaxPerf alone gets aggressive Nagle/DelACK and RSC/LSO. The Defender workload profile follows the PERFORMANCE MAX power profile (`PROFIL_POWER=0`): Tout optimiser applies it without confirmation because the usage question is already asked; Windows-default mode restores captured values, or documented defaults when no capture exists. Default laptops to Eco, desktops to MaxPerf; retain actual detected laptop type. Timer diagnostic BCD overrides are removed for every profile. Silently select the target power plan before sections 1–6 write SCHEME_CURRENT; section 7 still executes in sequence. Finish runtime downloads before restarting network adapters.
+- `INIT_PROFILS` owns normalization and composite flags: usage owns input/I/O/GPU latency; power owns energy/NIC/plan.
+- Gaming+MaxPerf alone gets aggressive Nagle/DelACK and RSC/LSO.
+- The Defender workload profile follows the PERFORMANCE MAX power profile (`PROFIL_POWER=0`).
+- *Tout optimiser* applies it without confirmation because the usage question is already asked; Windows-default mode restores captured values, or documented defaults when no capture exists.
+- Default laptops to Eco and desktops to MaxPerf; retain actual detected laptop type.
+- Timer diagnostic BCD overrides are removed for every profile.
+- Silently select the target power plan before sections 1–6 write `SCHEME_CURRENT`; section 7 still executes in sequence.
+- Finish runtime downloads before restarting network adapters.
 
 ## Helpers
 
-Class enumeration filters numeric NNNN subkeys, excluding Configuration/Properties. Match the adapter `InterfaceGuid` to `NetCfgInstanceId` to locate its device class key; do not infer that key from adapter order. Assignment consumes caret escaping before `for /f`. `STEP_ERRORS` aggregates helper failures; `STEP_RESULT` consumes/resets it and must not report unconditional success. Read ERRORLEVEL before `set` resets it. Keep goto routing where inline if/else assignment is ambiguous. Missing services may be ignored; verify existing services after writing.
+- Class enumeration filters numeric `NNNN` subkeys, excluding `Configuration`/`Properties`.
+- Match the adapter `InterfaceGuid` to `NetCfgInstanceId` to locate its device class key; do not infer that key from adapter order.
+- Assignment consumes caret escaping before `for /f`.
+- `STEP_ERRORS` aggregates helper failures; `STEP_RESULT` consumes/resets it and must not report unconditional success.
+- Read `ERRORLEVEL` before `set` resets it.
+- Keep `goto` routing where inline `if`/`else` assignment is ambiguous.
+- Missing services may be ignored; verify existing services after writing.
 
 ## Interaction
 
-O/N/M maps to 1/2/3; failed `choice.exe` (255, closed input) must never apply settings or loop forever. Visible menus reset interactive state. Allow reading errors before runtime screens clear the console. Indicators distinguish verified `[OK]`, processed `[FAIT]`, section end `[TERMINE]`, skipped `[IGNORE]`, warnings and errors; green processing does not prove state.
+- `O`/`N`/`M` maps to `1`/`2`/`3`; failed `choice.exe` (`255`, closed input) must never apply settings or loop forever.
+- Visible menus reset interactive state; allow reading errors before runtime screens clear the console.
+- Indicators distinguish verified `[OK]`, processed `[FAIT]`, section end `[TERMINE]`, skipped `[IGNORE]`, warnings and errors; green processing does not prove state.
 
 ## Safe settings
 
-Documented scope/storage does not prove runtime policy support. Persist the entire first baseline before any mutation; never overwrite prior entries. Security capture/import uses the process's default registry view, matching native reg.exe. Validate saved BCD tokens before registry import; native read failures are not absence, and baseline renewal must be explicit.
+- Documented scope/storage does not prove runtime policy support.
+- Persist the entire first baseline before any mutation; never overwrite prior entries.
+- Security capture/import uses the process's default registry view, matching native `reg.exe`.
+- Validate saved BCD tokens before registry import; native read failures are not absence, and baseline renewal must be explicit.
 
 ## System
 
-Keep InitialKeyboardIndicators, PeriodInNanoSeconds, F1/COM, Store access, Bluetooth/Hello/RDP/Spooler/PlugPlay intact. ShowFrequent affects recent-file display, not indexing. Keep DiagLog and SEMgrSvc Manual on Normal+Eco laptops (battery E3/SRUM and modern power settings depend on them). Preserve one-time hosts backups. Win32PrioritySeparation stock was 2, Gaming 0x26; MsMpEngCP.exe writes were denied even elevated. MMCSS stock observed Medium/Normal/Priority 2/GPU Priority 8.
+- Keep `InitialKeyboardIndicators`, `PeriodInNanoSeconds`, F1/COM, Store access, and Bluetooth/Hello/RDP/Spooler/PlugPlay intact.
+- `ShowFrequent` affects recent-file display, not indexing.
+- Keep `DiagLog` and `SEMgrSvc` Manual on Normal+Eco laptops (battery E3/SRUM and modern power settings depend on them).
+- Preserve one-time `hosts` backups.
+- Observed historical stock/values: `Win32PrioritySeparation` stock was `2`, Gaming `0x26`; `MsMpEngCP.exe` writes were denied even elevated; MMCSS stock observed Medium/Normal/Priority 2/GPU Priority 8.
 
 ## Browser policies
 
-DoH accepts off/automatic/secure; `allow` is ignored. Automatic permits plaintext fallback on filtered networks. NetworkPredictionOptions=2 disables prediction; NewTabPagePrerenderEnabled affects only new tabs. Thread Director Attributes controls visibility, not scheduling (2 visible, stock 1); Eco hides it. SCHEDPOLICY affects hybrid CPUs only; do not confuse Core Parking GUIDs ending 583 (E/class 0) and 584 (P/class 1), or Energy Saver `de830923...` with PCIe ASPM `ee12f906...` in its PCI Express subgroup.
+- DoH accepts `off`/`automatic`/`secure`; `allow` is ignored. `Automatic` permits plaintext fallback on filtered networks.
+- `NetworkPredictionOptions=2` disables prediction; `NewTabPagePrerenderEnabled` affects only new tabs.
+- Thread Director `Attributes` controls visibility, not scheduling (`2` visible, stock `1`); Eco hides it.
+- `SCHEDPOLICY` affects hybrid CPUs only; do not confuse Core Parking GUIDs ending `583` (E/class 0) and `584` (P/class 1), or Energy Saver `de830923...` with PCIe ASPM `ee12f906...` in its PCI Express subgroup.
 
 ## Memory/storage
 
-Reuse validated HW_RAM before querying again; compression depends on the 8 GiB threshold in SET_MEMORY_POWER_PROFILE. Stock Prefetcher was 3, SfTracingState 1 (Windows rewrites it at boot); absence is not stock for the latter. NTFS observed LastAccess=-2147483646, 8.3=2, others 0; stock long paths disabled. Keep Windows TRIM scheduling. Native nvmedisk.sys support is documented for Server 2025; do not revive undocumented client FeatureManagement/Storport overrides.
+- Reuse validated `HW_RAM` before querying again; compression depends on the 8 GiB threshold in `SET_MEMORY_POWER_PROFILE`.
+- Stock Prefetcher was `3`, `SfTracingState` `1` (Windows rewrites it at boot; absence is not stock for the latter).
+- NTFS observed `LastAccess=-2147483646`, `8.3=2`, others `0`; stock long paths disabled.
+- Keep Windows TRIM scheduling.
+- Native `nvmedisk.sys` support is documented for Server 2025; do not revive undocumented client `FeatureManagement`/`Storport` overrides.
 
 ## NVIDIA
 
-MaxFrameLatency belongs to each device class key, not GraphicsDrivers. Use Windows\Temp when elevated user TEMP might be unmapped; environment-based PowerShell copies preserve exclamation marks. NPI CLI import requires >=3.0.1.10. Restore only imported Base Profile SettingIDs through ResetValue (DRS_RestoreProfileDefaultSetting + SaveSettings), preserving unrelated customizations.
+- `MaxFrameLatency` belongs to each device class key, not `GraphicsDrivers`.
+- Use `Windows\Temp` when elevated user `TEMP` might be unmapped; environment-based PowerShell copies preserve exclamation marks.
+- NPI CLI import requires `>=3.0.1.10`.
+- Restore only imported Base Profile SettingIDs through `ResetValue` (`DRS_RestoreProfileDefaultSetting` + `SaveSettings`), preserving unrelated customizations.
 
 ## TCP
 
-MinRto belongs to `set supplemental`, not `set global`. Obsolete window-scaling heuristic wsh differs from supported forcews. initialRTO concerns SYN establishment, not established connections: Gaming 3000/2 follows documented values; Normal 1000/4 follows observed 25H2 client state, not a universal default. Stock congestion provider observed cubic. LanmanServer Size=1 is the client default; removing FastSendDatagramThreshold restores the native 1024-byte fast-path threshold. Nagle apply/restore must cover all interface keys, including disconnected ones, symmetrically; absent keys restore native behavior.
+- `MinRto` belongs to `set supplemental`, not `set global`.
+- Obsolete window-scaling heuristic `wsh` differs from supported `forcews`.
+- `initialRTO` concerns SYN establishment, not established connections: Gaming `3000/2` follows documented values; Normal `1000/4` follows observed 25H2 client state, not a universal default.
+- Stock congestion provider observed `cubic`.
+- `LanmanServer` `Size=1` is the client default; removing `FastSendDatagramThreshold` restores the native 1024-byte fast-path threshold.
+- Nagle apply/restore must cover all interface keys, including disconnected ones, symmetrically; absent keys restore native behavior.
 
 ## Input
 
-Normal+Eco laptops retain Windows pointer behavior; other historical profiles keep 1:1 motion. Observed stock: acceleration 1/6/10, KeyboardDataQueueSize=100, MouseDataQueueSize absent, absolute-pointer values 0, StickyKeys=510, ToggleKeys=62, FilterKeys and HID overrides absent. These observations are not portable defaults.
+- Normal+Eco laptops retain Windows pointer behavior; other historical profiles keep 1:1 motion.
+- Observed stock (not portable defaults): acceleration `1/6/10`, `KeyboardDataQueueSize=100`, `MouseDataQueueSize` absent, absolute-pointer values `0`, `StickyKeys=510`, `ToggleKeys=62`, `FilterKeys` and HID overrides absent.
 
 ## Energy
 
-Preserve OEM/custom plans, global hibernation/fast-start preferences and driver-owned WDF values. PowerRestoreDefaultPowerSchemes deletes all plans. Ultimate Performance `e9a42b02` was hidden/nonactivatable on 25H2 until duplicated to a fixed GUID; keep reuse idempotent. USB changes target the selected plan with one final activation. Keep hardcoded SUB_PROCESSOR where localized aliases fail. Optional GPU driver keys may be absent without error. Stock VetoPolicy=0, Attributes=1 for Thread Director/P/E parking and 2 for PCIe visibility were observed, not universally inferred.
+- Preserve OEM/custom plans, global hibernation/fast-start preferences and driver-owned WDF values.
+- `PowerRestoreDefaultPowerSchemes` deletes all plans.
+- Ultimate Performance `e9a42b02` was hidden/nonactivatable on 25H2 until duplicated to a fixed GUID; keep reuse idempotent.
+- USB changes target the selected plan with one final activation.
+- Keep hardcoded `SUB_PROCESSOR` where localized aliases fail; optional GPU driver keys may be absent without error.
+- Observed stock (not universally inferred): `VetoPolicy=0`, `Attributes=1` for Thread Director/P/E parking and `2` for PCIe visibility.
 
 ## Timers/storage calls
 
-Do not activate the disabled 80-byte TimerCoalescing override: boot crash 0x1E/Recovery 0xC0000001 was attributed to the Windows initialization path, with no reliable registry workaround. Let Windows manage it. MaxPerf Dynamic Tick tuning is experimental/hardware dependent; Eco removes it and restores legacy-disabled HPET. Create timer destination before transfer; hidden Start-Process kept SetTimerResolution alive where batch `start` did not. Never pipe a batch helper to PowerShell Out-Null: cmd treats it as an unknown program and may terminate the remaining script. New-ItemProperty -Name takes one string in PS5.1; loop over names in the shared storage traversal covering IoLatencyCap too.
+- Do not activate the disabled 80-byte `TimerCoalescing` override: boot crash `0x1E`/Recovery `0xC0000001` was attributed to the Windows initialization path, with no reliable registry workaround; let Windows manage it.
+- MaxPerf Dynamic Tick tuning is experimental/hardware dependent; Eco removes it and restores legacy-disabled HPET.
+- Create timer destination before transfer; hidden `Start-Process` kept `SetTimerResolution` alive where batch `start` did not.
+- Never pipe a batch helper to PowerShell `Out-Null`: `cmd` treats it as an unknown program and may terminate the remaining script.
+- `New-ItemProperty -Name` takes one string in PS 5.1; loop over names in the shared storage traversal covering `IoLatencyCap` too.
 
 ## Security
 
-Internal Force PerfMax wins; Gaming keeps VBS/HVCI, Normal restores snapshot or the observed 25H2 fallback. Converge every managed option across previous profiles. Microsoft “Configure added LSA protection” maps RunAsPPL=1 to UEFI lock, 2 to protection without lock (new Windows 11 22H2+ default). Registry/policy cannot remove an existing UEFI variable; recovery needs Microsoft's LsaPplConfig.efi. Keep RunAsPPL=2; captured RunAsPPLBoot may be 2, fallback leaves it absent. Restore only CFG/SEHOP choices without resetting unrelated mitigations; HVCI may keep the vulnerable-driver blocklist active. Defender reactivation must mirror direct Start=4 writes even when SCM rejects a loaded-driver change; report effective state on both paths. The hosts block makes Defender flag the file (`SettingsModifier:Win32/PossibleHostsFileHijack`); Microsoft documents a Defender exclusion for a deliberately modified hosts file. Add it only when the write succeeded (`HOSTS_RC=0`), for the hosts file alone, never the `etc` folder or a parent; exit code 10 means already excluded, nothing to do.
+- Internal Force PerfMax wins; Gaming keeps VBS/HVCI, Normal restores snapshot or the observed 25H2 fallback. Converge every managed option across previous profiles.
+- Microsoft “Configure added LSA protection” maps `RunAsPPL=1` to UEFI lock and `2` to protection without lock (new Windows 11 22H2+ installations default).
+- Registry/policy cannot remove an existing UEFI variable; recovery needs Microsoft's `LsaPplConfig.efi`.
+- Keep `RunAsPPL=2`; captured `RunAsPPLBoot` may be `2`, fallback leaves it absent.
+- Restore only CFG/SEHOP choices without resetting unrelated mitigations; HVCI may keep the vulnerable-driver blocklist active.
+- Defender reactivation must mirror direct `Start=4` writes even when SCM rejects a loaded-driver change; report effective state on both paths.
+- The `hosts` block makes Defender flag the file (`SettingsModifier:Win32/PossibleHostsFileHijack`); Microsoft documents a Defender exclusion for a deliberately modified `hosts` file.
+- Add that exclusion only when the write succeeded (`HOSTS_RC=0`), for the `hosts` file alone, never the `etc` folder or a parent; exit code `10` means already excluded, nothing to do.
 
 ## AI
 
-Use official Notepad DisableAIFeaturesInNotepad policy; legacy Copilot policy does not block the modern app. Anchor registry readback patterns so 0x1 does not match 0x10/0x18. Preserve native stderr and do not blame an unproved component. Recall AllowRecallEnablement=0 and DisableAIDataAnalysis=1 delete saved snapshots: every invoking screen must disclose deletion. Optional DISM component removal/reboot status must not invalidate successful primary policy application. Do not broaden changes to voice, typing or general permissions.
+- Use official Notepad `DisableAIFeaturesInNotepad` policy; legacy Copilot policy does not block the modern app.
+- Anchor registry readback patterns so `0x1` does not match `0x10`/`0x18`; preserve native stderr and do not blame an unproved component.
+- Recall `AllowRecallEnablement=0` and `DisableAIDataAnalysis=1` delete saved snapshots: every invoking screen must disclose deletion.
+- Optional DISM component removal/reboot status must not invalidate successful primary policy application.
+- Do not broaden changes to voice, typing or general permissions.
 
 ## Removal
 
-`timeout` fails with redirected stdin; use the existing ping delay. `rd` needs `for /d` enumeration for wildcards. Any OneDrive User Shell Folders reference protects the whole folder: KFM may place Desktop/Documents/Pictures there, including cloud-only files. Uninstaller exit codes do not prove deletion. Stop Explorer before deleting locked icon caches and restart it. Edge system/provisioned package state must be verified; Edge Update policies are mainly guaranteed on domain-joined devices. Remove provisioned apps before installed packages, use exact package identities, and decide success from final state rather than intermediate errors (legacy Win10 column/package behavior is not a support promise).
+- `timeout` fails with redirected stdin; use the existing `ping` delay.
+- `rd` needs `for /d` enumeration for wildcards.
+- Any OneDrive User Shell Folders reference protects the whole folder: KFM may place Desktop/Documents/Pictures there, including cloud-only files.
+- Uninstaller exit codes do not prove deletion; stop Explorer before deleting locked icon caches and restart it.
+- Edge system/provisioned package state must be verified; Edge Update policies are mainly guaranteed on domain-joined devices.
+- Remove provisioned apps before installed packages, use exact package identities, and decide success from final state rather than intermediate errors (legacy Win10 column/package behavior is not a support promise).
 
 ## Cleaning
 
-Preserve Diagnosis/WER roots and ACLs, Windows Update DataStore/ReportingEvents.log, active System/Application/Security event logs, recovery `$SysReset`/`$Windows.~BT`/`$Windows.~WS`, ESD/user recovery data, performance caches and Recall snapshots. Old Windows installation deletion requires confirmation. Do not stop cryptsvc unnecessarily; `net stop /y` avoids hidden dependency prompts. cleanmgr /sagerun covers all disks and ignores /d; select an unused StateFlags id in 0..65535, never overwrite a user's profile or force a fixed fallback. Skip if no free candidate. Keep worker logs outside the shared console and strip ANSI from text logs.
+- Preserve Diagnosis/WER roots and ACLs, Windows Update `DataStore`/`ReportingEvents.log`, active System/Application/Security event logs, recovery `$SysReset`/`$Windows.~BT`/`$Windows.~WS`, ESD/user recovery data, performance caches and Recall snapshots.
+- Old Windows installation deletion requires confirmation.
+- Do not stop `cryptsvc` unnecessarily; `net stop /y` avoids hidden dependency prompts.
+- `cleanmgr /sagerun` covers all disks and ignores `/d`; select an unused `StateFlags` id in `0..65535`, never overwrite a user's profile or force a fixed fallback, and skip if no free candidate.
+- Keep worker logs outside the shared console and strip ANSI from text logs.
 
 ## Backup/restore
 
-Retain the five newest batch copies. Capture both runas verbs before changing ownership; require complete native exports plus atomic hash-bound receipts. Preserve unverifiable legacy/partial captures and refuse writes. Verify hashes/scope before import, retain captures on refusal/readback mismatch, mark restoration before resumable cleanup and remove the receipt last. reg import may announce success on stderr; inspect its native code.
+- Retain the five newest batch copies.
+- Capture both `runas` verbs before changing ownership; require complete native exports plus atomic hash-bound receipts.
+- Preserve unverifiable legacy/partial captures and refuse writes.
+- Verify hashes/scope before import, retain captures on refusal/readback mismatch, mark restoration before resumable cleanup and remove the receipt last.
+- `reg import` may announce success on stderr; inspect its native code.
 
 ## File handling
 
-Preserve WINOPT_SELF_BACKUP_SOURCE set with delayed expansion off, including `!` in paths and exit text. Keep EnableExtensions until exit /b closes SETLOCAL. Balance pushd/popd on every path, including pushd failure. Hosts Latin-1 (28591) is byte-preserving; ASCII would corrupt bytes above 127. Ownership removal needs takeown AND icacls DACL grants; locale determines /d y or o, and `*S-1-5-32-544` resolves administrators across languages.
+- Preserve `WINOPT_SELF_BACKUP_SOURCE` set with delayed expansion off, including `!` in paths and exit text.
+- Keep `EnableExtensions` until `exit /b` closes `SETLOCAL`; balance `pushd`/`popd` on every path, including `pushd` failure.
+- Hosts Latin-1 (`28591`) is byte-preserving; ASCII would corrupt bytes above 127.
+- Ownership removal needs `takeown` AND `icacls` DACL grants; locale determines `/d y` or `o`, and `*S-1-5-32-544` resolves administrators across languages.
 
 ## Runtimes
 
-VC14 Installed=1 can survive uninstall with Visual Studio C++ present (StackOverflow #67493523); require the main DLL too. Minimum 14.40 supports VS17.10+ std::mutex changes. Use the correct x86/x64 registry views; no x64 package on 32-bit Windows. curl >=7.66 supports parallel missing-package downloads with individual fallback; one signature validation returns reject bits 1=x86/2=x64, unusable results reject both. Keep installer logs outside cleaned download directories. DirectX detection covers all June 2010 DLLs in each architecture, not one per family; d3dcompiler_47, xaudio2_8/9, xinput1_4 belong to Windows. curl/BITS/PowerShell remain ordered download fallbacks.
+- VC14 `Installed=1` can survive uninstall with Visual Studio C++ present (StackOverflow #67493523); require the main DLL too. Minimum `14.40` supports VS17.10+ `std::mutex` changes.
+- Use the correct x86/x64 registry views; no x64 package on 32-bit Windows.
+- `curl >=7.66` supports parallel missing-package downloads with individual fallback; one signature validation returns reject bits `1=x86`/`2=x64`, unusable results reject both.
+- Keep installer logs outside cleaned download directories.
+- DirectX detection covers all June 2010 DLLs in each architecture, not one per family; `d3dcompiler_47`, `xaudio2_8/9`, `xinput1_4` belong to Windows.
+- `curl`/BITS/PowerShell remain ordered download fallbacks.
 
 ## External tools
 
-Download to an admin-only named ProgramData subdirectory to prevent same-user substitution before execution. MAS/WinUtil lack Authenticode signatures; the URL allowlist is the trust boundary, and signature checking only rejects an invalid certificate. Never overstate that protection.
+- Download to an admin-only named `ProgramData` subdirectory to prevent same-user substitution before execution.
+- MAS/WinUtil lack Authenticode signatures; the URL allowlist is the trust boundary, and signature checking only rejects an invalid certificate. Never overstate that protection.
 
 ## Valorant
 
-Refuse writes while the game can save settings; never force termination. Preserve here-string settings, first backup, encoding detection, read-only attribute and write verification. The separate template is not an extraction source.
+- Refuse writes while the game can save settings; never force termination.
+- Preserve here-string settings, first backup, encoding detection, read-only attribute and write verification; the separate template is not an extraction source.
 
 ## Sources
 

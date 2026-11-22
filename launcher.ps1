@@ -3,7 +3,7 @@ param(
     [switch]$VerifyOnly
 )
 
-[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+[Net.ServicePointManager]::SecurityProtocol = [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 $ProgressPreference = "SilentlyContinue"
 function Stop-Launcher([string]$Message, [switch]$Cleanup, [switch]$NoPause) {
     if ($Cleanup -and $scriptRoot -and (Test-Path -LiteralPath $scriptRoot)) {
