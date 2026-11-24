@@ -59,18 +59,12 @@ try {
     Stop-Launcher "Impossible de lire le script." -Cleanup
 }
 
-$hasInvalidEncoding = $false
-foreach ($byte in $scriptBytes) {
-    if ($byte -eq 0 -or $byte -gt 0x7F) {
-        $hasInvalidEncoding = $true
-        break
-    }
-}
-if ($hasInvalidEncoding) {
+$scriptRaw = [Text.Encoding]::GetEncoding(28591).GetString($scriptBytes)
+if ($scriptRaw -match '[\x00\x80-\xFF]') {
     Stop-Launcher "Le script doit etre en ASCII sans BOM." -Cleanup
 }
 
-$scriptContent = [Text.Encoding]::ASCII.GetString($scriptBytes)
+$scriptContent = $scriptRaw
 try {
     $scriptContent = [regex]::Replace($scriptContent, "\r\n|\r|\n", "`r`n")
     [IO.File]::WriteAllText($scriptPath, $scriptContent, [Text.Encoding]::ASCII)
@@ -105,9 +99,11 @@ $timerOrigin = "$BaseUrl/Tools/Timer%20%26%20Interrupt/SetTimerResolution.exe"
 try {
     Invoke-WebRequest -Uri $timerOrigin -OutFile $timerTemp -UseBasicParsing -TimeoutSec 45 -ErrorAction Stop
     $timerBytes = [IO.File]::ReadAllBytes($timerTemp)
+    if ($timerBytes.Length -lt 10000 -or $timerBytes[0] -ne 77 -or $timerBytes[1] -ne 90) {
+        throw "binaire PE invalide"
+    }
     $peOffset = [BitConverter]::ToInt32($timerBytes, 60)
-    if ($timerBytes.Length -lt 10000 -or $timerBytes[0] -ne 77 -or $timerBytes[1] -ne 90 -or
-        $peOffset -lt 64 -or $peOffset + 4 -gt $timerBytes.Length -or
+    if ($peOffset -lt 64 -or $peOffset + 4 -gt $timerBytes.Length -or
         $timerBytes[$peOffset] -ne 80 -or $timerBytes[$peOffset + 1] -ne 69 -or
         $timerBytes[$peOffset + 2] -ne 0 -or $timerBytes[$peOffset + 3] -ne 0) {
         throw "binaire PE invalide"

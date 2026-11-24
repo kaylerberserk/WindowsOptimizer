@@ -9,6 +9,7 @@ TEXT = re.compile(r"^\s*@?(echo|set)\b", re.I)
 JUMP = re.compile(r"\b(goto|call)\s*(:?)([^\s&|()<>^\"]+)", re.I)
 TERMINAL = re.compile(r"^\s*@?(goto\s*:?\S+|exit(\s+/b)?(\s+\S+)?)\s*$", re.I)
 BUILTIN = {"EOF"}
+MAX_CMD_LINE = 8191
 
 
 def check_format(data):
@@ -25,6 +26,8 @@ def check_format(data):
 def check_labels(lines):
     labels, problems, referenced = {}, [], set()
     for n, line in enumerate(lines, 1):
+        if len(line) > MAX_CMD_LINE:
+            problems.append(f"L{n}: line length {len(line)} exceeds cmd.exe limit ({MAX_CMD_LINE})")
         m = LABEL.match(line)
         if m:
             name = m.group(1).upper()
