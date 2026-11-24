@@ -1,15 +1,28 @@
 name: batch-check
 
 on:
+  workflow_dispatch:
+  schedule:
+    - cron: '7 3 * * *'
   pull_request:
-  push:
-    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'All in One.cmd'
+      - 'launcher.ps1'
+      - '.gitattributes'
+      - '.github/workflows/batch-check.yml'
+      - '.github/*.py'
 
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   static:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -26,13 +39,15 @@ jobs:
           [void][System.Management.Automation.Language.Parser]::ParseFile("launcher.ps1", [ref]$null, [ref]$e)
           if ($e) { $e; exit 1 }
   windows-verify:
-    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event_name != 'pull_request' || (!github.event.pull_request.draft && github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: windows-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          sparse-checkout: launcher.ps1
+          sparse-checkout-cone-mode: false
           persist-credentials: false
       - name: Verify launcher.ps1 against exact commit
         shell: powershell

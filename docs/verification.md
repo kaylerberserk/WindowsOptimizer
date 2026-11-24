@@ -8,7 +8,7 @@ Read this owner through the root [AGENTS.md](../AGENTS.md#verification) before c
 
 ## Contract checks
 
-CI runs [`.github/check-batch.py`](../.github/check-batch.py) on every pull request and push to `main`, alongside its unit suite (`.github/test_check_batch.py`), PowerShell AST parsing of `launcher.ps1`, and `launcher.ps1 -VerifyOnly` on `windows-latest`; locally before every push, run:
+CI runs [`.github/check-batch.py`](../.github/check-batch.py) on non-draft pull requests touching the batch, launcher, `.gitattributes`, checker, or workflow (plus daily scheduled and manual runs), alongside its unit suite (`.github/test_check_batch.py`), PowerShell AST parsing of `launcher.ps1`, and `launcher.ps1 -VerifyOnly` on `windows-latest`; locally before every push, run:
 
 ```bash
 python3 .github/check-batch.py "All in One.cmd"
