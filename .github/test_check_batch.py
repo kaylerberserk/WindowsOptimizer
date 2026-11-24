@@ -67,6 +67,11 @@ class CheckBatchTests(unittest.TestCase):
         )
         self.assertEqual(res.returncode, 43)
 
+    def test_line_exceeding_cmd_limit_fails(self):
+        res = self._run(b"@echo off\r\necho " + b"a" * 8200 + b"\r\n")
+        self.assertEqual(res.returncode, 1)
+        self.assertIn("exceeds cmd.exe limit", res.stdout)
+
 
 if __name__ == "__main__":
     unittest.main()

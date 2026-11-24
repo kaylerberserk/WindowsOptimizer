@@ -12,7 +12,7 @@ if "%WINOPT_PS_MISSING%"=="1" echo [ERREUR] PowerShell est introuvable. Le scrip
 if "%WINOPT_PS_MISSING%"=="1" pause
 if "%WINOPT_PS_MISSING%"=="1" exit /b 1
 
-powershell -NoProfile -Command "try{$b=[IO.File]::ReadAllBytes($env:WINOPT_SELF);for($i=0;$i-lt$b.Length;$i++){if($b[$i]-eq0-or$b[$i]-gt127){exit 44};if(($b[$i]-eq10-and($i-eq0-or$b[$i-1]-ne13))-or($b[$i]-eq13-and($i+1-ge$b.Length-or$b[$i+1]-ne10))){exit 42}};exit 0}catch{exit 43}" >nul 2>&1
+powershell -NoProfile -Command "try{$s=[Text.Encoding]::GetEncoding(28591).GetString([IO.File]::ReadAllBytes($env:WINOPT_SELF));if($s-match'[\x00\x80-\xFF]'){exit 44};if($s-match'(?<!\r)\n|\r(?!\n)'){exit 42};exit 0}catch{exit 43}" >nul 2>&1
 set "WINOPT_FORMAT_RC=%errorlevel%"
 if "%WINOPT_FORMAT_RC%"=="43" echo [ERREUR] Impossible de lire ou verifier le format du script.
 if "%WINOPT_FORMAT_RC%"=="43" pause
@@ -186,7 +186,7 @@ if not "%~1"=="1" (
     set "DETECTE_PORTABLE=0"
 )
 set "WINOPT_HW_FILE=%TEMP%\hw_info_%RANDOM%_%RANDOM%.tmp"
-powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem; $c=(Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0' -EA SilentlyContinue).ProcessorNameString; if(-not $c){$c=@(Get-CimInstance Win32_Processor)[0].Name}; $v=Get-CimInstance Win32_VideoController; $m=Get-CimInstance Win32_PhysicalMemory; if(-not $m){$m=Get-CimInstance Win32_ComputerSystem}; $b=0; $lc=8,9,10,11,14,30,31,32; $enc=Get-CimInstance Win32_SystemEnclosure -EA SilentlyContinue; if($enc -and $enc.ChassisTypes){foreach($t in $enc.ChassisTypes){if($lc -contains $t){$b=1;break}}}; if(-not $b -and (Get-CimInstance Win32_Battery -EA SilentlyContinue)){$b=1}; $res=@(); $cap=$o.Caption; if(-not $cap){$pn=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName; if($pn){$cap=$pn}else{$cap='Windows'}}; $res+='OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Trim()}; if($v){$gn=@($v|Where-Object{$_.Name -and $_.Name -notmatch 'Parsec|Virtual Display|Microsoft Basic|Remote|Indirect|Mirror'}|ForEach-Object{$_.Name.Trim()}|Select-Object -Unique); if(-not $gn.Count){$gn=@($v|ForEach-Object{$_.Name.Trim()})}; $res+='GPU:'+($gn -join ' / ')}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}elseif($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}; $res+='LAPTOP:'+$b; $nv=0; if(@($v|Where-Object{$_.Name -match 'NVIDIA' -and $_.Name -notmatch 'Virtual|Parsec|Remote|Indirect|Mirror|Microsoft Basic'}).Count -gt 0){$cs=Get-CimInstance Win32_ComputerSystem; if($cs.Model -notmatch 'Virtual|VMware|VirtualBox|KVM|QEMU|Xen|Parallels'){$nv=1}}; $res+='NVIDIA:'+$nv; $res=@($res|ForEach-Object{$_ -replace [string][char]0x2019,[string][char]39}); [System.IO.File]::WriteAllLines($env:WINOPT_HW_FILE, $res, [Console]::OutputEncoding)" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='SilentlyContinue'; $o=Get-CimInstance Win32_OperatingSystem -Property Caption,Version; $c=(Get-ItemProperty 'HKLM:\HARDWARE\DESCRIPTION\System\CentralProcessor\0' -EA SilentlyContinue).ProcessorNameString; if(-not $c){$c=@(Get-CimInstance Win32_Processor -Property Name)[0].Name}; $v=Get-CimInstance Win32_VideoController -Property Name; $m=Get-CimInstance Win32_PhysicalMemory -Property Capacity; $cs=$null; if(-not $m){$cs=Get-CimInstance Win32_ComputerSystem -Property TotalPhysicalMemory,Model; $m=$cs}; $b=0; $lc=8,9,10,11,14,30,31,32; $enc=Get-CimInstance Win32_SystemEnclosure -Property ChassisTypes -EA SilentlyContinue; if($enc -and $enc.ChassisTypes){foreach($t in $enc.ChassisTypes){if($lc -contains $t){$b=1;break}}}; if(-not $b -and (Get-CimInstance Win32_Battery -Property DeviceID -EA SilentlyContinue)){$b=1}; $res=@(); $cap=$o.Caption; if(-not $cap){$pn=(Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion').ProductName; if($pn){$cap=$pn}else{$cap='Windows'}}; $res+='OS:'+$cap+' ('+$o.Version+')'; if($c){$res+='CPU:'+$c.Trim()}; if($v){$gn=@($v|Where-Object{$_.Name -and $_.Name -notmatch 'Parsec|Virtual Display|Microsoft Basic|Remote|Indirect|Mirror'}|ForEach-Object{$_.Name.Trim()}|Select-Object -Unique); if(-not $gn.Count){$gn=@($v|ForEach-Object{$_.Name.Trim()})}; $res+='GPU:'+($gn -join ' / ')}; if($m.Capacity){$t=($m|Measure-Object Capacity -Sum).Sum; $res+='RAM:'+[math]::Round($t/1GB,0)}elseif($m.TotalPhysicalMemory){$res+='RAM:'+[math]::Round($m.TotalPhysicalMemory/1GB,0)}; $res+='LAPTOP:'+$b; $nv=0; if(@($v|Where-Object{$_.Name -match 'NVIDIA' -and $_.Name -notmatch 'Virtual|Parsec|Remote|Indirect|Mirror|Microsoft Basic'}).Count -gt 0){if(-not $cs){$cs=Get-CimInstance Win32_ComputerSystem -Property Model}; if($cs.Model -notmatch 'Virtual|VMware|VirtualBox|KVM|QEMU|Xen|Parallels'){$nv=1}}; $res+='NVIDIA:'+$nv; $res=@($res|ForEach-Object{$_ -replace [string][char]0x2019,[string][char]39}); [System.IO.File]::WriteAllLines($env:WINOPT_HW_FILE, $res, [Console]::OutputEncoding)" >nul 2>&1
 if !errorlevel! NEQ 0 (
     echo %COLOR_RED%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Detection du materiel impossible.%COLOR_RESET%
     echo %COLOR_WHITE%Les valeurs par defaut seront utilisees.%COLOR_RESET%
@@ -332,17 +332,22 @@ exit /b 0
 
 :REFRESH_INTERNET_STATUS
 set "HAS_INTERNET=0"
-ping -n 1 -w 1500 1.1.1.1 2>nul | findstr /c:"TTL=" >nul
+where curl.exe >nul 2>&1
+if !errorlevel! EQU 0 (
+    curl.exe -fs --max-time 3 http://www.msftconnecttest.com/connecttest.txt 2>nul | findstr /c:"Microsoft" >nul 2>&1
+    if !errorlevel! EQU 0 (
+        set "HAS_INTERNET=1"
+        exit /b
+    )
+    ping -n 1 -w 1000 1.1.1.1 2>nul | findstr /c:"TTL=" >nul
+    if !errorlevel! EQU 0 set "HAS_INTERNET=1"
+    exit /b
+)
+ping -n 1 -w 1000 1.1.1.1 2>nul | findstr /c:"TTL=" >nul
 if !errorlevel! EQU 0 (
     set "HAS_INTERNET=1"
     exit /b
 )
-where curl.exe >nul 2>&1
-if !errorlevel! NEQ 0 goto :REFRESH_INTERNET_PS
-curl.exe -fs --max-time 5 http://www.msftconnecttest.com/connecttest.txt 2>nul | findstr /c:"Microsoft" >nul 2>&1
-if !errorlevel! EQU 0 set "HAS_INTERNET=1"
-exit /b
-:REFRESH_INTERNET_PS
 powershell -NoProfile -Command "try { $c=(Invoke-WebRequest -Uri 'http://www.msftconnecttest.com/connecttest.txt' -UseBasicParsing -TimeoutSec 5).Content; if ($c -match 'Microsoft') { exit 0 } else { exit 1 } } catch { exit 1 }" >nul 2>&1
 if !errorlevel! EQU 0 set "HAS_INTERNET=1"
 exit /b
@@ -820,7 +825,7 @@ goto :MENU_VALORANT
 setlocal
 set "WINOPT_TASK_NAME=%~1"
 set "WINOPT_TASK_ENABLED=%~2"
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$names=@($env:WINOPT_TASK_NAME.Split(';',[StringSplitOptions]::RemoveEmptyEntries));if(-not$names.Count){throw 'Liste de taches vide'};$all=@(Get-ScheduledTask -EA Stop);$want=$env:WINOPT_TASK_ENABLED-eq'true';$confirmed=0;$absent=0;$failed=0;foreach($n in $names){try{$p='\'+$n.Substring(0,$n.LastIndexOf('\')+1);$leaf=$n.Substring($n.LastIndexOf('\')+1);$ts=@($all|Where-Object{$_.TaskPath-eq$p-and$_.TaskName-eq$leaf});if(-not$ts.Count){$absent++;Write-Host ('[IGNORE] Tache absente : '+$n);continue};if($want){Enable-ScheduledTask -TaskPath $p -TaskName $leaf -EA Stop|Out-Null}else{Disable-ScheduledTask -TaskPath $p -TaskName $leaf -EA Stop|Out-Null};$t=Get-ScheduledTask -TaskPath $p -TaskName $leaf -EA Stop;if([bool]$t.Settings.Enabled-ne$want){throw 'Etat final different'};$confirmed++}catch{$failed++;Write-Host ('[ERREUR] Tache '+$n+' : '+$_.Exception.Message)}};Write-Host ('[INFO] Taches confirmees='+$confirmed+' absentes='+$absent+' en echec='+$failed);if($failed){exit 1};exit 0}catch{Write-Host ('[ERREUR] Taches : '+$_.Exception.Message);exit 1}"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$names=@($env:WINOPT_TASK_NAME.Split(';',[StringSplitOptions]::RemoveEmptyEntries));if(-not$names.Count){throw 'Liste de taches vide'};$svc=New-Object -ComObject Schedule.Service;$svc.Connect();$want=$env:WINOPT_TASK_ENABLED-eq'true';$confirmed=0;$absent=0;$failed=0;foreach($n in $names){try{$idx=$n.LastIndexOf('\');$fp=if($idx-ge0){'\'+$n.Substring(0,$idx)}else{'\'};$leaf=if($idx-ge0){$n.Substring($idx+1)}else{$n};$task=$null;try{$folder=$svc.GetFolder($fp);$task=$folder.GetTask($leaf)}catch{$hr=$_.Exception.HResult;if($hr-eq-2147024894-or$hr-eq-2147024893-or$_.Exception-is[IO.FileNotFoundException]-or$_.Exception-is[IO.DirectoryNotFoundException]){$absent++;Write-Host ('[IGNORE] Tache absente : '+$n);continue};throw};if([bool]$task.Enabled-ne$want){$task.Enabled=$want};$task=$folder.GetTask($leaf);if([bool]$task.Enabled-ne$want){throw 'Etat final different'};$confirmed++}catch{$failed++;Write-Host ('[ERREUR] Tache '+$n+' : '+$_.Exception.Message)}};Write-Host ('[INFO] Taches confirmees='+$confirmed+' absentes='+$absent+' en echec='+$failed);if($failed){exit 1};exit 0}catch{Write-Host ('[ERREUR] Taches : '+$_.Exception.Message);exit 1}"
 endlocal & exit /b %errorlevel%
 
 
@@ -1129,16 +1134,20 @@ call :START_AIO_RUNTIMES
 call :OPTIMISATIONS_SYSTEME
 set "AIO_SYSTEM_RC=!errorlevel!"
 call :OPTIMISATIONS_MEMOIRE
+set "AIO_MEM_RC=!errorlevel!"
 call :OPTIMISATIONS_DISQUES
 call :OPTIMISATIONS_GPU
 call :WAIT_AIO_RUNTIMES
 set "AIO_RUNTIME_RC=!errorlevel!"
 call :OPTIMISATIONS_RESEAU
+set "AIO_NETWORK_RC=!errorlevel!"
 call :OPTIMISATIONS_PERIPHERIQUES
 if "!PROFIL_POWER!"=="0" (
     call :DESACTIVER_ECONOMIES_ENERGIE
+    set "AIO_POWER_RC=!errorlevel!"
 ) else (
     call :RESTAURER_ECONOMIES_ENERGIE
+    set "AIO_POWER_RC=!errorlevel!"
 )
 if "!APPLIQUER_SECURITE!"=="1" (
     call :APPLIQUER_PROFIL_SECURITE
@@ -1162,6 +1171,8 @@ call :AFFICHER_RESUME_OPTIMISATION
 set "AIO_MODE=0"
 set "SKIP_PAUSE=0"
 set "AIO_POWER_PRESELECTED="
+set "AIO_USAGE_NAME="
+set "AIO_POWER_NAME="
 set "APPLIQUER_SECURITE="
 set "DESACTIVER_DEFENDER="
 set "DESACTIVER_ANIMATIONS="
@@ -1171,6 +1182,9 @@ set "AIO_RUNTIME_RC="
 set "AIO_RUNTIME_LOG="
 set "AIO_IA_RC="
 set "AIO_SYSTEM_RC="
+set "AIO_MEM_RC="
+set "AIO_NETWORK_RC="
+set "AIO_POWER_RC="
 goto :MENU_PRINCIPAL
 
 :AFFICHER_RESUME_OPTIMISATION
@@ -1193,7 +1207,9 @@ echo.
 echo %STYLE_BOLD%%COLOR_BLUE%-- PARCOURS EFFECTUE ----------------------------------------------------------%COLOR_RESET%
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Systeme, Memoire, Disques et GPU executees.%COLOR_RESET%
 if not "!AIO_SYSTEM_RC!"=="0" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Section Systeme partielle : voir les erreurs signalees.
+if not "!AIO_MEM_RC!"=="0" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Section Memoire partielle : voir les erreurs signalees.
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sections Reseau et Peripheriques executees.%COLOR_RESET%
+if not "!AIO_NETWORK_RC!"=="0" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Section Reseau partielle : voir les erreurs signalees.
 if "!AIO_RUNTIME_RC!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Runtimes Visual C++ et DirectX verifies.%COLOR_RESET%
 ) else (
@@ -1206,6 +1222,7 @@ if "!PROFIL_POWER!"=="0" (
 ) else (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Energie Eco demandee : Plan Equilibre et economies d'energie actives.%COLOR_RESET%
 )
+if not "!AIO_POWER_RC!"=="0" echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Section Energie partielle : voir les erreurs signalees.
 echo.
 
 echo %STYLE_BOLD%%COLOR_BLUE%-- OPTIONS COMPLEMENTAIRES ----------------------------------------------------%COLOR_RESET%
@@ -1446,117 +1463,67 @@ reg add "HKLM\SYSTEM\CurrentControlSet\Control\WMI\Autologger\ReadyBoot" /v Star
 
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation du blocage de la telemetrie...%COLOR_RESET%
 set "HOSTS=%SystemRoot%\System32\drivers\etc\hosts"
-
-call :BACKUP_HOSTS_BEFORE_CHANGE "%HOSTS%"
-set "HOSTS_BACKUP_RC=!errorlevel!"
-if "!HOSTS_BACKUP_RC!" NEQ "0" (
-    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Backup hosts impossible : le fichier ne sera pas modifie.%COLOR_RESET%
-    set "HOSTS="
-)
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';$h=$env:HOSTS;$item=$null;$attrs=$null;$tmp=[System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($h),([System.IO.Path]::GetFileName($h)+'.'+[guid]::NewGuid().ToString('N')+'.tmp'));$crlf=[char]13+[char]10;$s='# Telemetry Block Start';$e='# Telemetry Block End';$domains='vortex.data.microsoft.com','vortex-win.data.microsoft.com','v10.vortex-win.data.microsoft.com','v10.events.data.microsoft.com','telecommand.telemetry.microsoft.com','oca.telemetry.microsoft.com','watson.telemetry.microsoft.com','watsonc.microsoft.com','settings.data.microsoft.com','settings-win.data.microsoft.com','mobile.events.data.microsoft.com','browser.events.data.microsoft.com','self.events.data.microsoft.com','v20.events.data.microsoft.com','telemetry.microsoft.com','telemetrycollector.microsoft.com','pipe.aria.microsoft.com','diagnostics.office.com','activity.windows.com','modern.watson.data.microsoft.com','applicationinsights.microsoft.com','azurewatson.microsoft.com';$nb=$crlf+$s+$crlf;foreach($d in $domains){$nb+='0.0.0.0 '+$d+$crlf};$nb+=$e+$crlf;try{if(Test-Path -LiteralPath $h){$cur=[System.IO.File]::ReadAllText($h,[System.Text.Encoding]::GetEncoding(28591))}else{$cur=''};$cur=$cur -replace ('(?s)'+[regex]::Escape($s)+'.*?'+[regex]::Escape($e)),'';foreach($d in $domains){$cur=$cur -replace ('(?m)^0\.0\.0\.0\s+'+[regex]::Escape($d)+'\s*$'),''};$cur=$cur.TrimEnd()+$nb;if(Test-Path -LiteralPath $h){$item=Get-Item -LiteralPath $h -Force;$attrs=$item.Attributes;$item.IsReadOnly=$false};[System.IO.File]::WriteAllText($tmp,$cur,[System.Text.Encoding]::GetEncoding(28591));[System.IO.File]::Copy($tmp,$h,$true);Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;exit 0}catch{Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;exit 1}finally{if($item-ne$null-and$attrs-ne$null){$item.Attributes=$attrs}}" >nul 2>&1
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';$h=$env:HOSTS;$item=$null;$attrs=$null;$tmp=[System.IO.Path]::Combine([System.IO.Path]::GetDirectoryName($h),([System.IO.Path]::GetFileName($h)+'.'+[guid]::NewGuid().ToString('N')+'.tmp'));$crlf=[char]13+[char]10;$s='# Telemetry Block Start';$e='# Telemetry Block End';$domains='vortex.data.microsoft.com','vortex-win.data.microsoft.com','v10.vortex-win.data.microsoft.com','v10.events.data.microsoft.com','telecommand.telemetry.microsoft.com','oca.telemetry.microsoft.com','watson.telemetry.microsoft.com','watsonc.microsoft.com','settings.data.microsoft.com','settings-win.data.microsoft.com','mobile.events.data.microsoft.com','browser.events.data.microsoft.com','self.events.data.microsoft.com','v20.events.data.microsoft.com','telemetry.microsoft.com','telemetrycollector.microsoft.com','pipe.aria.microsoft.com','diagnostics.office.com','activity.windows.com','modern.watson.data.microsoft.com','applicationinsights.microsoft.com','azurewatson.microsoft.com';$nb=$crlf+$s+$crlf;foreach($d in $domains){$nb+='0.0.0.0 '+$d+$crlf};$nb+=$e+$crlf;try{if(Test-Path -LiteralPath $h){$bd=Join-Path $env:WINOPT_BACKUP_DIR 'Hosts';New-Item -ItemType Directory -Path $bd -Force|Out-Null;$dst=Join-Path $bd ('hosts_'+[guid]::NewGuid().ToString('N')+'.bak');Copy-Item -LiteralPath $h -Destination $dst -Force;if(-not(Test-Path -LiteralPath $dst)-or((Get-Item -LiteralPath $dst).Length-ne(Get-Item -LiteralPath $h).Length)){exit 2}}}catch{exit 2};try{if(Test-Path -LiteralPath $h){$cur=[System.IO.File]::ReadAllText($h,[System.Text.Encoding]::GetEncoding(28591))}else{$cur=''};$cur=$cur -replace ('(?s)'+[regex]::Escape($s)+'.*?'+[regex]::Escape($e)),'';foreach($d in $domains){$cur=$cur -replace ('(?m)^0\.0\.0\.0\s+'+[regex]::Escape($d)+'\s*$'),''};$cur=$cur.TrimEnd()+$nb;if(Test-Path -LiteralPath $h){$item=Get-Item -LiteralPath $h -Force;$attrs=$item.Attributes;$item.IsReadOnly=$false};[System.IO.File]::WriteAllText($tmp,$cur,[System.Text.Encoding]::GetEncoding(28591));[System.IO.File]::Copy($tmp,$h,$true);Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue}catch{Remove-Item -LiteralPath $tmp -Force -ErrorAction SilentlyContinue;exit 1}finally{if($item-ne$null-and$attrs-ne$null){$item.Attributes=$attrs}};try{if((Get-MpPreference).ExclusionPath -contains $h){exit 10};Add-MpPreference -ExclusionPath $h -ErrorAction Stop;exit 0}catch{exit 11}" >nul 2>&1
 set "HOSTS_RC=!errorlevel!"
-if "!HOSTS_RC!"=="0" (
+if "!HOSTS_RC!"=="2" (
+    echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% %COLOR_WHITE%Backup hosts impossible : le fichier ne sera pas modifie.%COLOR_RESET%
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Fichier hosts non modifie. Les autres reglages continuent.%COLOR_RESET%
+) else if "!HOSTS_RC!"=="0" (
     echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Bloc de telemetrie ajoute au fichier hosts%COLOR_RESET%
+    if not "!AIO_MODE!"=="1" ipconfig /flushdns >nul 2>&1
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Fichier hosts exclu de l'analyse Defender.%COLOR_RESET%
+) else if "!HOSTS_RC!"=="10" (
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Bloc de telemetrie ajoute au fichier hosts%COLOR_RESET%
+    if not "!AIO_MODE!"=="1" ipconfig /flushdns >nul 2>&1
+) else if "!HOSTS_RC!"=="11" (
+    echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Bloc de telemetrie ajoute au fichier hosts%COLOR_RESET%
+    if not "!AIO_MODE!"=="1" ipconfig /flushdns >nul 2>&1
+    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Exclusion Defender du fichier hosts impossible ; Defender peut le signaler.%COLOR_RESET%
 ) else (
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Fichier hosts non modifie. Les autres reglages continuent.%COLOR_RESET%
 )
-if not "!AIO_MODE!"=="1" ipconfig /flushdns >nul 2>&1
-if "!HOSTS_RC!"=="0" call :ENSURE_HOSTS_EXCLUSION
 set "HOSTS_RC="
 set "HOSTS="
-set "HOSTS_BACKUP_RC="
 
 REM  1.6 - Services optimises
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation du reglage des services Windows...%COLOR_RESET%
 set "SERVICE_CONFIG_SKIPPED=0"
-set "SERVICE_CONFIG_FAILED=0"
-
-for %%S in (
-    W32Time
-    WpnService
-    SysMain
-    defragsvc
-) do (
-  call :SET_EXISTING_SERVICE_START "%%S" 2
-)
-call :SET_EXISTING_SERVICE_START "WpnUserService" 2
-
-for %%S in (
-    ALG
-    AppVClient
-    BDESVC
-    CertPropSvc
-    CscService
-    GraphicsPerfSvc
-    icssvc
-    IKEEXT
-    lfsvc
-    MapsBroker
-    MSDTC
-    MSiSCSI
-    NaturalAuthentication
-    NcaSvc
-    NcbService
-    camsvc
-    NgcSvc
-    NgcCtnrSvc
-    PeerDistSvc
-    PhoneSvc
-    PNRPAutoReg
-    PNRPsvc
-    RpcLocator
-    SCardSvr
-    ScDeviceEnum
-    SstpSvc
-    stisvc
-    TroubleshootingSvc
-    tzautoupdate
-    WFDSConMgrSvc
-    WiaRpc
-    dmwappushservice
-    WerSvc
-    SystemSuggestions
-    uhssvc
-) do (
-  call :SET_EXISTING_SERVICE_START "%%S" 3
-)
-call :SET_EXISTING_SERVICE_START "CDPUserSvc" 3
-
-for %%S in (
-    AJRouter
-    AxInstSV
-    DiagTrack
-    diagnosticshub.standardcollector.service
-    DialogBlockingService
-    Fax
-    lltdsvc
-    NetTcpPortSharing
-    RemoteAccess
-    RemoteRegistry
-    RetailDemo
-    shpamsvc
-    ssh-agent
-    UevAgentService
-    WalletService
-    WMPNetworkSvc
-) do (
-  call :SET_EXISTING_SERVICE_START "%%S" 4
-)
-
+set "SERVICE_CONFIG_FAILED="
+set "WINOPT_SVC_2=W32Time;WpnService;SysMain;defragsvc;WpnUserService"
+set "WINOPT_SVC_3=ALG;AppVClient;BDESVC;CertPropSvc;CscService;GraphicsPerfSvc;icssvc;IKEEXT;lfsvc;MapsBroker;MSDTC;MSiSCSI;NaturalAuthentication;NcaSvc;NcbService;camsvc;NgcSvc;NgcCtnrSvc;PeerDistSvc;PhoneSvc;PNRPAutoReg;PNRPsvc;RpcLocator;SCardSvr;ScDeviceEnum;SstpSvc;stisvc;TroubleshootingSvc;tzautoupdate;WFDSConMgrSvc;WiaRpc;dmwappushservice;WerSvc;SystemSuggestions;uhssvc;CDPUserSvc"
+set "WINOPT_SVC_4=AJRouter;AxInstSV;DiagTrack;diagnosticshub.standardcollector.service;DialogBlockingService;Fax;lltdsvc;NetTcpPortSharing;RemoteAccess;RemoteRegistry;RetailDemo;shpamsvc;ssh-agent;UevAgentService;WalletService;WMPNetworkSvc"
 if "!IS_NORMAL_ECO_LAPTOP!"=="1" (
-  call :SET_EXISTING_SERVICE_START "SEMgrSvc" 3
+  set "WINOPT_SVC_3=!WINOPT_SVC_3!;SEMgrSvc"
 ) else (
-  call :SET_EXISTING_SERVICE_START "SEMgrSvc" 4
+  set "WINOPT_SVC_4=!WINOPT_SVC_4!;SEMgrSvc"
 )
+set "WINOPT_SVC_RES=%TEMP%\winopt_svc_%RANDOM%_%RANDOM%.tmp"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';$sk=0;$fa=0;$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey('LocalMachine','Default');try{foreach($st in @(2,3,4)){$list=@([Environment]::GetEnvironmentVariable('WINOPT_SVC_'+$st).Split(';',[StringSplitOptions]::RemoveEmptyEntries));foreach($s in $list){$path='SYSTEM\CurrentControlSet\Services\'+$s;$k=$base.OpenSubKey($path,$false);if($null-eq$k){$sk++;continue};$cur=$k.GetValue('Start',$null);$k.Dispose();if($cur-is[int]-and$cur-eq$st){continue};try{$kw=$base.OpenSubKey($path,$true);if($null-eq$kw){throw 'open'};try{$kw.SetValue('Start',$st,[Microsoft.Win32.RegistryValueKind]::DWord)}finally{$kw.Dispose()};$kr=$base.OpenSubKey($path,$false);$chk=if($kr){try{$kr.GetValue('Start',$null)}finally{$kr.Dispose()}}else{$null};if(-not($chk-is[int]-and$chk-eq$st)){throw 'verify'}}catch{$fa++;Write-Host ('[ERREUR] Demarrage du service '+$s+' non confirme : Start attendu '+$st+'.')}}}}finally{$base.Dispose()};[IO.File]::WriteAllText($env:WINOPT_SVC_RES,($sk.ToString()+'|'+$fa.ToString()),[Text.Encoding]::ASCII);if($fa-gt0){exit 1};exit 0"
+if !errorlevel! NEQ 0 set "SYSTEM_SECTION_ERROR=1"
+if exist "%WINOPT_SVC_RES%" (
+  for /f "usebackq tokens=1,2 delims=^|" %%A in ("%WINOPT_SVC_RES%") do (
+    set "SERVICE_CONFIG_SKIPPED=%%A"
+    set "SERVICE_CONFIG_FAILED=%%B"
+  )
+  del /f /q "%WINOPT_SVC_RES%" >nul 2>&1
+)
+set "WINOPT_SVC_2="
+set "WINOPT_SVC_3="
+set "WINOPT_SVC_4="
+set "WINOPT_SVC_RES="
 
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Configuration demandee pour les services presents%COLOR_RESET%
+if not defined SERVICE_CONFIG_FAILED (
+  echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Verification des services indisponible.
+  set "SYSTEM_SECTION_ERROR=1"
+) else if "!SERVICE_CONFIG_FAILED!"=="0" (
+  echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages des services confirmes. Verifiez vos usages avant redemarrage.%COLOR_RESET%
+) else (
+  echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Services non confirmes : !SERVICE_CONFIG_FAILED!.
+  set "SYSTEM_SECTION_ERROR=1"
+)
 if !SERVICE_CONFIG_SKIPPED! GTR 0 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Services absents ignores : !SERVICE_CONFIG_SKIPPED!. Aucune entree creee%COLOR_RESET%
-if !SERVICE_CONFIG_FAILED! GTR 0 echo %COLOR_YELLOW%[AVERTISSEMENT]%COLOR_RESET% Services non confirmes : !SERVICE_CONFIG_FAILED!.
-if !SERVICE_CONFIG_FAILED! GTR 0 set "SYSTEM_SECTION_ERROR=1"
 set "SERVICE_CONFIG_SKIPPED="
 set "SERVICE_CONFIG_FAILED="
-
-echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglages des services demandes. Verifiez vos usages avant redemarrage%COLOR_RESET%
 
 REM  1.7 - Optimisations demarrage et systeme
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Optimisations systeme diverses...%COLOR_RESET%
@@ -1655,7 +1622,9 @@ REM  1.14 - F1 et les inscriptions COM restent intacts.
 
 REM  1.15 - Optimisations audio (latence)
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Desactivation de l'attenuation audio Windows...%COLOR_RESET%
-powershell -NoProfile -Command "$path = 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e96c-e325-11ce-bfc1-08002be10318}'; Get-ChildItem -Path $path -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { New-ItemProperty -Path $_.PSPath -Name 'DisableAudioEndpointDucking' -PropertyType DWord -Value 1 -Force -ErrorAction SilentlyContinue | Out-Null } " >nul 2>&1
+for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e96c-e325-11ce-bfc1-08002be10318}" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+    reg add "%%K" /v DisableAudioEndpointDucking /t REG_DWORD /d 1 /f >nul 2>&1
+)
 reg add "HKCU\Software\Microsoft\Multimedia\Audio" /v UserDuckingPreference /t REG_DWORD /d 3 /f >nul 2>&1
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Attenuation audio desactivee, y compris pendant les appels%COLOR_RESET%
 
@@ -1778,7 +1747,7 @@ if "!PROFIL_USAGE!"=="0" (echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Sup
 REM  3.3 - TRIM sur volumes SSD
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation de la verification du TRIM...%COLOR_RESET%
 set "TRIM_STATUS="
-for /f "usebackq delims=" %%a in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$stampDir=Join-Path $env:ProgramData 'WindowsOptimizer'; $oldStampDir=Join-Path $env:ProgramData 'OptimizerAllInOne'; $stampFile=Join-Path $stampDir 'last_retrim.txt'; $oldStampFile=Join-Path $oldStampDir 'last_retrim.txt'; if((Test-Path $oldStampFile) -and -not (Test-Path $stampFile)){ if(-not (Test-Path $stampDir)){ New-Item -ItemType Directory -Path $stampDir -Force | Out-Null }; Move-Item -Path $oldStampFile -Destination $stampFile -Force -ErrorAction SilentlyContinue }; $ssds=Get-PhysicalDisk -ErrorAction SilentlyContinue | Where-Object { $_.MediaType -ne 'HDD' -and $_.OperationalStatus -eq 'OK' -and $_.BusType -notin @('Virtual','FileBackedVirtual') }; if(-not $ssds -or $ssds.Count -eq 0){ 'NO_SSD'; exit 0 }; if((Test-Path $stampFile) -and ((Get-Date) - (Get-Item $stampFile).LastWriteTime).TotalDays -lt 30){ 'SKIP_RECENT'; exit 0 }; if(-not (Test-Path $stampDir)){ New-Item -ItemType Directory -Path $stampDir -Force | Out-Null }; $vols=Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.DriveLetter -and ($_.FileSystem -in @('NTFS','ReFS')) }; $done=$false; foreach($v in $vols){ $part=Get-Partition -DriveLetter $v.DriveLetter -ErrorAction SilentlyContinue; if($part){ $phys=Get-PhysicalDisk -ErrorAction SilentlyContinue | Where-Object { $_.DeviceId -eq $part.DiskNumber }; if($phys -and $phys.MediaType -ne 'HDD' -and $phys.BusType -notin @('Virtual','FileBackedVirtual')){ try { Optimize-Volume -DriveLetter $v.DriveLetter -ReTrim -ErrorAction Stop | Out-Null; $done=$true } catch {} } } }; if($done){ Set-Content -Path $stampFile -Value (Get-Date -Format s) -Force; 'TRIM_DONE' } else { 'NO_SSD' }" 2^>nul`) do set "TRIM_STATUS=%%a"
+for /f "usebackq delims=" %%a in (`powershell -NoProfile -ExecutionPolicy Bypass -Command "$stampDir=Join-Path $env:ProgramData 'WindowsOptimizer'; $oldStampDir=Join-Path $env:ProgramData 'OptimizerAllInOne'; $stampFile=Join-Path $stampDir 'last_retrim.txt'; $oldStampFile=Join-Path $oldStampDir 'last_retrim.txt'; if((Test-Path $oldStampFile) -and -not (Test-Path $stampFile)){ if(-not (Test-Path $stampDir)){ New-Item -ItemType Directory -Path $stampDir -Force | Out-Null }; Move-Item -Path $oldStampFile -Destination $stampFile -Force -ErrorAction SilentlyContinue }; if((Test-Path $stampFile) -and ((Get-Date) - (Get-Item $stampFile).LastWriteTime).TotalDays -lt 30){ 'SKIP_RECENT'; exit 0 }; $ssds=@(Get-PhysicalDisk -ErrorAction SilentlyContinue | Where-Object { $_.MediaType -ne 'HDD' -and $_.OperationalStatus -eq 'OK' -and $_.BusType -notin @('Virtual','FileBackedVirtual') }); if(-not $ssds.Count){ 'NO_SSD'; exit 0 }; $ssdIds=@{}; foreach($s in $ssds){ $ssdIds[[string]$s.DeviceId]=$true }; if(-not (Test-Path $stampDir)){ New-Item -ItemType Directory -Path $stampDir -Force | Out-Null }; $vols=Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.DriveLetter -and ($_.FileSystem -in @('NTFS','ReFS')) }; $done=$false; foreach($v in $vols){ $part=Get-Partition -DriveLetter $v.DriveLetter -ErrorAction SilentlyContinue; if($part -and $ssdIds.ContainsKey([string]$part.DiskNumber)){ try { Optimize-Volume -DriveLetter $v.DriveLetter -ReTrim -ErrorAction Stop | Out-Null; $done=$true } catch {} } }; if($done){ Set-Content -Path $stampFile -Value (Get-Date -Format s) -Force; 'TRIM_DONE' } else { 'NO_SSD' }" 2^>nul`) do set "TRIM_STATUS=%%a"
 if not defined TRIM_STATUS (
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Passage TRIM ignore ; le script continue.%COLOR_RESET%
 ) else if "%TRIM_STATUS%"=="TRIM_DONE" (
@@ -1984,6 +1953,8 @@ if "!HAS_NVIDIA!"=="1" (
         rmdir "!NPI_DIR!" >nul 2>&1
         set "NPI_EXE_SRC="
         set "NPI_PROFILE_SRC="
+        set "NPI_DIR="
+        set "NPI_VALID="
         set "NPI_CLI_SUPPORTED="
     ) else (
         echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Preparation de la restauration du profil GPU...%COLOR_RESET%
@@ -2602,20 +2573,18 @@ if exist "%STR_EXE%" (
 if exist "%STR_EXE%" (
     taskkill /F /IM SetTimerResolution.exe >nul 2>&1
     call :REMOVE_STR_AUTOSTART_TASK
-    call :CREATE_STR_STARTUP_SHORTCUT
-    if !errorlevel! EQU 0 (
+    powershell -NoProfile -Command "$ErrorActionPreference='Stop';$rc=0;try{$d=Split-Path -Parent $env:STR_STARTUP_LNK;New-Item -ItemType Directory -Path $d -Force|Out-Null;$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut($env:STR_STARTUP_LNK);$s.TargetPath=$env:STR_EXE;$s.Arguments='--resolution 5275 --no-console';$s.WorkingDirectory=$env:STR_DIR;$s.Description='SetTimerResolution - WindowsOptimizer';$s.Save();$v=$w.CreateShortcut($env:STR_STARTUP_LNK);if(-not(Test-Path -LiteralPath $env:STR_STARTUP_LNK)-or$v.TargetPath-ne$env:STR_EXE-or$v.Arguments-ne'--resolution 5275 --no-console'){$rc=$rc-bor1}}catch{$rc=$rc-bor1};try{Start-Process -FilePath $env:STR_EXE -ArgumentList '--resolution','5275','--no-console' -WorkingDirectory $env:STR_DIR -WindowStyle Hidden -ErrorAction Stop;Start-Sleep -Milliseconds 700;if(-not(Get-Process -Name 'SetTimerResolution' -ErrorAction SilentlyContinue)){$rc=$rc-bor4}}catch{$rc=$rc-bor2};exit $rc" >nul 2>&1
+    set "STR_START_RC=!errorlevel!"
+    set /a "STR_LNK_ERR=STR_START_RC & 1", "STR_RUN_ERR=STR_START_RC & 2", "STR_ALIVE_ERR=STR_START_RC & 4"
+    if "!STR_LNK_ERR!"=="0" (
         echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Raccourci SetTimerResolution configure au demarrage.%COLOR_RESET%
     ) else (
         set "STR_TIMER_ERROR=1"
         echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Raccourci de demarrage non cree.%COLOR_RESET%
     )
-    powershell -NoProfile -Command "try{Start-Process -FilePath $env:STR_EXE -ArgumentList '--resolution','5275','--no-console' -WorkingDirectory $env:STR_DIR -WindowStyle Hidden -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
-    set "STR_START_RC=!errorlevel!"
-    if "!STR_START_RC!"=="0" (
+    if "!STR_RUN_ERR!"=="0" (
         echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Lancement de SetTimerResolution demande avec une resolution de 5275.%COLOR_RESET%
-        ping -n 2 127.0.0.1 >nul
-        tasklist /fi "IMAGENAME eq SetTimerResolution.exe" 2>nul | findstr /i /c:"SetTimerResolution.exe" >nul 2>&1
-        if !errorlevel! NEQ 0 (
+        if not "!STR_ALIVE_ERR!"=="0" (
             set "STR_TIMER_ERROR=1"
             echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%SetTimerResolution ne tourne pas apres le lancement.%COLOR_RESET%
         )
@@ -2624,6 +2593,9 @@ if exist "%STR_EXE%" (
         echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%SetTimerResolution n'a pas pu etre lance.%COLOR_RESET%
     )
     set "STR_START_RC="
+    set "STR_LNK_ERR="
+    set "STR_RUN_ERR="
+    set "STR_ALIVE_ERR="
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Cette resolution peut augmenter les reveils du processeur.%COLOR_RESET%
     echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Le mode Eco permet de la desactiver.%COLOR_RESET%
 )
@@ -2643,7 +2615,7 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Reglage PCI Express demande ;
 REM  7.13 - Optimisations stockage et disques
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Reglage de la gestion d'energie du stockage...%COLOR_RESET%
 reg add "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /t REG_DWORD /d 0 /f >nul 2>&1
-call :FOR_STORAGE_CLASS foreach($n in @('EnableHIPM','EnableDIPM','EnableHDDParking','IoLatencyCap')){New-ItemProperty -Path $p -Name $n -PropertyType DWord -Value 0 -Force}
+call :FOR_STORAGE_CLASS set
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion d'energie du stockage reglee pour les performances.%COLOR_RESET%
 
 REM  7.14 - Optimisations avancees des services : IoLatencyCap, ecrit ci-dessus
@@ -2848,7 +2820,7 @@ echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Gestion PCI Express rendue a 
 REM  7.14 - Mise en veille des disques et stockage
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Restauration des parametres de stockage...%COLOR_RESET%
 reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Storage" /v StorageD3InModernStandby /f >nul 2>&1
-call :FOR_STORAGE_CLASS Remove-ItemProperty -Path $p -Name 'EnableHIPM','EnableDIPM','EnableHDDParking','IoLatencyCap' -ErrorAction SilentlyContinue
+call :FOR_STORAGE_CLASS del
 echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Parametres de stockage restaures%COLOR_RESET%
 
 REM  7.15 - Limites de latence I/O : IoLatencyCap, retire ci-dessus
@@ -3159,15 +3131,6 @@ reg delete "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenEnabled" /f >n
 reg delete "HKCU\Software\Policies\Microsoft\Edge" /v "SmartScreenPuaEnabled" /f >nul 2>&1
 exit /b
 
-:ENSURE_HOSTS_EXCLUSION
-powershell -NoProfile -Command "try{$h=Join-Path $env:SystemRoot 'System32\drivers\etc\hosts';if((Get-MpPreference).ExclusionPath -contains $h){exit 10};Add-MpPreference -ExclusionPath $h -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
-if !errorlevel! EQU 10 exit /b 0
-if !errorlevel! NEQ 0 (
-    echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Exclusion Defender du fichier hosts impossible ; Defender peut le signaler.%COLOR_RESET%
-    exit /b 1
-)
-echo %COLOR_GREEN%[OK]%COLOR_RESET% %COLOR_WHITE%Fichier hosts exclu de l'analyse Defender.%COLOR_RESET%
-exit /b 0
 :TOGGLE_DEFENDER
 set "SKIP_PAUSE=0"
 call :SCREEN_HEADER " GERER WINDOWS DEFENDER"
@@ -3336,11 +3299,7 @@ exit /b 1
 :APPLY_DEFENDER_PERF_SECTION
 set "DEFENDER_PERF_ERROR=0"
 echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Profil performance Defender...%COLOR_RESET%
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{$p=Get-MpPreference;$k='HKLM:\SOFTWARE\WindowsOptimizer\DefenderPerf';if(Test-Path $k){Remove-Item $k -Recurse -Force};New-Item -Path $k -Force|Out-Null;$t=$p.ScanScheduleQuickScanTime;if($t -is [datetime]){$q=$t.ToString('HH:mm:ss')}else{$q=$t.ToString()};$m=[ordered]@{ScanAvgCPULoadFactor=[int]$p.ScanAvgCPULoadFactor;EnableLowCpuPriority=[int]$p.EnableLowCpuPriority;DisableCpuThrottleOnIdleScans=[int]$p.DisableCpuThrottleOnIdleScans;ScanScheduleDay=[int]$p.ScanScheduleDay;DisableEmailScanning=[int]$p.DisableEmailScanning;DisableRemovableDriveScanning=[int]$p.DisableRemovableDriveScanning;DisableScanningNetworkFiles=[int]$p.DisableScanningNetworkFiles;DisableScanningMappedNetworkDrivesForFullScan=[int]$p.DisableScanningMappedNetworkDrivesForFullScan;EnableFileHashComputation=[int]$p.EnableFileHashComputation};foreach($n in $m.Keys){New-ItemProperty -Path $k -Name $n -Value $m[$n] -PropertyType DWord -Force|Out-Null};New-ItemProperty -Path $k -Name QuickScan -Value $q -PropertyType String -Force|Out-Null;New-ItemProperty -Path $k -Name Captured -Value 1 -PropertyType DWord -Force|Out-Null;exit 0}catch{exit 1}" >nul 2>&1
-if !errorlevel! NEQ 0 set "DEFENDER_PERF_ERROR=1"
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{Set-MpPreference -ScanAvgCPULoadFactor 5 -EnableLowCpuPriority $true -DisableCpuThrottleOnIdleScans $false -ScanScheduleDay 8 -DisableEmailScanning $true -DisableRemovableDriveScanning $true -DisableScanningNetworkFiles $true -DisableScanningMappedNetworkDrivesForFullScan $true -EnableFileHashComputation $false -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
-if !errorlevel! NEQ 0 set "DEFENDER_PERF_ERROR=1"
-powershell -NoProfile -Command "try{$p=Get-MpPreference;$n=0;if($p.ScanAvgCPULoadFactor -eq 5){$n++};if($p.EnableLowCpuPriority -eq $true){$n++};if($p.DisableCpuThrottleOnIdleScans -eq $false){$n++};if($p.ScanScheduleDay -eq 8){$n++};if($p.DisableScanningNetworkFiles -eq $true){$n++};if($p.DisableEmailScanning -eq $true){$n++};if($p.DisableRemovableDriveScanning -eq $true){$n++};if($p.EnableFileHashComputation -eq $false){$n++};if($n -eq 8){exit 0};exit 1}catch{exit 1}" >nul 2>&1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop';try{$k='HKLM:\SOFTWARE\WindowsOptimizer\DefenderPerf';$cap=(Get-ItemProperty -Path $k -Name Captured -ErrorAction SilentlyContinue).Captured;if($cap -ne 1){$p=Get-MpPreference;New-Item -Path $k -Force|Out-Null;$t=$p.ScanScheduleQuickScanTime;if($t -is [datetime]){$q=$t.ToString('HH:mm:ss')}else{$q=$t.ToString()};$m=[ordered]@{ScanAvgCPULoadFactor=[int]$p.ScanAvgCPULoadFactor;EnableLowCpuPriority=[int]$p.EnableLowCpuPriority;DisableCpuThrottleOnIdleScans=[int]$p.DisableCpuThrottleOnIdleScans;ScanScheduleDay=[int]$p.ScanScheduleDay;DisableEmailScanning=[int]$p.DisableEmailScanning;DisableRemovableDriveScanning=[int]$p.DisableRemovableDriveScanning;DisableScanningNetworkFiles=[int]$p.DisableScanningNetworkFiles;DisableScanningMappedNetworkDrivesForFullScan=[int]$p.DisableScanningMappedNetworkDrivesForFullScan;EnableFileHashComputation=[int]$p.EnableFileHashComputation};foreach($n in $m.Keys){New-ItemProperty -Path $k -Name $n -Value $m[$n] -PropertyType DWord -Force|Out-Null};New-ItemProperty -Path $k -Name QuickScan -Value $q -PropertyType String -Force|Out-Null;New-ItemProperty -Path $k -Name Captured -Value 1 -PropertyType DWord -Force|Out-Null};Set-MpPreference -ScanAvgCPULoadFactor 5 -EnableLowCpuPriority $true -DisableCpuThrottleOnIdleScans $false -ScanScheduleDay 8 -DisableEmailScanning $true -DisableRemovableDriveScanning $true -DisableScanningNetworkFiles $true -DisableScanningMappedNetworkDrivesForFullScan $true -EnableFileHashComputation $false -ErrorAction Stop;$p=Get-MpPreference;if($p.ScanAvgCPULoadFactor -eq 5 -and $p.EnableLowCpuPriority -eq $true -and $p.DisableCpuThrottleOnIdleScans -eq $false -and $p.ScanScheduleDay -eq 8 -and $p.DisableScanningNetworkFiles -eq $true -and $p.DisableScanningMappedNetworkDrivesForFullScan -eq $true -and $p.DisableEmailScanning -eq $true -and $p.DisableRemovableDriveScanning -eq $true -and $p.EnableFileHashComputation -eq $false){exit 0};exit 1}catch{exit 1}" >nul 2>&1
 if !errorlevel! NEQ 0 set "DEFENDER_PERF_ERROR=1"
 if "!DEFENDER_PERF_ERROR!"=="0" (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Profil performance Defender applique et verifie.%COLOR_RESET%
@@ -3773,9 +3732,11 @@ exit /b 0
 :CORE_ACTIVER_WIDGETS
 set "WIDGETS_ENABLE_RC=0"
 call :DELETE_REG_VALUE_IF_PRESENT "HKLM\SOFTWARE\Policies\Microsoft\Dsh" "AllowNewsAndInterests"
-if !errorlevel! NEQ 0 set "WIDGETS_ENABLE_RC=1"
+reg query "HKLM\SOFTWARE\Policies\Microsoft\Dsh" /v AllowNewsAndInterests >nul 2>&1
+if !errorlevel! EQU 0 set "WIDGETS_ENABLE_RC=1"
 call :DELETE_REG_VALUE_IF_PRESENT "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" "EnableFeeds"
-if !errorlevel! NEQ 0 set "WIDGETS_ENABLE_RC=1"
+reg query "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" /v EnableFeeds >nul 2>&1
+if !errorlevel! EQU 0 set "WIDGETS_ENABLE_RC=1"
 reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa /t REG_DWORD /d 1 /f >nul 2>&1
 reg query "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" /v TaskbarDa 2>nul | findstr /R /C:"REG_DWORD[ ]*0x1[ ]*$" >nul
 if !errorlevel! NEQ 0 (
@@ -4221,9 +4182,9 @@ echo %COLOR_YELLOW%[EN COURS]%COLOR_RESET% %COLOR_WHITE%Creation d'un point de r
 echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%La creation peut prendre jusqu'a 60 secondes.%COLOR_RESET%
 echo.
 
-for /f "delims=" %%a in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss" 2^>nul') do set "RP_TIMESTAMP=%%a"
-powershell -NoProfile -Command "$ErrorActionPreference='Stop'; $key='HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore'; $name='SystemRestorePointCreationFrequency'; $had=$false; $old=$null; $ok=$false; try { $p=Get-ItemProperty -LiteralPath $key -ErrorAction Stop; $had=$p.PSObject.Properties.Name -contains $name; if($had){$old=$p.$name; Set-ItemProperty -LiteralPath $key -Name $name -Value 0 -ErrorAction Stop}else{New-ItemProperty -LiteralPath $key -Name $name -PropertyType DWord -Value 0 -Force -ErrorAction Stop | Out-Null}; Checkpoint-Computer -Description 'Optimizations_%RP_TIMESTAMP%' -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop; $ok=$true } catch { $ok=$false } finally { try { if($had){Set-ItemProperty -LiteralPath $key -Name $name -Value $old -ErrorAction Stop}else{Remove-ItemProperty -LiteralPath $key -Name $name -ErrorAction SilentlyContinue} } catch { $ok=$false } }; if($ok){exit 0}else{exit 1}" >nul 2>&1
-if !errorlevel! EQU 0 (
+set "RP_TIMESTAMP="
+for /f "delims=" %%a in ('powershell -NoProfile -Command "$ErrorActionPreference='Stop'; $ts=Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'; $key='HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore'; $name='SystemRestorePointCreationFrequency'; $had=$false; $old=$null; $ok=$false; try { $p=Get-ItemProperty -LiteralPath $key -ErrorAction Stop; $had=$p.PSObject.Properties.Name -contains $name; if($had){$old=$p.$name; Set-ItemProperty -LiteralPath $key -Name $name -Value 0 -ErrorAction Stop}else{New-ItemProperty -LiteralPath $key -Name $name -PropertyType DWord -Value 0 -Force -ErrorAction Stop | Out-Null}; Checkpoint-Computer -Description ('Optimizations_'+$ts) -RestorePointType 'MODIFY_SETTINGS' -ErrorAction Stop; $ok=$true } catch { $ok=$false } finally { try { if($had){Set-ItemProperty -LiteralPath $key -Name $name -Value $old -ErrorAction Stop}else{Remove-ItemProperty -LiteralPath $key -Name $name -ErrorAction SilentlyContinue} } catch { $ok=$false } }; if($ok){Write-Output $ts; exit 0}else{exit 1}" 2^>nul') do set "RP_TIMESTAMP=%%a"
+if defined RP_TIMESTAMP (
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Point de restauration cree avec succes.%COLOR_RESET%
     echo %COLOR_GREEN%[FAIT]%COLOR_RESET% %COLOR_WHITE%Nom : Optimizations_%RP_TIMESTAMP%%COLOR_RESET%
 ) else (
@@ -4992,29 +4953,12 @@ if "!PROFIL_POWER!"=="0" (
 )
 if !errorlevel! NEQ 0 set "MEMORY_POWER_ERROR=1"
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
-if "!PROFIL_POWER!"=="0" (
-    call :FTH_DISABLE
-) else (
-    call :FTH_RESTORE
-)
-set "MEMORY_FTH_RC=!errorlevel!"
-if not "!MEMORY_FTH_RC!"=="0" set "MEMORY_POWER_ERROR=1"
-if not "!MEMORY_FTH_RC!"=="0" set /a "STEP_ERRORS+=1"
 set "RAM_GB=0"
 for /f "delims=0123456789" %%X in ("x!HW_RAM!") do if "%%X"=="x" if defined HW_RAM set "RAM_GB=!HW_RAM!"
-if "!RAM_GB!"=="0" for /f %%A in ('powershell -NoProfile -Command "[math]::Round(((Get-CimInstance Win32_PhysicalMemory -ErrorAction Stop|Measure-Object Capacity -Sum).Sum)/1GB,0)" 2^>nul') do if not "%%A"=="" set "RAM_GB=%%A"
-if "!RAM_GB!"=="0" set "MEMORY_POWER_ERROR=1"
-if "!PROFIL_POWER!"=="1" (
-    powershell -NoProfile -Command "$ErrorActionPreference='Stop';Enable-MMAgent -MemoryCompression -ErrorAction Stop" >nul 2>&1
-) else if !RAM_GB! GTR 8 (
-    powershell -NoProfile -Command "$ErrorActionPreference='Stop';Disable-MMAgent -MemoryCompression -ErrorAction Stop" >nul 2>&1
-) else (
-    powershell -NoProfile -Command "$ErrorActionPreference='Stop';Enable-MMAgent -MemoryCompression -ErrorAction Stop" >nul 2>&1
-)
+powershell -NoProfile -Command "$ErrorActionPreference='Stop';$err=0;$power=$env:PROFIL_POWER;$f=$env:WINOPT_FTH_BACKUP;$ram=0;[void][int]::TryParse($env:RAM_GB,[ref]$ram);try{$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);try{if($power-eq'0'){$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);if(-not$key){$key=$base.CreateSubKey('SOFTWARE\Microsoft\FTH')};try{if(Test-Path -LiteralPath $f){$present=$key.GetValueNames()-contains'Enabled';if(-not($present-and$key.GetValueKind('Enabled')-eq[Microsoft.Win32.RegistryValueKind]::DWord-and[int]$key.GetValue('Enabled')-eq0)){$err=1}}else{$present=$key.GetValueNames()-contains'Enabled';$state=[ordered]@{Present=$present;Kind='None';Value=$null};if($present){$kind=$key.GetValueKind('Enabled');$state.Kind=[string]$kind;$value=$key.GetValue('Enabled',$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$state.Value=[Convert]::ToBase64String([byte[]]$value)}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::MultiString){$state.Value=@($value)}else{$state.Value=$value}};[IO.File]::WriteAllText($f,($state|ConvertTo-Json -Depth 5),[Text.Encoding]::UTF8);$key.SetValue('Enabled',0,[Microsoft.Win32.RegistryValueKind]::DWord);if($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne0){$err=1}}}finally{if($key){$key.Dispose()}}}else{if(-not(Test-Path -LiteralPath $f)){$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);if($key){try{$present=$key.GetValueNames()-contains'Enabled';if(-not($present-and$key.GetValueKind('Enabled')-eq[Microsoft.Win32.RegistryValueKind]::DWord-and[int]$key.GetValue('Enabled')-eq1)){if($present){$key.SetValue('Enabled',1,[Microsoft.Win32.RegistryValueKind]::DWord)}else{$key.DeleteValue('Enabled',$false)};if(($key.GetValueNames()-contains'Enabled')-and($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne1)){$err=1}}}finally{$key.Dispose()}}}else{$state=Get-Content -LiteralPath $f -Raw|ConvertFrom-Json;$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);try{$present=$key-and($key.GetValueNames()-contains'Enabled');if($present-and($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne0)){$err=1}else{if($state.Present){if(-not$key){$key=$base.CreateSubKey('SOFTWARE\Microsoft\FTH')};$kind=[Microsoft.Win32.RegistryValueKind]::Parse([Microsoft.Win32.RegistryValueKind],[string]$state.Kind);$value=$state.Value;if($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$value=[Convert]::FromBase64String([string]$state.Value)}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::DWord){$value=[uint32]$state.Value}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::QWord){$value=[uint64]$state.Value}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::MultiString){$value=@($state.Value)};$key.SetValue('Enabled',$value,$kind)}elseif($key-and$present){$key.DeleteValue('Enabled',$false)};Remove-Item -LiteralPath $f -Force -ErrorAction Stop}}finally{if($key){$key.Dispose()}}}}}finally{$base.Dispose()}}catch{$err=1};if($ram-le0){try{$ram=[int][math]::Round(((Get-CimInstance Win32_PhysicalMemory -Property Capacity -ErrorAction Stop|Measure-Object Capacity -Sum).Sum)/1GB,0)}catch{$ram=0}};if($ram-le0){$err=1};try{if($power-eq'1'-or$ram-le8){Enable-MMAgent -MemoryCompression -ErrorAction Stop}else{Disable-MMAgent -MemoryCompression -ErrorAction Stop}}catch{$err=1};exit $err" >nul 2>&1
 if !errorlevel! NEQ 0 set "MEMORY_POWER_ERROR=1"
 if !errorlevel! NEQ 0 set /a "STEP_ERRORS+=1"
 call :STEP_RESULT "Memoire, FTH et compression alignes avec le profil d'energie" "ERREUR" "La convergence du profil memoire est incomplete"
-set "MEMORY_FTH_RC="
 exit /b !MEMORY_POWER_ERROR!
 
 :STEP_RESULT
@@ -5042,18 +4986,6 @@ exit /b 0
 
 :SET_UI_ANIMATIONS
 powershell -NoProfile -Command "$s=Add-Type -PassThru -Name U -Namespace W -MemberDefinition '[DllImport(\"user32.dll\")] public static extern bool SystemParametersInfo(uint a,uint b,IntPtr c,uint d);'; $f=0; foreach($a in 0x1003,0x1005,0x1007,0x1013,0x1015,0x1017,0x1043){ if(-not $s::SystemParametersInfo($a,0,[IntPtr]%~1,3)){$f=1} }; exit $f" >nul 2>&1
-exit /b !errorlevel!
-
-:FTH_DISABLE
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=$env:WINOPT_FTH_BACKUP;$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);if(-not$key){$key=$base.CreateSubKey('SOFTWARE\Microsoft\FTH')};if(Test-Path -LiteralPath $f){$present=$key.GetValueNames()-contains'Enabled';if($present-and$key.GetValueKind('Enabled')-eq[Microsoft.Win32.RegistryValueKind]::DWord-and[int]$key.GetValue('Enabled')-eq 0){exit 0};exit 2};$present=$key.GetValueNames()-contains'Enabled';$state=[ordered]@{Present=$present;Kind='None';Value=$null};if($present){$kind=$key.GetValueKind('Enabled');$state.Kind=[string]$kind;$value=$key.GetValue('Enabled',$null,[Microsoft.Win32.RegistryValueOptions]::DoNotExpandEnvironmentNames);if($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$state.Value=[Convert]::ToBase64String([byte[]]$value)}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::MultiString){$state.Value=@($value)}else{$state.Value=$value}};[IO.File]::WriteAllText($f,($state|ConvertTo-Json -Depth 5),[Text.Encoding]::UTF8);$key.SetValue('Enabled',0,[Microsoft.Win32.RegistryValueKind]::DWord);if($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne 0){exit 1};exit 0}catch{exit 1}" >nul 2>&1
-exit /b !errorlevel!
-
-:FTH_RESTORE
-if not exist "%WINOPT_FTH_BACKUP%" (
-    powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);if(-not $key){exit 0};$present=$key.GetValueNames()-contains'Enabled';if($present-and$key.GetValueKind('Enabled')-eq[Microsoft.Win32.RegistryValueKind]::DWord-and[int]$key.GetValue('Enabled')-eq 1){exit 0};if($present){$key.SetValue('Enabled',1,[Microsoft.Win32.RegistryValueKind]::DWord)}else{$key.DeleteValue('Enabled',$false)};if(-not$key.GetValueNames()-contains'Enabled'){exit 0};if($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne 1){exit 1};exit 0}catch{exit 1}" >nul 2>&1
-    exit /b !errorlevel!
-)
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$f=$env:WINOPT_FTH_BACKUP;$state=Get-Content -LiteralPath $f -Raw|ConvertFrom-Json;$base=[Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,[Microsoft.Win32.RegistryView]::Default);$key=$base.OpenSubKey('SOFTWARE\Microsoft\FTH',$true);$present=$key-and($key.GetValueNames()-contains'Enabled');if($present-and($key.GetValueKind('Enabled')-ne[Microsoft.Win32.RegistryValueKind]::DWord-or[int]$key.GetValue('Enabled')-ne 0)){exit 2};if($state.Present){if(-not$key){$key=$base.CreateSubKey('SOFTWARE\Microsoft\FTH')};$kind=[Microsoft.Win32.RegistryValueKind]::Parse([Microsoft.Win32.RegistryValueKind],[string]$state.Kind);$value=$state.Value;if($kind-eq[Microsoft.Win32.RegistryValueKind]::Binary){$value=[Convert]::FromBase64String([string]$state.Value)}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::DWord){$value=[uint32]$state.Value}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::QWord){$value=[uint64]$state.Value}elseif($kind-eq[Microsoft.Win32.RegistryValueKind]::MultiString){$value=@($state.Value)};$key.SetValue('Enabled',$value,$kind)}elseif($key-and$present){$key.DeleteValue('Enabled',$false)};Remove-Item -LiteralPath $f -Force -ErrorAction Stop;exit 0}catch{exit 1}" >nul 2>&1
 exit /b !errorlevel!
 
 :REMOVE_COPILOT_HOSTS_BLOCK
@@ -5100,7 +5032,17 @@ powershell -NoLogo -NoProfile -Command "Get-ChildItem 'HKLM:\SYSTEM\CurrentContr
 exit /b
 
 :FOR_STORAGE_CLASS
-powershell -NoProfile -Command "foreach($c in @('{4d36e96a-e325-11ce-bfc1-08002be10318}','{4d36e97b-e325-11ce-bfc1-08002be10318}')){ Get-ChildItem -Path ('HKLM:\SYSTEM\CurrentControlSet\Control\Class\'+$c) -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' } | ForEach-Object { $p=$_.PSPath; %* } }" >nul 2>&1
+for %%C in ({4d36e96a-e325-11ce-bfc1-08002be10318} {4d36e97b-e325-11ce-bfc1-08002be10318}) do (
+    for /f "tokens=*" %%K in ('reg query "HKLM\SYSTEM\CurrentControlSet\Control\Class\%%C" /f "" /k 2^>nul ^| findstr /r "\\[0-9][0-9][0-9][0-9]$"') do (
+        for %%N in (EnableHIPM EnableDIPM EnableHDDParking IoLatencyCap) do (
+            if /i "%~1"=="set" (
+                reg add "%%K" /v %%N /t REG_DWORD /d 0 /f >nul 2>&1
+            ) else (
+                reg delete "%%K" /v %%N /f >nul 2>&1
+            )
+        )
+    )
+)
 exit /b 0
 
 :SET_POWERCFG_ACDC
@@ -5321,10 +5263,12 @@ exit /b 0
 set "STR_TMP=%STR_DIR%\SetTimerResolution.exe.download"
 set "STR_DOWNLOAD_URL=%WINOPT_RELEASE_BASE_URL%/Tools/Timer%%20%%26%%20Interrupt/SetTimerResolution.exe"
 if exist "%STR_TMP%" del /f /q "%STR_TMP%" >nul 2>&1
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$src=Join-Path $env:WINOPT_SOURCE_DIR 'Tools\Timer & Interrupt\SetTimerResolution.exe';if([IO.File]::Exists($src)){Copy-Item -LiteralPath $src -Destination $env:STR_TMP -Force;exit 0};exit 1}catch{exit 1}" >nul 2>&1
-call :VALIDATE_STR_BINARY
-if !errorlevel! EQU 0 goto :INSTALL_STR_COMMIT
-if exist "%STR_TMP%" del /f /q "%STR_TMP%" >nul 2>&1
+if exist "%WINOPT_SOURCE_DIR%Tools\Timer & Interrupt\SetTimerResolution.exe" (
+    powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$src=Join-Path $env:WINOPT_SOURCE_DIR 'Tools\Timer & Interrupt\SetTimerResolution.exe';if([IO.File]::Exists($src)){Copy-Item -LiteralPath $src -Destination $env:STR_TMP -Force;exit 0};exit 1}catch{exit 1}" >nul 2>&1
+    call :VALIDATE_STR_BINARY
+    if !errorlevel! EQU 0 goto :INSTALL_STR_COMMIT
+    if exist "%STR_TMP%" del /f /q "%STR_TMP%" >nul 2>&1
+)
 where curl.exe >nul 2>&1
 if !errorlevel! NEQ 0 goto :INSTALL_STR_BITS
 curl.exe --fail --location --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 45 --silent --show-error --output "%STR_TMP%" "%STR_DOWNLOAD_URL%"
@@ -5357,10 +5301,6 @@ exit /b 0
 if not exist "%STR_TMP%" exit /b 1
 for %%A in ("%STR_TMP%") do if %%~zA LSS 10000 exit /b 1
 powershell -NoProfile -Command "$p=$env:STR_TMP;try{$b=[IO.File]::ReadAllBytes($p);if($b.Length -lt 10000 -or $b[0] -ne 77 -or $b[1] -ne 90){exit 1};$o=[BitConverter]::ToInt32($b,60);if($o -lt 64 -or $o+4 -gt $b.Length -or $b[$o] -ne 80 -or $b[$o+1] -ne 69 -or $b[$o+2] -ne 0 -or $b[$o+3] -ne 0){exit 1};exit 0}catch{exit 1}" >nul 2>&1
-exit /b !errorlevel!
-
-:CREATE_STR_STARTUP_SHORTCUT
-powershell -NoProfile -Command "$ErrorActionPreference='Stop';try{$d=Split-Path -Parent $env:STR_STARTUP_LNK;New-Item -ItemType Directory -Path $d -Force|Out-Null;$w=New-Object -ComObject WScript.Shell;$s=$w.CreateShortcut($env:STR_STARTUP_LNK);$s.TargetPath=$env:STR_EXE;$s.Arguments='--resolution 5275 --no-console';$s.WorkingDirectory=$env:STR_DIR;$s.Description='SetTimerResolution - WindowsOptimizer';$s.Save();$v=$w.CreateShortcut($env:STR_STARTUP_LNK);if(-not (Test-Path -LiteralPath $env:STR_STARTUP_LNK) -or $v.TargetPath -ne $env:STR_EXE -or $v.Arguments -ne '--resolution 5275 --no-console'){exit 1};exit 0}catch{exit 1}" >nul 2>&1
 exit /b !errorlevel!
 
 :REMOVE_STR_AUTOSTART_TASK
@@ -5451,7 +5391,7 @@ echo %COLOR_YELLOW%[INFO]%COLOR_RESET% %COLOR_WHITE%Source distante autorisee : 
 set "REMOTE_PS_DIR=%ProgramData%\WindowsOptimizer\Remote\%RANDOM%%RANDOM%"
 if not exist "%REMOTE_PS_DIR%" mkdir "%REMOTE_PS_DIR%" >nul 2>&1
 if not exist "%REMOTE_PS_DIR%" (
-    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Reperoire temporaire de telechargement indisponible.%COLOR_RESET%
+    echo %COLOR_RED%[ERREUR]%COLOR_RESET% %COLOR_WHITE%Repertoire temporaire de telechargement indisponible.%COLOR_RESET%
     exit /b 1
 )
 set "REMOTE_PS_FILE=%REMOTE_PS_DIR%\outil.ps1"

@@ -16,9 +16,9 @@ python3 -B -m unittest discover -s .github -p 'test_*.py' -v
 pwsh -NoProfile -Command '$e=$null;[void][Management.Automation.Language.Parser]::ParseFile("launcher.ps1",[ref]$null,[ref]$e);if($e){$e;exit 1}'
 ```
 
-It applies the format contract below to the working copy (same exit codes `44`, `42`, `43`), then exits `1` on a duplicate label, a `goto`/`call :` target that does not exist, a dynamic (`%`/`!`) target, or a label that is neither referenced nor reached by fall-through from a line other than an unconditional `goto`/`exit`. `rem`, `::`, `echo` and `set` lines are ignored. It is static: no PowerShell, launcher or Windows execution.
+It applies the format contract below to the working copy (same exit codes `44`, `42`, `43`), then exits `1` on a physical line longer than 8191 characters, a duplicate label, a `goto`/`call :` target that does not exist, a dynamic (`%`/`!`) target, or a label that is neither referenced nor reached by fall-through from a line other than an unconditional `goto`/`exit`. `rem`, `::`, `echo` and `set` lines are ignored. It is static: no PowerShell, launcher or Windows execution.
 
-The command below uses external hp-dev lab tooling, not files supplied by a fresh clone. On hp-dev, first read the active host machine index (`~/.agents/MACHINE.md`, topic `machine.d/vm-charge.md`) to locate the lab, then run from the worktree root:
+The command below uses external hp-dev lab tooling, not files supplied by a fresh clone. On hp-dev, first read the active host machine index (`~/.agents/MACHINE.md`, topic `machine.d/host-power.md`) to locate the lab, then run from the worktree root:
 
 ```bash
 REPO="$PWD" ~/vms/winopt-lab/check.sh --local
@@ -29,7 +29,7 @@ This checks working-copy ASCII/CRLF, labels, targets, parentheses and unsafe ech
 Working-copy format must return `0` with this Windows PowerShell check:
 
 ```powershell
-powershell -NoProfile -Command "try{$b=[IO.File]::ReadAllBytes('All in One.cmd');for($i=0;$i-lt$b.Length;$i++){if($b[$i]-eq0-or$b[$i]-gt127){exit 44};if(($b[$i]-eq10-and($i-eq0-or$b[$i-1]-ne13))-or($b[$i]-eq13-and($i+1-ge$b.Length-or$b[$i+1]-ne10))){exit 42}};exit 0}catch{exit 43}"
+powershell -NoProfile -Command "try{$s=[Text.Encoding]::GetEncoding(28591).GetString([IO.File]::ReadAllBytes('All in One.cmd'));if($s-match'[\x00\x80-\xFF]'){exit 44};if($s-match'(?<!\r)\n|\r(?!\n)'){exit 42};exit 0}catch{exit 43}"
 ```
 
 On Windows, test the local and published launcher separately, each in a temporary directory containing only `launcher.ps1`:
