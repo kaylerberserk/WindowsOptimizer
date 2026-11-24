@@ -9,15 +9,15 @@ on:
     paths:
       - 'All in One.cmd'
       - 'launcher.ps1'
+      - '.gitattributes'
       - '.github/workflows/batch-check.yml'
-      - '.github/check-batch.py'
-      - '.github/test_check_batch.py'
+      - '.github/*.py'
 
 permissions:
   contents: read
 
 concurrency:
-  group: batch-check-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
